@@ -1,10 +1,11 @@
 {
 	"name": "@fatpaper-monopoly/server",
 	"version": "1.0.0",
-	"main": "index.js",
+	"main": "app.ts",
+	"type": "module",
 	"license": "MIT",
 	"scripts": {
-		"dev": "nodemon -r --exec ts-node ./app.ts",
+		"dev": "nodemon --exec tsx ./app.ts",
 		"start": "tsc && node dist/monopoly-server/app.js"
 	},
 	"dependencies": {
@@ -15,7 +16,7 @@
 		"express-jwt": "^8.2.0",
 		"jsonwebtoken": "^9.0.0",
 		"multer": "^1.4.5-lts.1",
-		"mysql": "^2.18.1",
+		"mysql": "npm:mysql2@^2.1.0",
 		"node-vibrant": "^3.2.1-alpha.1",
 		"nodemon": "^2.0.20",
 		"path-to-regexp": "^6.2.1",
@@ -37,6 +38,7 @@
 		"@types/node": "^18.11.17",
 		"@types/ws": "^8.5.3",
 		"ts-node": "^10.9.2",
-		"ws": "^8.11.0"
+		"ws": "^8.11.0",
+		"@fatpaper-monopoly/config": "workspace:*"
 	}
 }

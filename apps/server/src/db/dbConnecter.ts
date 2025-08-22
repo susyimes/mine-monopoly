@@ -1,7 +1,11 @@
 import { DataSource } from "typeorm";
-import {MYSQL_PASSWORD, MYSQL_PORT, MYSQL_USERNAME} from "../../../global.config";
+import { MYSQL_PASSWORD, MYSQL_PORT, MYSQL_USERNAME } from "@fatpaper-monopoly/config";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const AppDataSource = new DataSource({
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+export const AppDataSource = new DataSource({
 	type: "mysql",
 	host: process.env.NODE_ENV == "production" ? "mysql" : "localhost",
 	port: MYSQL_PORT,
@@ -11,5 +15,3 @@ const AppDataSource = new DataSource({
 	synchronize: true,
 	entities: [__dirname + "/entities/*{.js,.ts}"],
 });
-
-export default AppDataSource;

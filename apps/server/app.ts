@@ -1,26 +1,14 @@
 import "reflect-metadata";
-import AppDataSource from "./src/db/dbConnecter";
+import {AppDataSource} from "./src/db/dbConnecter";
 import express, { ErrorRequestHandler, RequestHandler } from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-import routerModel from "./src/routers/model";
 import { routerUser } from "./src/routers/user";
-import { routerMap } from "./src/routers/map";
-import { routerRole } from "./src/routers/role";
-import { routerItemType } from "./src/routers/item-type";
-import { routerMapItem } from "./src/routers/mapItem";
-import { routerStreet } from "./src/routers/street";
-import { routerProperty } from "./src/routers/property";
-import { routerChanceCard } from "./src/routers/chance-card";
-import { routerMusic } from "./src/routers/music";
 import { roomRouter } from "./src/routers/room-router";
 import { serverLog } from "./src/utils/logger";
 import chalk from "chalk";
 import { __APIPORT__, __ICE_SERVER_PORT__, __USERSERVERHOST__ } from "./global.config";
-import { getPublicKey } from "./src/utils/api/keys";
 import { roleValidation } from "./src/utils/role-validation";
-import { routerArrivedEvent } from "./src/routers/arrived-event";
-import { RoomRouter } from "./src/classes/RoomRouter";
 import { PeerServer } from "peer";
 
 // import { roleValidation } from "./src/utils/role-validation";
@@ -30,9 +18,6 @@ async function bootstrap() {
 		await AppDataSource.initialize().then(() => {
 			serverLog(`${chalk.bold.bgGreen(" 数据库连接成功 ")}`);
 		});
-
-		const publicKey = await getPublicKey();
-		serverLog(`${chalk.bold.bgGreen(" 用户服务器连接成功 ")}`);
 
 		const app = express();
 
@@ -45,16 +30,6 @@ async function bootstrap() {
 		app.use(bodyParser.json());
 
 		app.use("/user", routerUser);
-		app.use("/role", routerRole);
-		app.use("/model", routerModel);
-		app.use("/map", routerMap);
-		app.use("/item-type", routerItemType);
-		app.use("/arrived-event", routerArrivedEvent);
-		app.use("/map-item", routerMapItem);
-		app.use("/street", routerStreet);
-		app.use("/property", routerProperty);
-		app.use("/chance-card", routerChanceCard);
-		app.use("/music", routerMusic);
 		app.use("/room-router", roomRouter);
 
 		app.get("/health", (req, res) => {
