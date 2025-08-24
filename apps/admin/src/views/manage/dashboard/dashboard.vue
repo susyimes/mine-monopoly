@@ -23,42 +23,37 @@ onBeforeUnmount(() => {
 
 <template>
 	<div class="dashboard">
-		<div class="room-list-container">
-			<div class="room-list-title">当前房间列表({{ roomList.length }})</div>
-			<div class="room-list">
-				<RoomItem :room="room" v-for="room in roomList" :key="room.roomId" />
-			</div>
+		<div class="top-bar">
+			<h4>当前房间列表({{ roomList.length }})</h4>
+		</div>
+		<div class="room-list">
+			<RoomItem :room="room" v-for="room in roomList" :key="room.roomId" />
 		</div>
 	</div>
 </template>
 
 <style lang="scss" scoped>
 .dashboard {
-	height: 100%;
-	.room-list-container {
+	padding: 10px;
+
+	.top-bar {
+		width: 100%;
+		height: 52px;
 		display: flex;
-		flex: 1;
 		justify-content: space-between;
-		flex-direction: column;
-		height: 100%;
-		padding: 20px;
-		border-radius: 20px;
-		box-shadow: var(--el-box-shadow-light);
-		box-sizing: border-box;
+		align-items: center;
+		background-color: #fff;
+		padding: 10px 20px;
+		border-radius: 5px;
+	}
 
-		& > .room-list-title {
-			font-weight: bold;
-			margin-bottom: 10px;
-		}
-
-		& > .room-list {
-			flex: 1;
-			display: flex;
-			justify-content: flex-start;
-			align-content: flex-start;
-			overflow-y: scroll;
-			flex-wrap: wrap;
-		}
+	.room-list {
+		flex: 1;
+		display: flex;
+		justify-content: flex-start;
+		align-content: flex-start;
+		overflow-y: scroll;
+		flex-wrap: wrap;
 	}
 }
 </style>
