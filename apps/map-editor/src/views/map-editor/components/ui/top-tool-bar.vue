@@ -36,6 +36,64 @@ function handleCameraModeChange() {
 	eventBus.emit("change-camera-mode", editorStore.currentCameraMode);
 }
 
+type ButtonConifg = {
+	text: string;
+	icon: string;
+	onClick: () => any;
+};
+
+const buttonConfigs: ButtonConifg[] = [
+	{
+		text: "角色",
+		icon: "fas fa-mask",
+		onClick: () => {
+			roleManagerVisible.value = true;
+		},
+	},
+	{
+		text: "路径索引",
+		icon: "fas fa-bezier-curve",
+		onClick: () => {
+			mapIndexCreatorVisible.value = true;
+		},
+	},
+	{
+		text: "游戏流程",
+		icon: "fas fa-microchip",
+		onClick: () => {
+			processManagerVisible.value = true;
+		},
+	},
+	{
+		text: "街道",
+		icon: "fas fa-road",
+		onClick: () => {
+			streetManagerVisible.value = true;
+		},
+	},
+	{
+		text: "模型",
+		icon: "fas fa-cubes",
+		onClick: () => {
+			modelManagerVisible.value = true;
+		},
+	},
+	{
+		text: "地块事件",
+		icon: "fas fa-book",
+		onClick: () => {
+			eventManagerVisible.value = true;
+		},
+	},
+	{
+		text: "机会卡",
+		icon: "fas fa-wand-magic-sparkles",
+		onClick: () => {
+			chanceCardManagerVisible.value = true;
+		},
+	},
+];
+
 const roleManagerVisible = ref(false);
 const mapIndexCreatorVisible = ref(false);
 const processManagerVisible = ref(false);
@@ -101,33 +159,9 @@ const chanceCardManagerVisible = ref(false);
 
 		<div class="right">
 			<a-space wrap>
-				<a-button @click="roleManagerVisible = true">
-					<font-awesome-icon style="margin-right: 5px" :icon="['fas', 'user-ninja']" />
-					<span>角色</span>
-				</a-button>
-				<a-button @click="mapIndexCreatorVisible = true">
-					<font-awesome-icon style="margin-right: 5px" :icon="['fas', 'bezier-curve']" />
-					<span>路径索引</span>
-				</a-button>
-				<a-button @click="processManagerVisible = true">
-					<font-awesome-icon style="margin-right: 5px" :icon="['fas', 'microchip']" />
-					<span>游戏流程</span>
-				</a-button>
-				<a-button @click="streetManagerVisible = true">
-					<font-awesome-icon style="margin-right: 5px" :icon="['fas', 'road']" />
-					<span>街道</span>
-				</a-button>
-				<a-button @click="modelManagerVisible = true">
-					<font-awesome-icon style="margin-right: 5px" :icon="['fas', 'cubes']" />
-					<span>模型</span>
-				</a-button>
-				<a-button @click="eventManagerVisible = true">
-					<font-awesome-icon style="margin-right: 5px" :icon="['fas', 'book']" />
-					<span>地块事件</span>
-				</a-button>
-				<a-button @click="chanceCardManagerVisible = true">
-					<font-awesome-icon style="margin-right: 5px" :icon="['fas', 'wand-magic-sparkles']" />
-					<span>机会卡</span>
+				<a-button v-for="btnConfig in buttonConfigs" @click="btnConfig.onClick">
+					<font-awesome-icon style="margin-right: 5px" :icon="btnConfig.icon" />
+					<span>{{ btnConfig.text }}</span>
 				</a-button>
 			</a-space>
 		</div>
