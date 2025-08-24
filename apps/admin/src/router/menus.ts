@@ -23,4 +23,11 @@ export const menus: menuItem[] = [
 		component: () => import("@/views/manage/map-manage/map-manage.vue"),
 		icon: "map-location-dot",
 	},
+	{
+		path: "/user",
+		menuName: "用户管理",
+		name: "user",
+		component: () => import("@/views/manage/user-manage/user-manage.vue"),
+		icon: "person",
+	},
 ];

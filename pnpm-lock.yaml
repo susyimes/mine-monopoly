@@ -136,6 +136,9 @@ importers:
       '@fatpaper-monopoly/login':
         specifier: workspace:*
         version: link:../../packages/components/login
+      '@fatpaper-monopoly/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -243,6 +246,9 @@ importers:
       '@fatpaper-monopoly/config':
         specifier: workspace:*
         version: link:../../packages/configs
+      '@fatpaper-monopoly/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@types/body-parser':
         specifier: ^1.19.2
         version: 1.19.6

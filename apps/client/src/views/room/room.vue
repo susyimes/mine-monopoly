@@ -272,7 +272,7 @@ function handleUpdateGameSetting() {
 
 <style lang="scss" scoped>
 .room-page {
-	width: 75vw;
+	width: 80vw;
 	height: 85%;
 	padding: 1.2rem;
 	margin: auto;

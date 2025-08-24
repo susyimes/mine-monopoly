@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import {AppDataSource} from "./src/db/dbConnecter";
+import { AppDataSource } from "./src/db/dbConnecter";
 import express, { ErrorRequestHandler, RequestHandler } from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -10,6 +10,7 @@ import chalk from "chalk";
 import { __APIPORT__, __ICE_SERVER_PORT__, __USERSERVERHOST__ } from "./global.config";
 import { roleValidation } from "./src/utils/role-validation";
 import { PeerServer } from "peer";
+import { gameMapRouter } from "src/routers/game-map";
 
 // import { roleValidation } from "./src/utils/role-validation";
 
@@ -31,6 +32,7 @@ async function bootstrap() {
 
 		app.use("/user", routerUser);
 		app.use("/room-router", roomRouter);
+		app.use("/game-map", gameMapRouter);
 
 		app.get("/health", (req, res) => {
 			// 在这里进行服务的健康检查，返回适当的响应

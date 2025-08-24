@@ -47,7 +47,7 @@ export interface User {
 }
 
 export interface UserInRoomInfo extends User {
-	role: Role;
+	role: Role | undefined;
 }
 
 export interface Room {

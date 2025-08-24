@@ -25,6 +25,8 @@ function createWindow() {
 		webPreferences: {
 			nodeIntegration: true,
 			nodeIntegrationInWorker: false,
+			contextIsolation: true,
+			enableBlinkFeatures: "WebRTC",
 			preload: path.join(__dirname, "preload.mjs"),
 			devTools: true,
 			webSecurity: false,

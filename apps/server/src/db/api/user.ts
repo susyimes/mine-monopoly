@@ -1,4 +1,4 @@
-import { User } from "../entities/user";
+import { User } from "../entities/User";
 import { AppDataSource } from "../dbConnecter";
 import { decryptPassword, generatePasswordHash, getRandomString, randomColor } from "../../utils/index";
 

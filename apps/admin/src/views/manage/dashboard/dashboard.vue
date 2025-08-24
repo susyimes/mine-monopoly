@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { RoomMapItem } from "@/interfaces/interfaces";
 import RoomItem from "./components/room-item.vue";
-import { getRoomList } from "@/utils/api/roomList";
-import { onMounted, ref } from "vue";
+import { getRoomList } from "@/utils/api/room-list";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 const roomList = ref<RoomMapItem[]>([]);
+let setTimeOutId: any;
 
-async function poll() {
+async function updateRoomList() {
 	roomList.value = await getRoomList();
-	setTimeout(poll, 3000);
+	setTimeOutId = setTimeout(updateRoomList, 2000);
 }
 
 onMounted(() => {
-	poll();
+	updateRoomList();
+});
+
+onBeforeUnmount(() => {
+	clearTimeout(setTimeOutId);
 });
 </script>
 

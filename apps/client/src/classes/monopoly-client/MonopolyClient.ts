@@ -98,6 +98,7 @@ export class MonopolyClient {
 		console.log("🚀 ~ MonopolyClient ~ joinRoom ~ roomId:", roomId);
 		try {
 			const data = await joinRoomApi(roomId);
+			console.log("🚀 ~ MonopolyClient ~ joinRoom ~ data:", data)
 			const userStore = useUserInfo();
 			let hostPeerId = data.hostPeerId;
 
@@ -124,6 +125,7 @@ export class MonopolyClient {
 				await this.linkToGameHost(hostPeerId);
 			}
 		} catch (e) {
+			console.log("🚀 ~ MonopolyClient ~ joinRoom ~ e:", e)
 			FPMessage({ type: "error", message: "服务器连接失败" });
 		}
 	}

@@ -41,5 +41,8 @@ const isMusicPlayerVisiable = computed(() => router.name !== "login");
 .main-container {
 	flex: 1;
 	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 </style>

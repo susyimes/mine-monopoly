@@ -31,6 +31,7 @@ import {
 	faHandPointer,
 	faGauge,
 	faRightFromBracket,
+	faPerson,
 } from "@fortawesome/free-solid-svg-icons";
 
 /* add icons to the library */
@@ -53,7 +54,8 @@ library.add(
 	faUpDownLeftRight,
 	faHandPointer,
 	faGauge,
-	faRightFromBracket
+	faRightFromBracket,
+	faPerson
 );
 
 const app = createApp(App);

@@ -107,6 +107,7 @@ function handleLogout() {
 			margin-left: 10px;
 		}
 		.icon {
+			width: 20px;
 		}
 	}
 }

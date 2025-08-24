@@ -3,7 +3,6 @@ import { ChatMessage, Role, RoomInfo, SocketMessage, User, UserInRoomInfo, GameS
 import { GameOverRule, OperateType } from "@src/enums/game";
 import { ChangeRoleOperate, ChatMessageType, SocketMsgType } from "@src/enums/bace";
 import { debounce, randomString } from "@src/utils";
-import { getRoleList } from "@src/utils/api/role";
 import GameProcessWorker from "@src/classes/worker/GameProcessWorker?worker";
 import { WorkerCommMsg } from "@src/interfaces/worker";
 import { WorkerCommType } from "@src/enums/worker";
@@ -222,8 +221,7 @@ export class MonopolyHost {
 				resolve(peer);
 			});
 		});
-		const { roleList } = await getRoleList();
-		const room = new Room(roomId, roleList);
+		const room = new Room(roomId);
 
 		return new MonopolyHost(peer, room, heartContinuationTimeMs);
 	}
@@ -386,10 +384,10 @@ class Room {
 	private gameProcess: Worker | null = null;
 	public isStarted: boolean;
 
-	constructor(roomId: string, roleList: Role[]) {
+	constructor(roomId: string) {
 		this.roomId = roomId;
 		this.ownerId = "";
-		this.roleList = roleList;
+		this.roleList = [];
 		this.isStarted = false;
 		this.userList = new Map();
 		this.gameSetting = {

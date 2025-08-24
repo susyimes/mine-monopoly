@@ -24,7 +24,7 @@ const props = defineProps<{ room: RoomMapItem }>();
 				房主: <b>{{ room.hostName }}</b>
 			</div>
 			<div class="owner-id">
-				房主ID: <b>{{ room.hostId }}</b>
+				房主ID: <b class="owner-id-text">{{ room.hostId }}</b>
 			</div>
 		</div>
 	</div>
@@ -39,6 +39,7 @@ const props = defineProps<{ room: RoomMapItem }>();
 	box-sizing: border-box;
 	box-shadow: var(--el-box-shadow-light);
 	height: max-content;
+	background-color: #fff;
 
 	& > .top-bar {
 		display: flex;
@@ -74,6 +75,10 @@ const props = defineProps<{ room: RoomMapItem }>();
 
 		& > .owner-id {
 			margin-left: 50px;
+
+			.owner-id-text{
+				color: #949494;
+			}
 		}
 	}
 }

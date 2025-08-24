@@ -104,58 +104,6 @@ routerUser.get("/info", async (req, res, next) => {
 	}
 });
 
-// routerUser.post("/create", async (req, res, next) => {
-// 	const { username, password, avatar, color } = req.body;
-// 	if (username && password) {
-// 		try {
-// 			const resMsg: ResInterface = {
-// 				status: 200,
-// 				msg: "创建用户成功",
-// 				data: await createUser(username, password, avatar, color),
-// 			};
-// 			res.status(resMsg.status).json(resMsg);
-// 		} catch (e) {
-// 			const resMsg: ResInterface = {
-// 				status: 500,
-// 				msg: "数据库请求错误",
-// 			};
-// 			res.status(resMsg.status).json(resMsg);
-// 		}
-// 	} else {
-// 		const resMsg: ResInterface = {
-// 			status: 500,
-// 			msg: "参数错误",
-// 		};
-// 		res.status(resMsg.status).json(resMsg);
-// 	}
-// });
-
-// routerUser.post("/update", async (req, res, next) => {
-// 	const { id, username, avatar, color } = req.body;
-// 	if (id && username && avatar && color) {
-// 		try {
-// 			const resMsg: ResInterface = {
-// 				status: 200,
-// 				msg: "更新用户信息成功",
-// 				data: await updateUser(id, username, avatar, color),
-// 			};
-// 			res.status(resMsg.status).json(resMsg);
-// 		} catch (e) {
-// 			const resMsg: ResInterface = {
-// 				status: 500,
-// 				msg: "数据库请求错误",
-// 			};
-// 			res.status(resMsg.status).json(resMsg);
-// 		}
-// 	} else {
-// 		const resMsg: ResInterface = {
-// 			status: 500,
-// 			msg: "参数错误",
-// 		};
-// 		res.status(resMsg.status).json(resMsg);
-// 	}
-// });
-
 routerUser.get("/public-key", async (req, res, next) => {
 	const resMsg: ResInterface = {
 		status: 200,

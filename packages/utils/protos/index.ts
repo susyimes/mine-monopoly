@@ -1,4 +1,3 @@
-import * as protobuf from "protobufjs";
 import { GameMap } from "./game-map";
 
 export type ProtoFileType = {
