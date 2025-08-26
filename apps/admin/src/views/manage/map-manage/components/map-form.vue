@@ -2,44 +2,103 @@
 import { createGameMap } from "@/utils/api/game-map";
 import { GameMapInDb } from "@fatpaper-monopoly/types";
 import { FormInstance, message, UploadChangeParam, UploadFile, UploadProps } from "ant-design-vue";
-import { reactive, ref } from "vue";
+import { dataToProtoBuffer, loadFromProto, ProtoFileType } from "@fatpaper-monopoly/utils";
+import { reactive, ref, watch } from "vue";
+import { calculateFileHash, readMapFile, uint8ArrayToFile, uint8ArrayToObjectURL } from "@/utils/file";
+import { Rule } from "ant-design-vue/es/form";
 
 const formRef = ref<FormInstance>();
+const coverImagePreview = ref("");
+const coverImageFile = ref<File | undefined>();
 const visible = defineModel();
 const props = defineProps<{ gameMap: GameMapInDb | undefined }>();
+const emits = defineEmits(["finish"]);
+
+watch(coverImagePreview, (newUrl, oldUrl) => {
+	if (oldUrl) URL.revokeObjectURL(oldUrl);
+});
 
 const gameMapfileList = ref<UploadProps["fileList"]>([]);
-const formValue = reactive<{ name: string; file: UploadFile | undefined }>({
+type FormState = { name: string; version: string; file: UploadFile | undefined };
+const formValue = reactive<FormState>({
 	name: "",
+	version: "",
 	file: undefined,
 });
 
-function selectFileChange(info: UploadChangeParam) {
+async function handleFileChange(info: UploadChangeParam) {
 	formValue.file = info.file;
+	const file = info.file.originFileObj;
+	if (!file) {
+		message.error("获取文件对象失败");
+		return;
+	}
+	const { mapData, images } = await readMapFile(file);
+	formValue.name = mapData.info.name;
+	formValue.version = mapData.info.version;
+	const coverImageId = mapData.info.coverImageId;
+	if (!coverImageId) {
+		message.error("该地图没有设置封面");
+		return;
+	}
+	const imageResource = images.find((i) => i.id === coverImageId);
+	if (!imageResource) {
+		message.error("匹配地图封面资源失败");
+		return;
+	}
+	const url = uint8ArrayToObjectURL(imageResource.buffer, imageResource.filetype);
+	coverImagePreview.value = url;
+	coverImageFile.value = uint8ArrayToFile(
+		imageResource.buffer,
+		`cover-image.${imageResource.filetype}`,
+		imageResource.filetype
+	);
 }
 
 async function onFinish() {
 	const formData = new FormData();
-	// console.log("🚀 ~ onFinish ~ formValue.file:", formValue.file);
 	if (!formValue.file || !formValue.file.originFileObj) {
 		message.error("获取文件时错误");
 		return;
 	}
+	const coverImage = coverImageFile.value;
+	if (!coverImage) {
+		message.error("获取封面文件时错误");
+		return;
+	}
 	formData.append("game-map", formValue.file.originFileObj);
+	formData.append("cover-image", coverImage);
 	formData.append("name", formValue.name);
+	formData.append("version", formValue.version);
+	formData.append("hash", await calculateFileHash(formValue.file.originFileObj));
 	await createGameMap(formData);
-	message.success("上传地图成功");
+	visible.value = false;
+	emits("finish");
+}
+
+async function checkCoverImage(_rule: Rule, value: string) {
+	if (coverImagePreview.value === "") {
+		return Promise.reject("你的地图没有封面");
+	}
 }
 </script>
 
 <template>
 	<a-form :model="formValue" @finish="onFinish" ref="formRef">
-		<a-form-item label="地图名称" name="name" :rules="[{ required: true, message: '请输入地图名称' }]">
-			<a-input v-model:value="formValue.name"></a-input>
+		<a-form-item label="地图名称" name="name" :rules="[{ required: true, message: '你的地图没有名称' }]">
+			<a-input disabled v-model:value="formValue.name"></a-input>
 		</a-form-item>
+		<a-form-item label="地图版本" name="version" :rules="[{ required: true, message: '你的地图没有版本' }]">
+			<a-input disabled v-model:value="formValue.version"></a-input>
+		</a-form-item>
+
+		<a-form-item label="地图封面" name="cover-image" :rules="[{ required: true, validator: checkCoverImage }]">
+			<img v-if="coverImagePreview" class="cover-image-preview" :src="coverImagePreview" />
+		</a-form-item>
+
 		<a-form-item label="地图文件" name="file" :rules="[{ required: true, message: '请选择地图文件' }]">
 			<a-upload
-				@change="selectFileChange"
+				@change="handleFileChange"
 				accept=".fpmap"
 				v-model:file-list="gameMapfileList"
 				:max-count="1"
@@ -57,4 +116,15 @@ async function onFinish() {
 	</a-form>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.cover-image-preview {
+	aspect-ratio: 1.5;
+	object-fit: contain;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 5px;
+	border-radius: 10px;
+	border: 1px solid #dddddd;
+	background-color: #eeeeee;
+}
+</style>

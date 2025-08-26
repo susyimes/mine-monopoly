@@ -1,15 +1,26 @@
+import { GameMapInDb } from "@fatpaper-monopoly/types";
 import { AppDataSource } from "../dbConnecter";
 import { GameMap } from "../entities/GameMap";
 
 const gameMapRepository = AppDataSource.getRepository(GameMap);
 
-export const createGameMap = async (name: string, url: string) => {
+export const createGameMap = async (info: Omit<GameMapInDb, "id">) => {
 	const gameMapToCreate = new GameMap();
-	gameMapToCreate.name = name;
-	gameMapToCreate.url = url;
-	gameMapToCreate.inuse = false;
+	Object.assign(gameMapToCreate, info);
 
 	return await gameMapRepository.save(gameMapToCreate);
+};
+
+export const setMapUse = async (id: string, use: boolean) => {
+	const gameMap = await gameMapRepository.findOne({
+		where: { id },
+	});
+	if (gameMap) {
+		gameMap.inuse = use;
+		return gameMapRepository.save(gameMap);
+	} else {
+		null;
+	}
 };
 
 export const deleteGameMap = async (id: string) => {

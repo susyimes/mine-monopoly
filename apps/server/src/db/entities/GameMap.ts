@@ -9,8 +9,17 @@ export class GameMap implements GameMapInDb {
 	@Column({ type: "varchar", nullable: false })
 	name: string;
 
+	@Column({ type: "varchar", nullable: false })
+	version: string;
+
+	@Column({ type: "varchar", nullable: false })
+	coverUrl: string;
+
   @Column({ type: "varchar", nullable: false })
-	url: string;
+	mapUrl: string;
+
+	@Column({ type: "varchar", nullable: false })
+	hash: string;
 
 	@Column({ type: "boolean", nullable: false, default: false })
 	inuse: boolean;

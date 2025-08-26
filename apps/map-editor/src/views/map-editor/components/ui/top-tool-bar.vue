@@ -14,7 +14,7 @@ import ChanceCardManager from "../manager/chancecard-manager.vue";
 import StreetManager from "../manager/street-manager.vue";
 import RoleManager from "../manager/role-manager.vue";
 import { eventBus } from "@src/utils/event-bus";
-import { handleNewImage } from "@src/utils/file";
+import { addNewImage } from "@src/utils/file";
 
 const editorStore = useEditorStore();
 
@@ -114,7 +114,7 @@ async function seleteMapBackgroundImage() {
 		filters: [{ name: "图片", extensions: ["png", "jpg", "jpeg"] }],
 	});
 	const filePath = res.filePaths[0];
-	const id = await handleNewImage(filePath, "Background");
+	const id = await addNewImage(filePath, "Background");
 	useMapDataStore().setBackgroundImageId(id);
 }
 

@@ -76,7 +76,3 @@ export const getUserList = async (page: number, size: number) => {
 	const total = await userRepository.count();
 	return { userList, total };
 };
-
-export const isAdmin = async (openId: string) => {
-	return openId === "o9eqR63E6wFQRAqUUcHs424HCNw4";
-};

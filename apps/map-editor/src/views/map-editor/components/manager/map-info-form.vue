@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { GameMapInfo } from "@fatpaper-monopoly/types";
 import { useMapDataStore, useResourceStore } from "@src/stores";
-import { handleNewImage } from "@src/utils/file";
+import { addNewImage } from "@src/utils/file";
 import { message } from "ant-design-vue";
 import { Rule } from "ant-design-vue/es/form";
 import { ref, reactive, onMounted, onUpdated } from "vue";
@@ -27,7 +27,7 @@ async function getCoverImagePreviewUrl() {
 async function handleUpdateInfo() {
 	try {
 		if (coverImageUrl.value) {
-			const coverImageId = await handleNewImage(coverImageUrl.value, "CoverImage");
+			const coverImageId = await addNewImage(coverImageUrl.value, "CoverImage");
 			useMapDataStore().setCoverImageId(coverImageId);
 		}
 		useMapDataStore().updateMapInfo({ name: mapInfoForm.name, version: mapInfoForm.version });

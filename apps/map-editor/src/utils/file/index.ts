@@ -146,7 +146,7 @@ export async function readFileToTempDir(filePath: string, type: "model" | "image
 	return { newFilePath, id, fileType };
 }
 
-export async function handleNewModel(filePath: string, name: string) {
+export async function addNewModel(filePath: string, name: string) {
 	try {
 		const { newFilePath, id, fileType } = await readFileToTempDir(filePath, "model");
 		const resourcesStore = useResourceStore();
@@ -162,7 +162,7 @@ export async function handleNewModel(filePath: string, name: string) {
 	}
 }
 
-export async function handleNewImage(filePath: string, name: string) {
+export async function addNewImage(filePath: string, name: string) {
 	const { newFilePath, id, fileType } = await readFileToTempDir(filePath, "image");
 	const resourcesStore = useResourceStore();
 	resourcesStore.addImage({

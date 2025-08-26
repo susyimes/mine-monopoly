@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { handleNewModel } from "@src/utils/file";
+import { addNewModel } from "@src/utils/file";
 import { ModelPreviewerRenderer } from "@src/utils/three/ModelPreviewerRenderer";
 import { ref, reactive, onMounted, onUpdated } from "vue";
 
@@ -16,7 +16,7 @@ const visible = defineModel({ default: false });
 let modelPreviewer: ModelPreviewerRenderer | null;
 
 function handleCreateModel() {
-	handleNewModel(createModelFrom.fileUrl, createModelFrom.name);
+	addNewModel(createModelFrom.fileUrl, createModelFrom.name);
 	handleClose();
 	visible.value = false;
 }

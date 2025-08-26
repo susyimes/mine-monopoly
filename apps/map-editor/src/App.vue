@@ -5,7 +5,7 @@ import MapEditor from "./views/map-editor/map-editor.vue";
 import { TitleBar } from "@fatpaper-monopoly/ui";
 import MapEditorAlert from "@src/components/map-edior-alert/index.vue";
 
-const mapName = useMapDataStore().name;
+const mapName = useMapDataStore().info.name;
 const version = window.electronAPI.getVersion();
 const isLoading = useEditorStore().isLoading;
 </script>

@@ -7,7 +7,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
 import { ChanceCardType } from "@fatpaper-monopoly/types";
-import { handleNewImage } from "@src/utils/file";
+import { addNewImage } from "@src/utils/file";
 import { Rule } from "ant-design-vue/es/form";
 import ChanceCardPreview from "@src/views/map-editor/components/common/chance-card-preview.vue";
 
@@ -46,8 +46,8 @@ const chanceCardForm = reactive<ChanceCard>(props.chanceCard || getInitForm());
 async function handleAddChanceCard() {
 	try {
 		const mapDataStore = useMapDataStore();
-		const iconId = await handleNewImage(iconUrl.value, chanceCardForm.name);
-			chanceCardForm.iconId = iconId;
+		const iconId = await addNewImage(iconUrl.value, chanceCardForm.name);
+		chanceCardForm.iconId = iconId;
 		if (props.chanceCard) {
 			mapDataStore.editChanceCard(chanceCardForm);
 			message.success(`修改 "${chanceCardForm.name}" 成功`);
@@ -90,13 +90,13 @@ const iconRule = async (_rule: Rule, value: string) => {
 <template>
 	<div class="chance-card-form-container">
 		<div class="chance-card-form">
-			<chance-card-preview class="chance-card-preview" :chance-card="chanceCardForm" :disable="false" :icon-preview="chanceCardIconPreview"/>
-			<a-form
-				@finish="handleAddChanceCard"
-				:model="chanceCardForm"
-				name="map-event"
-				autocomplete="off"
-			>
+			<chance-card-preview
+				class="chance-card-preview"
+				:chance-card="chanceCardForm"
+				:disable="false"
+				:icon-preview="chanceCardIconPreview"
+			/>
+			<a-form @finish="handleAddChanceCard" :model="chanceCardForm" name="map-event" autocomplete="off">
 				<a-form-item label="ID">
 					<a-alert size="small" style="word-break: break-all" :message="chanceCardForm.id" type="info" />
 				</a-form-item>
@@ -147,7 +147,7 @@ const iconRule = async (_rule: Rule, value: string) => {
 		overflow-y: scroll;
 		padding-right: 10px;
 
-		.chance-card-preview{
+		.chance-card-preview {
 			font-size: 14px;
 			margin-bottom: 10px;
 		}
@@ -169,7 +169,7 @@ const iconRule = async (_rule: Rule, value: string) => {
 		border: 1px solid #ccc;
 		border-radius: 5px;
 		background-color: #f3f3f3;
-		font-size: .8em;
+		font-size: 0.8em;
 	}
 	.icon-preview {
 		display: block;

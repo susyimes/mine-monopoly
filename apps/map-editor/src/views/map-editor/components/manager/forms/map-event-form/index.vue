@@ -7,7 +7,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
 import { MapEventType } from "@fatpaper-monopoly/types";
-import { handleNewImage } from "@src/utils/file";
+import { addNewImage } from "@src/utils/file";
 import { Rule } from "ant-design-vue/es/form";
 
 const props = defineProps<{ mapEvent: MapEvent | undefined }>();
@@ -45,7 +45,7 @@ const mapEventForm = reactive<MapEvent>(props.mapEvent || getInitForm());
 async function handleAddMapEvent() {
 	try {
 		const mapDataStore = useMapDataStore();
-		const iconId = await handleNewImage(iconUrl.value, mapEventForm.name);
+		const iconId = await addNewImage(iconUrl.value, mapEventForm.name);
 		mapEventForm.iconId = iconId;
 		if (props.mapEvent) {
 			mapDataStore.editMapEvent(mapEventForm);

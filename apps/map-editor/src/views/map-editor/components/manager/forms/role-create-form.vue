@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMapDataStore, useResourceStore } from "@src/stores";
-import { handleNewImage } from "@src/utils/file";
+import { addNewImage } from "@src/utils/file";
 import { RolePreviewerRenderer } from "@src/utils/three/RolePreviewerRenderer";
 import { message } from "ant-design-vue";
 import { ref, reactive, onMounted, onUpdated } from "vue";
@@ -21,7 +21,7 @@ let rolePreviewer: RolePreviewerRenderer | null;
 
 async function handleCreateRole() {
 	try {
-		const imageId = await handleNewImage(createRoleForm.fileUrl, createRoleForm.name);
+		const imageId = await addNewImage(createRoleForm.fileUrl, createRoleForm.name);
 		const role = {
 			id: `role-${crypto.randomUUID()}`,
 			name: createRoleForm.name,
