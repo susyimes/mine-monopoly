@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore, useMapDataStore } from "@src/stores";
 import MapItemInfo from "../common/map-item-info.vue";
-import PropertyForm from "../common/property-form.vue";
+import PropertyForm from "../manager/forms/property-form/index.vue";
 import MapEventSelector from "../common/map-event-selector.vue";
 import { computed, ref } from "vue";
 import { eventBus } from "@src/utils/event-bus";

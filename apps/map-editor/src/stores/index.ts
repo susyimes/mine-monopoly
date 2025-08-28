@@ -25,7 +25,6 @@ export const useMapDataStore = defineStore("MapData", {
 			coverImageId: "",
 		},
 		mapItems: [],
-		properties: [],
 		chanceCards: [],
 		mapItemTypes: [],
 		mapIndex: [],
@@ -34,9 +33,7 @@ export const useMapDataStore = defineStore("MapData", {
 		inUse: false,
 		mapEvents: [],
 		phases: getInitPhase(),
-		houseModel_lv0_id: "",
-		houseModel_lv1_id: "",
-		houseModel_lv2_id: "",
+		buildingModelIdList: ["", "", ""],
 	}),
 	actions: {
 		// MapInfo
@@ -68,11 +65,7 @@ export const useMapDataStore = defineStore("MapData", {
 			const index = this.mapItems.findIndex((m) => m.id === id);
 			if (index === -1) throw Error("寻找MapItem失败");
 			this.unLinkMapItem(id);
-			//级联删除Property
-			const property = this.mapItems[index].property;
-			if (property) {
-				this.reomveProperty(property.id);
-			}
+
 			this.mapItems.splice(index, 1);
 			eventBus.emit("map-item-deleted", id);
 			this.updateMapIndex([]);
@@ -199,20 +192,11 @@ export const useMapDataStore = defineStore("MapData", {
 			const mapItem = this.mapItems.find((m) => m.id === mapItemId);
 			if (!mapItem) throw Error("找不到目标地块");
 			mapItem.property = property;
-			this.properties.push(property);
 		},
 		editProperty(mapItemId: string, property: IProperty) {
 			const mapItem = this.mapItems.find((m) => m.id === mapItemId);
 			if (!mapItem) throw Error("找不到目标地块");
-			const index = this.properties.findIndex((p) => p.id === property.id);
-			if (index < 0) throw Error("找不到目标地皮");
-			Object.assign(this.properties[index], property);
 			mapItem.property = property;
-		},
-		reomveProperty(id: string) {
-			const deleteIndex = this.properties.findIndex((p) => p.id === id);
-			if (deleteIndex < 0) throw Error("找不到目标地皮");
-			this.properties.splice(deleteIndex, 1);
 		},
 
 		// Role
@@ -222,13 +206,16 @@ export const useMapDataStore = defineStore("MapData", {
 		editRole(role: Role) {
 			const index = this.roles.findIndex((s) => s.id === role.id);
 			if (index < 0) throw Error("找不到目标角色");
-			const old = this.roles[index];
-			useResourceStore().removeImage(old.imageId);
 			Object.assign(this.roles[index], role);
 		},
+		findRoleById(id: string) {
+			return this.roles.find((r) => r.id === id);
+		},
 		reomveRole(id: string) {
-			const deleteIndex = this.roles.findIndex((s) => s.id === id);
+			const deleteIndex = this.roles.findIndex((r) => r.id === id);
 			if (deleteIndex < 0) throw Error("找不到目标角色");
+			const resourceId = this.roles[deleteIndex].imageId;
+			useResourceStore().removeImage(resourceId);
 			this.roles.splice(deleteIndex, 1);
 		},
 
@@ -266,10 +253,12 @@ export const useResourceStore = defineStore("Resources", {
 			const mapItemTypeIds = useMapDataStore()
 				.mapItemTypes.filter((m) => m.modelId === id)
 				.map((m) => m.id);
-			console.log("🚀 ~ removeModel ~ mapItemTypeIds:", mapItemTypeIds);
 			mapItemTypeIds.forEach((mapItemTypeId) => {
 				useMapDataStore().removeMapItemType(mapItemTypeId);
 			});
+
+			//级联删除默认房屋模型
+			useMapDataStore().buildingModelIdList = useMapDataStore().buildingModelIdList.map((i) => (i === id ? "" : i));
 			this.models.splice(deleteIndex, 1);
 		},
 		removeImage(id: string) {
@@ -314,6 +303,19 @@ const alertList: EditorAlert[] = [
 		visible: () => useMapDataStore().info.coverImageId === "",
 	},
 	{
+		type: "warning",
+		message: "没有机会卡",
+		visible: () => useMapDataStore().chanceCards.length === 0,
+	},
+	{
+		type: "error",
+		message: "没有设置地皮等级(房屋)模型",
+		visible: () => {
+			const idList = useMapDataStore().buildingModelIdList;
+			return idList.some((i) => i == "") || idList.length === 0;
+		},
+	},
+	{
 		type: "error",
 		message: "没有设置地图名称",
 		visible: () => useMapDataStore().info.name === "",
@@ -351,11 +353,6 @@ const alertList: EditorAlert[] = [
 		visible: () => {
 			return useMapDataStore().mapItems.length === 0;
 		},
-	},
-	{
-		type: "warning",
-		message: "没有机会卡",
-		visible: () => useMapDataStore().chanceCards.length === 0,
 	},
 ];
 

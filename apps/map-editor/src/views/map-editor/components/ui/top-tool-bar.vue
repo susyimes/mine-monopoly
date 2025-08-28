@@ -4,7 +4,7 @@ import { RadioChangeEvent } from "ant-design-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { message } from "ant-design-vue";
 import { useEditorStore, useMapDataStore, useResourceStore } from "@src/stores";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import MapInfoForm from "../manager/map-info-form.vue";
 import MapIndexCreator from "../common/map-index-creator.vue";
 import processManager from "../manager/process-manager/process-manager.vue";
@@ -13,6 +13,7 @@ import EventManager from "../manager/event-manager.vue";
 import ChanceCardManager from "../manager/chancecard-manager.vue";
 import StreetManager from "../manager/street-manager.vue";
 import RoleManager from "../manager/role-manager.vue";
+import BuildingModelSeletor from "../manager/components/building-model-seletor.vue";
 import { eventBus } from "@src/utils/event-bus";
 import { addNewImage } from "@src/utils/file";
 
@@ -46,15 +47,17 @@ type ButtonConifg = {
 
 const buttonConfigs: ButtonConifg[] = [
 	{
-		text: "地图背景",
-		icon: "fas fa-image",
-		onClick: seleteMapBackgroundImage,
-	},
-	{
 		text: "地图信息",
 		icon: "fas fa-circle-info",
 		onClick: () => {
 			mapInfoFormVisible.value = true;
+		},
+	},
+	{
+		text: "模型",
+		icon: "fas fa-cubes",
+		onClick: () => {
+			modelManagerVisible.value = true;
 		},
 	},
 	{
@@ -72,6 +75,18 @@ const buttonConfigs: ButtonConifg[] = [
 		},
 	},
 	{
+		text: "地图背景",
+		icon: "fas fa-image",
+		onClick: seleteMapBackgroundImage,
+	},
+	{
+		text: "建筑模型",
+		icon: "fas fa-house",
+		onClick: () => {
+			buildingModelVisible.value = true;
+		},
+	},
+	{
 		text: "游戏流程",
 		icon: "fas fa-microchip",
 		onClick: () => {
@@ -83,13 +98,6 @@ const buttonConfigs: ButtonConifg[] = [
 		icon: "fas fa-road",
 		onClick: () => {
 			streetManagerVisible.value = true;
-		},
-	},
-	{
-		text: "模型",
-		icon: "fas fa-cubes",
-		onClick: () => {
-			modelManagerVisible.value = true;
 		},
 	},
 	{
@@ -116,6 +124,12 @@ async function seleteMapBackgroundImage() {
 	const filePath = res.filePaths[0];
 	const id = await addNewImage(filePath, "Background");
 	useMapDataStore().setBackgroundImageId(id);
+}
+
+const buildingModelIdList = computed(() => useMapDataStore().buildingModelIdList);
+const buildingModelVisible = ref(false);
+function handleBuildingModelSeletorSubmit(idList: string[]) {
+	useMapDataStore().buildingModelIdList = idList;
 }
 
 const mapInfoFormVisible = ref(false);
@@ -191,6 +205,12 @@ const chanceCardManagerVisible = ref(false);
 			</a-space>
 		</div>
 
+		<building-model-seletor
+			@submit="handleBuildingModelSeletorSubmit"
+			v-model:visible="buildingModelVisible"
+			:modelIdList="buildingModelIdList"
+			:title="'默认房屋模型'"
+		/>
 		<map-info-form v-model="mapInfoFormVisible" />
 		<role-manager v-model="roleManagerVisible" />
 		<map-index-creator v-model="mapIndexCreatorVisible" />

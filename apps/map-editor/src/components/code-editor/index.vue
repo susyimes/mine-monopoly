@@ -15,6 +15,7 @@ let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 const initEditor = async () => {
+	console.log("🚀 ~ initEditor ~ containerRef.value:", containerRef.value)
 	if (containerRef.value && !editor) {
 		loader.config({ monaco });
 		const monacoInstance = await loader.init();
@@ -28,7 +29,7 @@ const initEditor = async () => {
 		});
 
 		editor = monacoInstance.editor.create(containerRef.value, {
-			value: code.value || props.templateText || "",
+			value: code.value && code.value !== "" ? code.value : props.templateText || "",
 			language: "typescript",
 			minimap: { enabled: false },
 		});

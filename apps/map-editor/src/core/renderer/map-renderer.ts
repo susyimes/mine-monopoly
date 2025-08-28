@@ -56,7 +56,7 @@ export class MapRenderer {
 		this.renderer = new THREE.WebGLRenderer({ canvas: canvasEl });
 		this.canvasEl = canvasEl;
 		this.scene = new THREE.Scene();
-		this.camera = new THREE.PerspectiveCamera(75, this.canvasEl.clientWidth / this.canvasEl.clientHeight, 0.1, 1000);
+		this.camera = new THREE.PerspectiveCamera(75, this.canvasEl.clientWidth / this.canvasEl.clientHeight, 0.1, 100);
 		// this.renderLoop();
 		this.renderer.setSize(this.canvasEl.clientWidth, this.canvasEl.clientHeight);
 		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -114,8 +114,8 @@ export class MapRenderer {
 		this.outlinePass.hiddenEdgeColor.set(0xffffff);
 		this.composer.addPass(this.outlinePass);
 
-		this.linkOutlinePass = this.linkOutlinePass = new SolidOutlinePass(size, this.scene, this.camera);
-		this.linkOutlinePass.edgeStrength = 10;
+		this.linkOutlinePass = new SolidOutlinePass(size, this.scene, this.camera);
+		this.linkOutlinePass.edgeStrength = 8;
 		this.linkOutlinePass.edgeThickness = 1.5;
 		this.linkOutlinePass.visibleEdgeColor.set(0x6611ff);
 		this.linkOutlinePass.hiddenEdgeColor.set(0x6611ff);
@@ -387,7 +387,7 @@ export class MapRenderer {
 				frustumSize / 2,
 				frustumSize / -2,
 				0.1,
-				1000
+				50
 			);
 		}
 

@@ -30,14 +30,18 @@ export interface IProperty {
 	cost_lv0: number;
 	cost_lv1: number;
 	cost_lv2: number;
+	buildingModelIdList?: string[];
+	effectCode?: string;
 	streetId: string;
 }
 
 export interface Role {
 	id: string;
 	name: string;
+	description: string;
 	color: string;
 	imageId: string;
+	initCode: string;
 }
 
 export interface Street {

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { FormInstance, Rule } from "ant-design-vue/es/form";
-import { reactive, ref, toRaw, computed, watch, onMounted } from "vue";
-import { MapItem } from "@fatpaper-monopoly/types/interfaces/game/item";
+import { reactive, ref, toRaw, computed, watch, onMounted, createVNode } from "vue";
+import { IProperty, MapItem } from "@fatpaper-monopoly/types/interfaces/game/item";
 import { useEditorStore, useMapDataStore } from "@src/stores";
 import { message } from "ant-design-vue";
+import EffectEditor from "./effect-editor.vue";
+import BuildingModelSeletor from "../../components/building-model-seletor.vue";
 
 // props & emits
 const emits = defineEmits(["submit"]);
@@ -15,13 +17,15 @@ const streetList = computed(() => useMapDataStore().streets);
 const propertyId = ref("");
 
 // 表单数据
-const propertyForm = reactive({
+const propertyForm = reactive<Omit<IProperty, "id">>({
 	name: "",
 	sellCost: 100,
 	buildCost: 100,
 	cost_lv0: 100,
 	cost_lv1: 100,
 	cost_lv2: 100,
+	effectCode: undefined,
+	buildingModelIdList: undefined,
 	streetId: "",
 });
 
@@ -54,7 +58,8 @@ watch(
 
 function updateForm(newMapItem: MapItem | undefined) {
 	if (newMapItem?.property) {
-		const { id, name, sellCost, buildCost, cost_lv0, cost_lv1, cost_lv2, streetId } = newMapItem.property;
+		const { id, name, sellCost, buildCost, cost_lv0, cost_lv1, cost_lv2, streetId, effectCode, buildingModelIdList } =
+			newMapItem.property;
 		propertyId.value = id;
 		Object.assign(propertyForm, {
 			name,
@@ -63,6 +68,8 @@ function updateForm(newMapItem: MapItem | undefined) {
 			cost_lv0,
 			cost_lv1,
 			cost_lv2,
+			effectCode,
+			buildingModelIdList,
 			streetId,
 		});
 	} else {
@@ -89,12 +96,31 @@ const autoArrivedCost = () => {
 	propertyForm.cost_lv1 = Math.round(0.8 * sellCost + buildCost * 0.6);
 	propertyForm.cost_lv2 = Math.round(0.8 * sellCost + buildCost * 1.1);
 };
+
+const effectCodeEditorVisible = ref(false);
+
+function handleSubmitEffectCode() {
+	handleCreateOrUpdateProperty();
+	effectCodeEditorVisible.value = false;
+}
+
+function handleDeleteEffectCode() {
+	propertyForm.effectCode = undefined;
+	handleCreateOrUpdateProperty();
+}
+
+const buildingModelVisible = ref(false);
+
+function handleBuildingModelSeletorSubmit(idList: string[]) {
+	propertyForm.buildingModelIdList = idList;
+}
 </script>
 
 <template>
 	<div class="property-form">
 		<h4>地皮设置</h4>
 		<a-form
+			size="small"
 			ref="propertyFormRef"
 			:model="propertyForm"
 			:rules="propertyFormRules"
@@ -138,14 +164,50 @@ const autoArrivedCost = () => {
 			</a-form-item>
 
 			<!-- 操作按钮组 -->
-			<a-form-item :wrapper-col="{ offset: 6, span: 14 }">
+			<a-form-item style="justify-self: end">
 				<a-space>
 					<a-button @click="autoArrivedCost">过路费参考</a-button>
 					<a-button type="primary" html-type="submit"> 绑定地皮 </a-button>
 				</a-space>
 			</a-form-item>
 		</a-form>
+		<a-divider><h5 style="font-size: 0.75em">额外部分</h5></a-divider>
+		<div class="extra-area">
+			<div>
+				<a-button @click="effectCodeEditorVisible = true" type="dashed">{{
+					propertyForm.effectCode ? "修改触发代码" : "添加触发代码"
+				}}</a-button>
+				<a-button @click="handleDeleteEffectCode" type="primary" danger v-if="propertyForm.effectCode"
+					>删除触发代码</a-button
+				>
+			</div>
+			<div>
+				<a-button @click="buildingModelVisible = true" type="dashed">{{
+					propertyForm.buildingModelIdList ? "修改建筑模型" : "添加建筑模型"
+				}}</a-button>
+				<a-button type="primary" danger v-if="propertyForm.buildingModelIdList">删除建筑模型</a-button>
+			</div>
+		</div>
+		<building-model-seletor
+			@submit="handleBuildingModelSeletorSubmit"
+			v-model:visible="buildingModelVisible"
+			:modelIdList="propertyForm.buildingModelIdList"
+			:title="`${propertyForm.name}的房屋模型`"
+		/>
 	</div>
+
+	<a-modal
+		@ok="handleSubmitEffectCode"
+		v-model:open="effectCodeEditorVisible"
+		title="编辑触发代码"
+		width="80vw"
+		closable
+		okText="确定修改"
+		cancelText="取消"
+		destroyOnClose
+	>
+		<effect-editor v-model="propertyForm.effectCode" />
+	</a-modal>
 </template>
 
 <style scoped lang="scss">
@@ -157,6 +219,25 @@ const autoArrivedCost = () => {
 
 	h4 {
 		margin-bottom: 10px;
+	}
+}
+
+.extra-area {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 10px;
+
+	div {
+		width: 100%;
+		display: flex;
+		justify-content: center;
+		gap: 10px;
+
+		button:first-child {
+			flex: 1;
+		}
 	}
 }
 </style>

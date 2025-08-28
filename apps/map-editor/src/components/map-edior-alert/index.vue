@@ -20,5 +20,6 @@ const alertList = computed(() => useEditorStore().alertList);
 	bottom: 10px;
 	max-height: 30vh;
   overflow-y: auto;
+	padding-right: 10px;
 }
 </style>

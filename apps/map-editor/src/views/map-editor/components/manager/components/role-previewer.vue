@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Role } from "@fatpaper-monopoly/types";
-import { useResourceStore } from "@src/stores";
+import { useMapDataStore, useResourceStore } from "@src/stores";
 import { RolePreviewerRenderer } from "@src/utils/three/RolePreviewerRenderer";
 import { message } from "ant-design-vue";
 import { onBeforeUnmount, onMounted, watch } from "vue";
 
 const props = defineProps<{ role: Role }>();
+
+const emits = defineEmits(["edit"]);
 
 let rolePreviewer: RolePreviewerRenderer | null;
 
@@ -26,18 +28,23 @@ watch(
 	() => props.role,
 	async (newRole) => {
 		if (rolePreviewer && newRole) {
-			const image = useResourceStore().findImageById(props.role.imageId);
+			const image = useResourceStore().findImageById(newRole.imageId);
 			if (!image) {
-				message.error(`获取角色 "${props.role.name}" 的图片资源失败`);
+				message.error(`获取角色 "${newRole.name}" 的图片资源失败`);
 				return;
 			}
 			rolePreviewer.loadRole(image.url);
 		}
-	}
+	},
+	{ deep: true }
 );
 
-function handleDelete(){
+function handleEdit() {
+	emits("edit", props.role.id);
+}
 
+function handleDelete() {
+	useMapDataStore().reomveRole(props.role.id);
 }
 
 onBeforeUnmount(() => {
@@ -49,7 +56,7 @@ onBeforeUnmount(() => {
 <template>
 	<a-card class="role-previewer" size="small" :title="props.role.name" :bodyStyle="{ flex: '1' }">
 		<template #extra>
-			<a-button size="small" type="link" primary>编辑</a-button>
+			<a-button @click="handleEdit" size="small" type="link" primary>编辑</a-button>
 			<a-popconfirm title="你确定删除这个角色吗" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
 				<a-button size="small" type="link" danger>删除</a-button>
 			</a-popconfirm>

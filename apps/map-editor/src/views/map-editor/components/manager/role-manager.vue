@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { computed, reactive, ref } from "vue";
-import RoleCreateForm from "./forms/role-create-form.vue";
+import RoleForm from "./forms/role-form/index.vue";
 import rolePreviewer from "./components/role-previewer.vue";
+import { message } from "ant-design-vue";
+import { Role } from "@fatpaper-monopoly/types";
 
 const mapDataStroe = useMapDataStore();
 const resourcesStore = useResourceStore();
@@ -17,6 +19,22 @@ const currentPage = ref(1);
 const pageSize = ref(6);
 
 const createRoleFromVisible = ref(false);
+const currentRole = ref<Role | undefined>();
+
+function handleCreate() {
+	currentRole.value = undefined;
+	createRoleFromVisible.value = true;
+}
+
+function handleEdit(id: string) {
+	const role = mapDataStroe.findRoleById(id);
+	if (!role) {
+		message.error("查找角色失败");
+		return;
+	}
+	currentRole.value = role;
+	createRoleFromVisible.value = true;
+}
 </script>
 
 <template>
@@ -29,11 +47,11 @@ const createRoleFromVisible = ref(false);
 		title="角色管理"
 	>
 		<div class="operation-container">
-			<a-button style="float: right" @click="createRoleFromVisible = true" type="primary">添加角色</a-button>
+			<a-button style="float: right" @click="handleCreate" type="primary">添加角色</a-button>
 		</div>
 		<a-empty v-if="roleCount === 0" description="没有数据" />
 		<div class="preview-container">
-			<role-previewer v-for="role in roleToShow" :role="role" />
+			<role-previewer @edit="handleEdit" v-for="role in roleToShow" :role="role" />
 		</div>
 		<a-pagination
 			v-model:current="currentPage"
@@ -43,7 +61,9 @@ const createRoleFromVisible = ref(false);
 			show-less-items
 		/>
 	</a-modal>
-	<role-create-form v-model="createRoleFromVisible" />
+	<a-modal width="100%" destroyOnClose title="编辑角色" :footer="null" v-model:open="createRoleFromVisible" centered>
+		<role-form @submit="createRoleFromVisible = false" v-model="createRoleFromVisible" :role="currentRole" />
+	</a-modal>
 </template>
 
 <style lang="scss">

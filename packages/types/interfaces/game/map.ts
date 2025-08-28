@@ -5,7 +5,6 @@ export interface GameMap {
 	id: string;
 	info: GameMapInfo;
 	mapItems: MapItem[];
-	properties: IProperty[];
 	chanceCards: ChanceCard[];
 	mapItemTypes: MapItemType[];
 	mapIndex: string[];
@@ -18,7 +17,5 @@ export interface GameMap {
 		playerRound: GamePhaseInfo[];
 		gameRoundEnd: GamePhaseInfo[];
 	};
-	houseModel_lv0_id?: string;
-	houseModel_lv1_id?: string;
-	houseModel_lv2_id?: string;
+	buildingModelIdList: string[]
 }
