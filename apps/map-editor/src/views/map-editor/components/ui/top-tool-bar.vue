@@ -165,7 +165,7 @@ const chanceCardManagerVisible = ref(false);
 							<span v-if="editorStore.currentEditMode === OperationMode.Edit">{{
 								operationModeNameMap[OperationMode.Edit]
 							}}</span>
-							<font-awesome-icon :icon="['fas', 'pen-to-square']" />
+							<font-awesome-icon :icon="['fas', 'plus']" />
 						</a-space>
 					</a-radio-button>
 				</a-radio-group>
