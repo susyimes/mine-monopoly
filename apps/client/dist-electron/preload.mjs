@@ -10,3 +10,15 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
   close: () => electron.ipcRenderer.send("window-close"),
   getVersion: () => version
 });
+electron.contextBridge.exposeInMainWorld("mapCacheLoader", {
+  async save(mapId, hash, arrayBuffer) {
+    await electron.ipcRenderer.invoke("map-cache:save", mapId, hash, arrayBuffer);
+  },
+  async load(mapId, hash) {
+    const buffer = await electron.ipcRenderer.invoke("map-cache:load", mapId, hash);
+    if (buffer) {
+      return buffer;
+    }
+    return void 0;
+  }
+});

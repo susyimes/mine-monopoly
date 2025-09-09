@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { PlayerInfo } from "@src/interfaces/game";
 import { PropType, computed, ref, watch } from "vue";
-import { useGameInfo } from "@src/store/index";
+import { useGameData } from "@src/store/index";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { __PROTOCOL__ } from "@src/../global.config";
 import gsap from "gsap";

@@ -3,19 +3,27 @@ import { createGameMap } from "@/utils/api/game-map";
 import { GameMapInDb } from "@fatpaper-monopoly/types";
 import { FormInstance, message, UploadChangeParam, UploadFile, UploadProps } from "ant-design-vue";
 import { dataToProtoBuffer, loadFromProto, ProtoFileType } from "@fatpaper-monopoly/utils";
-import { reactive, ref, watch } from "vue";
+import { onMounted, reactive, ref, watch } from "vue";
 import { calculateFileHash, readMapFile, uint8ArrayToFile, uint8ArrayToObjectURL } from "@/utils/file";
 import { Rule } from "ant-design-vue/es/form";
+import { PROTOCOL } from "@fatpaper-monopoly/config";
 
+const { gameMap } = defineProps<{ gameMap: GameMapInDb | undefined }>();
 const formRef = ref<FormInstance>();
 const coverImagePreview = ref("");
 const coverImageFile = ref<File | undefined>();
 const visible = defineModel();
-const props = defineProps<{ gameMap: GameMapInDb | undefined }>();
 const emits = defineEmits(["finish"]);
 
 watch(coverImagePreview, (newUrl, oldUrl) => {
 	if (oldUrl) URL.revokeObjectURL(oldUrl);
+});
+
+onMounted(() => {
+	if (!gameMap) return;
+	formValue.name = gameMap.name;
+	formValue.version = gameMap.version;
+	coverImagePreview.value = `${PROTOCOL}://${gameMap.coverUrl}`;
 });
 
 const gameMapfileList = ref<UploadProps["fileList"]>([]);
@@ -96,7 +104,11 @@ async function checkCoverImage(_rule: Rule, value: string) {
 			<img v-if="coverImagePreview" class="cover-image-preview" :src="coverImagePreview" />
 		</a-form-item>
 
-		<a-form-item label="地图文件" name="file" :rules="[{ required: true, message: '请选择地图文件' }]">
+		<a-form-item
+			label="地图文件"
+			name="file"
+			:rules="[{ required: true, message: gameMap ? '选择新的地图' : '选择地图文件' }]"
+		>
 			<a-upload
 				@change="handleFileChange"
 				accept=".fpmap"

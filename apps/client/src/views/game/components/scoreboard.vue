@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { useGameInfo } from "@src/store/index";
+import { useGameData } from "@src/store/index";
 import { computed } from "vue";
 import playerCard from "./player-card.vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
-const isGameOver = computed(() => useGameInfo().isGameOver);
+const isGameOver = computed(() => useGameData().isGameOver);
 const playerListSorted = computed(() =>
-	useGameInfo().playersList.sort((playerA, playerB) => playerB.money - playerA.money)
+	useGameData().playersList.sort((playerA, playerB) => playerB.money - playerA.money)
 );
 
 function toRoomList() {
-	useGameInfo().$reset();
+	useGameData().$reset();
 	router.replace("/room");
 }
 </script>

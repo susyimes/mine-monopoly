@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory, createWebHistory } from "vue-router";
 import { useLoading, useRoomInfo, useUserInfo } from "@src/store";
-import { destoryMonopolyClient } from "@src/classes/monopoly-client/MonopolyClient";
+import { destoryMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 
 function componentLoadedInterceptor(promise: Promise<any>) {
 	return () => {

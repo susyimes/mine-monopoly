@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import FpDialog from "@src/components/utils/fp-dialog/fp-dialog.vue";
 import { ChanceCardInfo } from "@src/interfaces/game";
-import { useGameInfo, useMapData } from "@src/store";
+import { useGameData, useMapData } from "@src/store";
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import ChanceCard from "@src/views/game/components/chance-card.vue";
 import MiniMap from "./mini-map.vue";
@@ -19,7 +19,7 @@ const currentSelectedProperty = computed(() => {
 	if (!targetMapItem) return;
 	const targetPropertyId = targetMapItem.property?.id;
 	if (!targetPropertyId) return;
-	const targetProperty = useGameInfo().propertiesList.find((p) => p.id === targetPropertyId);
+	const targetProperty = useGameData().propertiesList.find((p) => p.id === targetPropertyId);
 	return targetProperty;
 });
 

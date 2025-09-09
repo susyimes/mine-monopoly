@@ -77,6 +77,7 @@ function closeDialog() {
 		transition: 0.3s;
 		min-width: 30em;
 		min-height: 20em;
+		max-width: 90vw;
 		max-height: 80vh;
 		background-color: #fff;
 		position: relative;

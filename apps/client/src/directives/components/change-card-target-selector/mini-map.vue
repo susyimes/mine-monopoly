@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { MapItem, PlayerInfo } from "@src/interfaces/game";
-import { useGameInfo, useMapData } from "@src/store";
+import { useGameData, useMapData } from "@src/store";
 import { onMounted, nextTick, computed, toRaw } from "vue";
 
 const mapDataStore = useMapData();
@@ -8,10 +8,10 @@ const mapDataStore = useMapData();
 const props = defineProps<{ highLightList: string[]; selectedId: string }>();
 const emits = defineEmits(["update:selectedId"]);
 
-const properties = useGameInfo().propertiesList;
-const playerList = useGameInfo().playersList;
+const properties = useGameData().propertiesList;
+const playerList = useGameData().playersList;
 const indexList = useMapData().mapIndexList;
-const myInfo = useGameInfo().getMyInfo;
+const myInfo = useGameData().getMyInfo;
 
 type MapItemWithPlayer = MapItem & {
 	players: PlayerInfo[];

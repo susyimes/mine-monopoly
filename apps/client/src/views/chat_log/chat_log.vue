@@ -2,7 +2,7 @@
 import { ref, watch, computed, nextTick } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useChat, useGameLog, useRoomInfo } from "@src/store";
-import { useMonopolyClient } from "@src/classes/monopoly-client/MonopolyClient";
+import { useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 import ChatMessageItem from "./components/chat-message-item.vue";
 import gsap from "gsap";
 import GameLogItem from "./components/game-log-item.vue";
@@ -197,9 +197,9 @@ function handleHideContainer() {
 				backdrop-filter: blur(0.13rem);
 			}
 
-			.chat_content-container {
-				padding-bottom: 2.2rem;
-			}
+			// .chat_content-container {
+			// 	padding-bottom: 2.2rem;
+			// }
 		}
 	}
 	.chat_input-container {

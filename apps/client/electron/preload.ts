@@ -1,11 +1,4 @@
-import {
-	ipcRenderer,
-	contextBridge,
-	OpenDialogOptions,
-	SaveDialogOptions,
-	OpenDialogReturnValue,
-	SaveDialogReturnValue,
-} from "electron";
+import { ipcRenderer, contextBridge } from "electron";
 import { version } from "../package.json";
 
 // --------- Expose some API to the Renderer process ---------
@@ -17,4 +10,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	unmaximize: () => ipcRenderer.send("window-unmaximize"),
 	close: () => ipcRenderer.send("window-close"),
 	getVersion: () => version,
+});
+
+contextBridge.exposeInMainWorld("mapCacheLoader", {
+	async save(mapId: string, hash: string, arrayBuffer: ArrayBuffer): Promise<void> {
+		await ipcRenderer.invoke("map-cache:save", mapId, hash, arrayBuffer);
+	},
+	async load(mapId: string, hash: string): Promise<ArrayBuffer | undefined> {
+		const buffer = await ipcRenderer.invoke("map-cache:load", mapId, hash);
+		if (buffer) {
+			return buffer;
+		}
+		return undefined;
+	},
 });

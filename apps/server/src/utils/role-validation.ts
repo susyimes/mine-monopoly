@@ -14,15 +14,15 @@ const AllowPath = {
 		"/user/get-code-state",
 		"/user/get-login-code",
 		"/static/(.*)",
-		"/map/list",
-		"/map/info",
+		"/game-map/list",
+		"/game-map/info",
 		"/room-router/join",
 		"/room-router/emit-host",
 		"/room-router/delete",
 		"/room-router/heart",
 		"/room-router/random-public-room",
 		"/room-router/set-private",
-		"/room-router/set-started"
+		"/room-router/set-started",
 	],
 };
 

@@ -17,7 +17,8 @@
 		"@fatpaper-monopoly/types": "workspace:*",
 		"@fatpaper-monopoly/config": "workspace:*",
 		"@fatpaper-monopoly/ui": "workspace:*",
-		"@fatpaper-monopoly/login": "workspace:*"
+		"@fatpaper-monopoly/login": "workspace:*",
+		"@fatpaper-monopoly/utils": "workspace:*"
 	},
 	"devDependencies": {}
 }

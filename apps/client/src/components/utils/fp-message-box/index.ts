@@ -1,8 +1,7 @@
 import { App, createApp, VNode, watch } from "vue";
 import FPMessageBoxVue from "./fp-message-box.vue";
-import { useUtil } from "@src/store";
 import useEventBus from "@src/utils/event-bus";
-import { GameEvents } from "@src/enums/game";
+import { GameEventType } from "@fatpaper-monopoly/types";
 
 interface Options extends Record<string, any> {
 	title?: string;
@@ -39,7 +38,7 @@ function showMessageBox(options: Options, resolve: (value: unknown) => void, rej
 
 	function unmount() {
 		messageBoxApp.unmount();
-		useEventBus().remove(GameEvents.TimeOut, unmount);
+		useEventBus().remove(GameEventType.TimeOut, unmount);
 		//@ts-ignore
 		if (vm.isConfirm) {
 			resolve("");
@@ -48,5 +47,5 @@ function showMessageBox(options: Options, resolve: (value: unknown) => void, rej
 		}
 	}
 
-	useEventBus().once(GameEvents.TimeOut, unmount);
+	useEventBus().once(GameEventType.TimeOut, unmount);
 }

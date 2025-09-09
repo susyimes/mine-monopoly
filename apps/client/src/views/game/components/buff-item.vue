@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { playerBuffTriggerTimingMap } from "@src/classes/worker/enums/game";
+import { playerBuffTriggerTimingMap } from "@src/core/worker/enums/game";
 import { Buff } from "@src/interfaces/game";
 
 const props = defineProps<{ buff: Buff }>();

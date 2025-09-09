@@ -4,20 +4,22 @@ import roomUserCard from "@src/views/room/components/room-user-card.vue";
 import FpDialog from "@src/components/utils/fp-dialog/fp-dialog.vue";
 import { FPMessage } from "@fatpaper-monopoly/ui";
 import ItemSelector from "@src/components/utils/item-selector/item-selector.vue";
-import { GameSetting } from "@src/interfaces/bace";
+import { GameSetting, RoleInRoom } from "@src/interfaces/bace";
 import router from "@src/router";
-import { useLoading, useRoomInfo } from "@src/store";
+import { useLoading, useMapData, useResourceStore, useRoomInfo } from "@src/store";
 import { useUserInfo } from "@src/store";
-import { getGameMapList } from "@src/utils/api/map";
-import { GameMap } from "@src/interfaces/game";
-import { MapPreviewerRenderer } from "@src/views/room/utils/MapPreviewerRenderer";
-import { MonopolyClient, useMonopolyClient } from "@src/classes/monopoly-client/MonopolyClient";
+import { getGameMapById, getGameMapList } from "@src/utils/api/map";
+import { MonopolyClient, useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, reactive, ref, toRaw, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { copyToClipboard } from "@src/utils";
 import { setRoomPrivate } from "@src/utils/api/room-router";
 import { GameMapInDb } from "@fatpaper-monopoly/types";
 import { PROTOCOL } from "@fatpaper-monopoly/config";
+import { getGameMap } from "@src/utils/file/game-map";
+import RolePreviewer from "./components/role-previewer.vue";
+
+let socketClient: MonopolyClient;
 
 const roomInfoStore = useRoomInfo();
 const userInfoStore = useUserInfo();
@@ -26,60 +28,106 @@ const playerList = computed(() => roomInfoStore.userList);
 const ownerName = computed(() => roomInfoStore.ownerName);
 const ownerId = computed(() => roomInfoStore.ownerId);
 const roomId = computed(() => roomInfoStore.roomId);
-const roleList = computed(() => roomInfoStore.roleList);
 const isPrivate = ref(true);
 
 const isOwner = computed(() => userInfoStore.userId === roomInfoStore.ownerId);
 const isReady = computed(() => roomInfoStore.userList.find((user) => user.userId === userInfoStore.userId)?.isReady);
 
-const _mapList = ref<GameMapInDb[]>([]);
-const gameSetting = computed(() => roomInfoStore.gameSetting);
-const _tempMapSelectedId = ref<string>(gameSetting.value.mapId || "");
-
-const _tempGameSettingFrom = ref<GameSetting>(JSON.parse(JSON.stringify(roomInfoStore.gameSetting)));
-
-const _currentMap = ref<GameMapInDb>();
-const coverImageUrl = computed(() => (_currentMap.value ? `${PROTOCOL}://${_currentMap.value.coverUrl}` : ""));
-
+// 地图相关
+const mapList = ref<GameMapInDb[]>([]);
 const mapSelectorVisible = ref(false);
+const currentMap = ref<GameMapInDb>();
+const tempMapSelectedId = ref<string>(roomInfoStore.mapId || "");
+const coverImageUrl = computed(() => (currentMap.value ? `${PROTOCOL}://${currentMap.value.coverUrl}` : ""));
+const selectMapButtonText = computed(() => (currentMap.value ? currentMap.value.name : "选择地图"));
 
-const _selectMapButtonText = computed(() => (_currentMap.value ? _currentMap.value.name : "选择地图"));
+function handleChangeMap() {
+	if (socketClient && tempMapSelectedId.value !== currentMap.value?.id) {
+		socketClient.changeGameMap(tempMapSelectedId.value);
+	}
+}
+
+watch(
+	() => roomInfoStore.mapId,
+	async (newId, oldId) => {
+		if (newId && newId !== oldId) {
+			useLoading().showLoading("地图更换——正在向服务器获取地图信息...");
+			const mapInfo = await getGameMapById(newId);
+			if (mapInfo) {
+				useLoading().showLoading("地图更换——正在读取地图...");
+				const { mapData, gameInfo } = await getGameMap(mapInfo);
+				useMapData().$patch(gameInfo);
+				const roles = gameInfo.roles;
+				useLoading().showLoading("地图更换——正在读取角色信息...");
+				const resourceStore = useResourceStore();
+				resourceStore.clear();
+				const tempRoleList: RoleInRoom[] = [];
+				for (const role of roles) {
+					const imageId = role.imageId;
+					const imageResource = mapData.imageFiles.find((i) => i.id === imageId);
+					if (!imageResource) {
+						useLoading().hideLoading();
+						throw Error("读取角色资源失败");
+					}
+					const blob = new Blob([imageResource.buffer as BlobPart], { type: `image/${imageResource.filetype}` });
+					const roleImageUrl = URL.createObjectURL(blob);
+					tempRoleList.push({ ...role, imageUrl: roleImageUrl });
+					//添加到资源仓库
+					resourceStore.add({
+						id: imageResource.id,
+						name: imageResource.name,
+						fileType: imageResource.filetype,
+						url: roleImageUrl,
+					});
+				}
+				roleList.value = tempRoleList;
+				// 初始随机选择一个角色
+				socketClient && socketClient.changeRole(roles[Math.floor(Math.random() * roles.length)].id);
+				currentMap.value = mapInfo;
+			}
+			useLoading().hideLoading();
+		}
+	}
+);
+
+// 角色相关
+const roleList = ref<RoleInRoom[]>([]);
+const roleSelectorVisible = ref(false);
+const tempRoleSelectedId = ref<string>("");
+
+function handleChangeRole() {
+	if (socketClient && tempMapSelectedId.value !== currentMap.value?.id) {
+		socketClient.changeRole(tempMapSelectedId.value);
+	}
+}
+
+// 游戏设置相关
+const tempGameSettingFrom = ref<GameSetting>(JSON.parse(JSON.stringify(roomInfoStore.gameSetting)));
+function handleUpdateGameSetting() {
+	if (tempGameSettingFrom.value.overMoney <= tempGameSettingFrom.value.initMoney) {
+		FPMessage({ type: "error", message: "目标金钱必须大于初始金钱" });
+		return;
+	}
+	if (socketClient) {
+		socketClient.changeGameSetting(toRaw(tempGameSettingFrom.value));
+	}
+}
 
 const canStart = computed(
 	() =>
 		!(
-			Boolean(gameSetting.value.mapId) &&
-			roomInfoStore.userList.every((user) => user.userId === ownerId.value || user.isReady)
+			Boolean(roomInfoStore.mapId) &&
+			roomInfoStore.userList.every((user) => Boolean(user.roleId) || user.userId === ownerId.value || user.isReady) &&
+			!useLoading().loading
 		)
-);
-
-watch(
-	gameSetting,
-	async (newGameSetting, oldGameSetting) => {
-		const map = _mapList.value.find((_item) => _item.id === newGameSetting.mapId);
-		if (map) {
-			map;
-			_currentMap.value = map;
-		}
-		_tempGameSettingFrom.value = JSON.parse(JSON.stringify(roomInfoStore.gameSetting));
-	},
-	{ deep: true }
 );
 
 onMounted(async () => {
 	socketClient = useMonopolyClient();
 	const { gameMapList } = await getGameMapList(1, 1000);
-	_mapList.value = gameMapList;
-	_currentMap.value = _mapList.value.find((_item) => _item.id === gameSetting.value.mapId);
+	mapList.value = gameMapList;
+	currentMap.value = mapList.value.find((_item) => _item.id === roomInfoStore.mapId);
 });
-
-let socketClient: MonopolyClient;
-
-function handleLeaveRoom() {
-	if (socketClient) {
-		socketClient.leaveRoom();
-	}
-}
 
 async function handleSetPrivate() {
 	isPrivate.value = !isPrivate.value;
@@ -94,6 +142,12 @@ async function handleCopyRoomId() {
 	});
 }
 
+function handleLeaveRoom() {
+	if (socketClient) {
+		socketClient.leaveRoom();
+	}
+}
+
 function handleReadyToggle() {
 	if (socketClient) {
 		socketClient.readyToggle();
@@ -103,23 +157,6 @@ function handleReadyToggle() {
 function handleGameStart() {
 	if (socketClient) {
 		socketClient.startGame();
-	}
-}
-
-function handleChangeMap() {
-	if (socketClient) {
-		_tempGameSettingFrom.value.mapId = _tempMapSelectedId.value;
-		socketClient.changeGameSetting(toRaw(_tempGameSettingFrom.value));
-	}
-}
-
-function handleUpdateGameSetting() {
-	if (_tempGameSettingFrom.value.overMoney <= _tempGameSettingFrom.value.initMoney) {
-		FPMessage({ type: "error", message: "目标金钱必须大于初始金钱" });
-		return;
-	}
-	if (socketClient) {
-		socketClient.changeGameSetting(toRaw(_tempGameSettingFrom.value));
 	}
 }
 </script>
@@ -142,16 +179,16 @@ function handleUpdateGameSetting() {
 			</div>
 
 			<div class="map-preview-inroom">
-				<div class="map-cover-image">
-					<img v-if="coverImageUrl" :src="coverImageUrl" />
+				<div class="map-cover-container">
+					<img class="map-cover" v-if="coverImageUrl" :src="coverImageUrl" />
 				</div>
 				<button
 					class="select-map-button"
-					:class="{ nomap: !Boolean(_tempGameSettingFrom.mapId) }"
+					:class="{ nomap: !Boolean(roomInfoStore.mapId) }"
 					:disabled="!isOwner"
 					@click="mapSelectorVisible = true"
 				>
-					{{ _selectMapButtonText }}
+					{{ selectMapButtonText }}
 				</button>
 			</div>
 
@@ -162,21 +199,21 @@ function handleUpdateGameSetting() {
 						<input
 							:disabled="!isOwner"
 							type="number"
-							:min="_tempGameSettingFrom.initMoney"
-							v-model="_tempGameSettingFrom.overMoney"
+							:min="tempGameSettingFrom.initMoney"
+							v-model="tempGameSettingFrom.overMoney"
 						/>￥
 					</div>
 				</div>
 				<div class="options">
 					<span class="label">骰子数量</span>
 					<div>
-						<input :disabled="!isOwner" type="number" min="1" max="5" v-model="_tempGameSettingFrom.diceNum" />个
+						<input :disabled="!isOwner" type="number" min="1" max="5" v-model="tempGameSettingFrom.diceNum" />个
 					</div>
 				</div>
 				<div class="options">
 					<span class="label">回合时间</span>
 					<div>
-						<input :disabled="!isOwner" type="number" min="5" max="30" v-model="_tempGameSettingFrom.roundTime" />秒
+						<input :disabled="!isOwner" type="number" min="5" max="30" v-model="tempGameSettingFrom.roundTime" />秒
 					</div>
 				</div>
 				<div class="options">
@@ -187,13 +224,13 @@ function handleUpdateGameSetting() {
 							type="number"
 							min="1000"
 							step="1000"
-							v-model="_tempGameSettingFrom.initMoney"
+							v-model="tempGameSettingFrom.initMoney"
 						/>￥
 					</div>
 				</div>
 				<div class="options">
 					<span class="label">倍率涨幅</span>
-					<div><input :disabled="!isOwner" type="number" min="0" v-model="_tempGameSettingFrom.multiplier" />倍</div>
+					<div><input :disabled="!isOwner" type="number" min="0" v-model="tempGameSettingFrom.multiplier" />倍</div>
 				</div>
 				<div class="options">
 					<span class="label">涨幅频率</span>
@@ -202,21 +239,21 @@ function handleUpdateGameSetting() {
 							:disabled="!isOwner"
 							type="number"
 							min="1"
-							v-model="_tempGameSettingFrom.multiplierIncreaseRounds"
+							v-model="tempGameSettingFrom.multiplierIncreaseRounds"
 						/>回合
 					</div>
 				</div>
 				<div class="options">
 					<span class="label">机会卡可视</span>
 					<div>
-						<input :disabled="!isOwner" type="checkbox" v-model="_tempGameSettingFrom.chanceCardVisible" />
+						<input :disabled="!isOwner" type="checkbox" v-model="tempGameSettingFrom.chanceCardVisible" />
 						<span>(玩家详情只显示机会卡数量)</span>
 					</div>
 				</div>
 				<div class="options">
 					<span class="label">摸鱼模式</span>
 					<div>
-						<input :disabled="!isOwner" type="checkbox" v-model="_tempGameSettingFrom.slackOffMode" />
+						<input :disabled="!isOwner" type="checkbox" v-model="tempGameSettingFrom.slackOffMode" />
 						<span>(房主离开/隐藏视窗会暂停游戏)</span>
 					</div>
 				</div>
@@ -225,7 +262,7 @@ function handleUpdateGameSetting() {
 
 			<div class="room-footbar">
 				<button v-if="isOwner" :disabled="canStart" class="ready-button" @click="handleGameStart">
-					{{ _currentMap ? "开始游戏" : "先选择地图吧" }}
+					{{ currentMap ? "开始游戏" : "先选择地图吧" }}
 				</button>
 				<button v-else class="ready-button" @click="handleReadyToggle">
 					{{ isReady ? "取消准备" : "准备" }}
@@ -235,20 +272,41 @@ function handleUpdateGameSetting() {
 
 		<div class="right-container">
 			<div class="player-list-container">
-				<roomUserCard v-for="player in playerList" :key="player.userId" :user="player" />
+				<roomUserCard
+					@role-select="roleSelectorVisible = true"
+					v-for="player in playerList"
+					:key="player.userId"
+					:user="player"
+				/>
 				<roomUserCard v-for="i in 6 - playerList.length" :key="i" :user="undefined" />
 			</div>
 		</div>
 	</div>
+	<FpDialog @submit="handleChangeRole" v-model:visible="roleSelectorVisible">
+		<template #title>选择角色</template>
+		<template #default>
+			<ItemSelector
+				:column="3"
+				:multiple="false"
+				:item-list="roleList"
+				key-name="id"
+				v-model:selected-key="tempRoleSelectedId"
+			>
+				<template #item="role">
+					<RolePreviewer :role="role" />
+				</template>
+			</ItemSelector>
+		</template>
+	</FpDialog>
 	<FpDialog @submit="handleChangeMap" v-model:visible="mapSelectorVisible">
 		<template #title>选择地图 (点击想玩的地图然后确认)</template>
 		<template #default>
 			<ItemSelector
-				:column="1"
+				:column="3"
 				:multiple="false"
-				:item-list="_mapList"
+				:item-list="mapList"
 				key-name="id"
-				v-model:selected-key="_tempMapSelectedId"
+				v-model:selected-key="tempMapSelectedId"
 			>
 				<template #item="map">
 					<MapPreviewer :map="map" />
@@ -261,7 +319,7 @@ function handleUpdateGameSetting() {
 <style lang="scss" scoped>
 .room-page {
 	width: 80vw;
-	height: 85%;
+	height: 80%;
 	padding: 1.2rem;
 	margin: auto;
 	box-sizing: border-box;
@@ -394,7 +452,7 @@ function handleUpdateGameSetting() {
 
 		&.nomap:not([disabled]) {
 			background-color: var(--color-second);
-			animation: identifier 1s infinite ease-in-out;
+			animation: identifier 1.5s infinite ease-in-out;
 
 			&:hover {
 				background-color: var(--color-third);
@@ -408,18 +466,26 @@ function handleUpdateGameSetting() {
 		}
 	}
 
-	& > .map-cover-image {
+	& .map-cover-container {
 		width: 100%;
 		height: 100%;
-		border-radius: 0.6rem;
-		overflow: hidden;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 		background-color: #ddd;
+		padding: 0.5rem;
+		box-sizing: border-box;
 
-		img {
-			width: 100%;
-			height: 100%;
+		.map-cover {
 			display: block;
+			width: auto;
+			height: auto;
 			object-fit: contain;
+			max-width: 100%;
+			max-height: 100%;
+			object-fit: contain;
+			margin: auto;
+			border-radius: 0.6em;
 		}
 	}
 }

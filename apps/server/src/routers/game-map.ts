@@ -2,7 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { createGameMap, deleteGameMap, getGameMapList, setMapUse } from "src/db/api/game-map";
+import { createGameMap, deleteGameMap, getGameMapById, getGameMapList, setMapUse } from "src/db/api/game-map";
 import { ResInterface } from "src/interfaces/res";
 import { deleteFiles, uploadFile } from "src/utils/file-uploader";
 import { getFileNameInPath, randomString } from "src/utils";
@@ -30,7 +30,7 @@ gameMapRouter.post(
 			return;
 		}
 		const files = req.files as FileArray;
-		
+
 		const coverImageFile = files["cover-image"][0];
 		const gameMapFile = files["game-map"][0];
 
@@ -104,6 +104,31 @@ gameMapRouter.post(
 	}
 );
 
+gameMapRouter.get("/info", async (req, res, next) => {
+	const { id } = req.query;
+	if (!id) {
+		const resContent: ResInterface = {
+			status: 400,
+			msg: "请求参数错误, 缺少地图id",
+		};
+		res.status(400).json(resContent);
+		return;
+	}
+	try {
+		const resMsg: ResInterface = {
+			status: 200,
+			data: await getGameMapById(id.toString()),
+		};
+		res.status(200).json(resMsg);
+	} catch {
+		const resMsg: ResInterface = {
+			status: 500,
+			msg: "获取地图列表失败",
+		};
+		res.status(500).json(resMsg);
+	}
+});
+
 gameMapRouter.get("/list", async (req, res, next) => {
 	const { page = 1, size = 8 } = req.query;
 	try {
@@ -148,7 +173,7 @@ gameMapRouter.delete("/delete", async (req, res, next) => {
 			const gameMap = await deleteGameMap(id.toString());
 			if (gameMap) {
 				const coverImageFileName = getFileNameInPath(gameMap.coverUrl);
-				console.log("🚀 ~ coverImageFileName:", coverImageFileName)
+				console.log("🚀 ~ coverImageFileName:", coverImageFileName);
 				const gameMapFileName = getFileNameInPath(gameMap.mapUrl);
 				await deleteFiles([`monopoly/game-map/${coverImageFileName}`, `monopoly/game-map/${gameMapFileName}`]);
 			} else {

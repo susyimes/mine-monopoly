@@ -21,6 +21,14 @@ interface IProperty {
 	effectCode?: string;
 	streetId: string;
 }
+interface Role {
+	id: string;
+	name: string;
+	description: string;
+	color: string;
+	imageId: string;
+	initCode: string;
+}
 interface IChanceCard extends ChanceCard {
 	sourceId: string;
 }
@@ -78,6 +86,7 @@ interface GameRoundEndContext extends GameContext {
 interface IPlayer {
 	id: string;
 	user: User;
+	role: Role;
 	money: number;
 	properties: PropertyInfo[];
 	chanceCards: ChanceCardInfo[];

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useGameInfo } from "@src/store";
+import { useGameData } from "@src/store";
 import PlayerCard from "@src/views/game/components/player-card.vue";
 
-const gameInfoStore = useGameInfo();
+const gameInfoStore = useGameData();
 
 const _currentRound = computed(() => gameInfoStore.currentRound);
 const _currentMultiplier = computed(() => gameInfoStore.currentMultiplier);

@@ -1,41 +1,45 @@
-export enum SocketMsgType {
-	ConfirmIdentity = 1000, //确认身份(websocket从客户端获取id)
-	Heart, //心跳信息
-	MsgNotify, //纯信息广播
-	GameLog, //游戏过程信息广播
-	UserList, //大厅玩家信息广播
-	RoomList, //房间列表广播
-	JoinRoom, //加入房间
-	LeaveRoom, //离开房间
-	RoomInfo, //房间信息广播
-	RoomChat, //房间聊天
-	ReadyToggle, //准备状态切换
-	ChangeColor, //切换颜色
-	KickOut, //踢出房间
-	ChangeRole, //切换角色
-	ChangeGameSetting, //修改游戏设置信息
-	GameStart, //游戏开始
-	GameInit, //游戏初始化
-	GameInitFinished, //游戏初始化完成
-	GameInfo, //游戏信息广播
-	GainMoney, //玩家获得金钱
-	CostMoney, //玩家花费金钱
-	RoundTurn, //更新当前回合轮到的玩家,
-	RollDiceStart, //开始摇骰子
-	RollDiceResult, //掷骰子
-	UseChanceCard, //使用机会卡
-	RemainingTime, //回合剩余时间
-	RoundTimeOut, //回合超时
-	PlayerWalk, //位置移动方式1：玩家角色走路
-	PlayerTp, //位置移动方式2：传送
-	Animation, //前端动画完成回馈
-	BuyProperty, //购买地皮
-	BuildHouse, //升级房子
-	Bankrupt, //破产
-	GameOver, //游戏结束
+export const enum SocketMsgType {
+	Heart = "Heart", //心跳信息
+	MsgNotify = "MsgNotify", //纯信息广播
+	GameLog = "GameLog", //游戏过程信息广播
+	UserList = "UserList", //大厅玩家信息广播
+	RoomList = "RoomList", //房间列表广播
+	JoinRoom = "JoinRoom", //加入房间
+	LeaveRoom = "LeaveRoom", //离开房间
+	RoomInfo = "RoomInfo", //房间信息广播
+	RoomChat = "RoomChat", //房间聊天
+	ReadyToggle = "ReadyToggle", //准备状态切换
+	ChangeColor = "ChangeColor", //切换颜色
+	KickOut = "KickOut", //踢出房间
+	ChangeMap = "ChangeMap", //切换角色
+	ChangeRole = "ChangeRole", //切换角色
+	ChangeGameSetting = "ChangeGameSetting", //修改游戏设置信息
+	GameStart = "GameStart", //游戏开始
+	GameInit = "GameInit", //游戏初始化
+	GameInitFinished = "GameInitFinished", //游戏初始化完成
+	GameData = "GameData", //游戏信息广播
+	GainMoney = "GainMoney", //玩家获得金钱
+	CostMoney = "CostMoney", //玩家花费金钱
+	RoundTurn = "RoundTurn", //更新当前回合轮到的玩家
+	RollDiceStart = "RollDiceStart", //开始摇骰子
+	RollDiceResult = "RollDiceResult", //掷骰子
+	UseChanceCard = "UseChanceCard", //使用机会卡
+	RemainingTime = "RemainingTime", //回合剩余时间
+	RoundTimeOut = "RoundTimeOut", //回合超时
+	PlayerWalk = "PlayerWalk", //位置移动方式1：玩家角色走路
+	PlayerTp = "PlayerTp", //位置移动方式2：传送
+	Animation = "Animation", //前端动画完成回馈
+	BuyProperty = "BuyProperty", //购买地皮
+	BuildHouse = "BuildHouse", //升级房子
+	Bankrupt = "Bankrupt", //破产
+	GameOver = "GameOver", //游戏结束
+	PauseGame = "PauseGame", //房主暂停游戏
+	ResumeGame = "ResumeGame", //房主恢复游戏
+}
 
-	PauseGame, //房主暂停游戏
-	ResumeGame, //房主恢复游戏
+export enum SocketMsgSource {
+	Client = "client",
+	Server = "server",
 }
 
 export enum ChangeRoleOperate {
@@ -61,7 +65,10 @@ export enum MonopolyWebSocketMsgType {
 	Error,
 }
 
-export enum CardUseMode {
-	Drag,
-	Click,
+export enum GameLogLinkItem {
+	Player = "Player",
+	ChanceCard = "ChanceCard",
+	Property = "Property",
+	ArrivedEvent = "ArrivedEvent",
 }
+

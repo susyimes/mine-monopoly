@@ -1,4 +1,4 @@
-import { Animated2DBase } from "@src/classes/game/Animated2DBase";
+import { Animated2DBase } from "@src/core/game/Animated2DBase";
 
 export class RoleModel extends Animated2DBase {
 	constructor(size: number, baseUrl: string, roleName: string) {

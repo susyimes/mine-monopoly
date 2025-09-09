@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { useGameInfo } from "@src/store";
+import { useGameData } from "@src/store";
 import { App, computed, createApp, onMounted, ref } from "vue";
 import PlayerCard from "./player-card.vue";
-import { PlayerInfo } from "@src/interfaces/game";
+import { GameEventType, PlayerInfo } from "@fatpaper-monopoly/types";
 import FpDialog from "@src/components/utils/fp-dialog/fp-dialog.vue";
 import PlayerDetail from "./player-detail.vue";
 import useEventBus from "@src/utils/event-bus";
-import { GameEvents } from "@src/enums/game";
 import FlyItem from "@src/components/common/fly-item.vue";
 import gsap from "gsap";
 import { remToPx } from "@src/utils";
 
-const gameInfoStore = useGameInfo();
+const gameInfoStore = useGameData();
 const _playersList = computed(() => gameInfoStore.playersList);
 const playerDetailVisiable = ref(false);
 const currentPlayer = ref<PlayerInfo | null>(null);
@@ -25,7 +24,7 @@ onMounted(() => {
 			playerCardElMap.set(player.id, playerCardEl as HTMLElement);
 		}
 
-		useEventBus().on(GameEvents.CostMoney + player.id, (playerInfo: PlayerInfo, money: number, target: PlayerInfo) => {
+		useEventBus().on(GameEventType.CostMoney + player.id, (playerInfo: PlayerInfo, money: number, target: PlayerInfo) => {
 			if (target) return;
 			const gainMoneyEl = playerCardElMap.get(player.id);
 			if (gainMoneyEl) {
@@ -52,7 +51,7 @@ onMounted(() => {
 			}
 		});
 
-		useEventBus().on(GameEvents.GainMoney + player.id, (playerInfo: PlayerInfo, money: number, source: PlayerInfo) => {
+		useEventBus().on(GameEventType.GainMoney + player.id, (playerInfo: PlayerInfo, money: number, source: PlayerInfo) => {
 			const gainMoneyEl = playerCardElMap.get(player.id);
 
 			if (gainMoneyEl) {
@@ -123,7 +122,7 @@ function handleShowPlayerDetail(player: PlayerInfo) {
 <template>
 	<FpDialog :style="'width: 70%; height: 70%;'" v-model:visible="playerDetailVisiable">
 		<template #title>
-			<div class="title">{{ currentPlayer?.user.username }}的底细</div>
+			<div class="title">{{ currentPlayer?.user.name }}的底细</div>
 		</template>
 
 		<PlayerDetail #default v-if="currentPlayer" :player="currentPlayer" />

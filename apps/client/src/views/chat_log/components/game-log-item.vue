@@ -4,13 +4,13 @@ import playerCard from "@src/views/game/components/player-card.vue";
 import propertyInfoCard from "@src/views/game/utils/components/property-info-card.vue";
 import chanceCard from "@src/views/game/components/chance-card.vue";
 import arrivedEventCard from "@src/views/game/utils/components/arrived-event-card.vue";
-import { GameLinkItem } from "@src/enums/game";
-import { useDeviceStatus, useGameInfo, useMapData } from "@src/store";
+import { GameLogLinkItem } from "@fatpaper-monopoly/types";
+import { useDeviceStatus, useGameData, useMapData } from "@src/store";
 import { App, Component, computed, createApp, h, ref, render, toRaw } from "vue";
-import { ArrivedEvent, ChanceCardInfo, PlayerInfo, Property, PropertyInfo } from "@src/interfaces/game";
+import { MapEvent, ChanceCardInfo, PlayerInfo, PropertyInfo } from "@fatpaper-monopoly/types";
 
 const props = defineProps<{ gameLog: GameLog }>();
-const gameInfoStore = useGameInfo();
+const gameInfoStore = useGameData();
 const mapInfoStroe = useMapData();
 
 enum GameLogType {
@@ -19,13 +19,13 @@ enum GameLogType {
 }
 
 type LinkItemDataMap = {
-	[GameLinkItem.ArrivedEvent]: ArrivedEvent;
-	[GameLinkItem.Property]: PropertyInfo;
-	[GameLinkItem.Player]: PlayerInfo;
-	[GameLinkItem.ChanceCard]: ChanceCardInfo;
+	[GameLogLinkItem.ArrivedEvent]: MapEvent;
+	[GameLogLinkItem.Property]: PropertyInfo;
+	[GameLogLinkItem.Player]: PlayerInfo;
+	[GameLogLinkItem.ChanceCard]: Omit<ChanceCardInfo, "sourceId">;
 };
 
-type LinkDataItem = { type: GameLinkItem; data: LinkItemDataMap[GameLinkItem]; text: string; color: string };
+type LinkDataItem = { type: GameLogLinkItem; data: LinkItemDataMap[GameLogLinkItem]; text: string; color: string };
 
 type GameLogContent = {
 	[GameLogType.Text]: string;
@@ -41,7 +41,7 @@ function handleGameLog(gameLog: GameLog) {
 	const parts: ParsedGameLog[] = [];
 	let lastIndex = 0;
 
-	gameLog.content.replace(regex, (match, type: GameLinkItem, id: string, offset: number) => {
+	gameLog.content.replace(regex, (match, type: GameLogLinkItem, id: string, offset: number) => {
 		// 添加文本部分
 		if (lastIndex < offset) {
 			parts.push({ type: GameLogType.Text, content: gameLog.content.slice(lastIndex, offset) });
@@ -51,35 +51,35 @@ function handleGameLog(gameLog: GameLog) {
 			let item: LinkDataItem | null = null;
 
 			switch (type) {
-				case GameLinkItem.ArrivedEvent:
-					const arrivedEvent = toRaw(mapInfoStroe.getArrivedItemInfoById(id));
+				case GameLogLinkItem.ArrivedEvent:
+					const arrivedEvent = toRaw(mapInfoStroe.getMapEventByMapItemId(id));
 					if (arrivedEvent) {
 						item = { type, data: arrivedEvent, text: arrivedEvent.name, color: "var(--color-second)" };
 					}
 					break;
 
-				case GameLinkItem.ChanceCard:
-					const chanceCard = toRaw(mapInfoStroe.getChanceCardInfoById(id));
+				case GameLogLinkItem.ChanceCard:
+					const chanceCard = toRaw(mapInfoStroe.findChanceCardById(id));
 					if (chanceCard) {
 						item = { type, data: chanceCard, text: chanceCard.name, color: chanceCard.color };
 					}
 					break;
 
-				case GameLinkItem.Player:
+				case GameLogLinkItem.Player:
 					const player = toRaw(gameInfoStore.getPlayerInfoById(id));
 					if (player) {
-						item = { type, data: player, text: player.user.username, color: player.user.color };
+						item = { type, data: player, text: player.user.name, color: player.user.color };
 					}
 					break;
 
-				case GameLinkItem.Property:
+				case GameLogLinkItem.Property:
 					const property = toRaw(gameInfoStore.getPropertyById(id));
 					if (property) {
 						item = {
 							type,
 							data: property,
 							text: property.name,
-							color: property.owner ? property.owner.color : "var(--color-second)",
+							color: property.owner ? property.owner.user.color : "var(--color-second)",
 						};
 					}
 					break;
@@ -107,25 +107,25 @@ function handleGameLog(gameLog: GameLog) {
 	return parts;
 }
 
-function generatePopItem(e: MouseEvent, itemType: GameLinkItem, props: any) {
+function generatePopItem(e: MouseEvent, itemType: GameLogLinkItem, props: any) {
 	const x = e.clientX;
 	const y = e.clientY;
 	let compoentToRender: Component | null = null;
 	let compoentProps: { [key: string]: any } | null = null;
 	switch (itemType) {
-		case GameLinkItem.ArrivedEvent:
+		case GameLogLinkItem.ArrivedEvent:
 			compoentToRender = arrivedEventCard;
 			compoentProps = { arrivedEvent: props };
 			break;
-		case GameLinkItem.ChanceCard:
+		case GameLogLinkItem.ChanceCard:
 			compoentToRender = chanceCard;
 			compoentProps = { chanceCard: props, disable: false };
 			break;
-		case GameLinkItem.Player:
+		case GameLogLinkItem.Player:
 			compoentToRender = playerCard;
 			compoentProps = { player: props, roundMark: false };
 			break;
-		case GameLinkItem.Property:
+		case GameLogLinkItem.Property:
 			compoentToRender = propertyInfoCard;
 			compoentProps = { property: props };
 			break;

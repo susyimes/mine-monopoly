@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import FpDialog from "@src/components/utils/fp-dialog/fp-dialog.vue";
-import { CardUseMode } from "@src/enums/bace";
 import { useSettig } from "@src/store";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
@@ -17,40 +16,6 @@ const router = useRoute();
 		<template #title>设置</template>
 		<div class="setting-container">
 			<div class="setting-list">
-				<div class="setting-item">
-					<div class="ban-mask" v-show="router.name === 'game'"><span>游戏中不能切换机会卡使用模式</span></div>
-					<div class="label">机会卡使用</div>
-					<div class="content">
-						<div>
-							<input
-								type="radio"
-								name="card-use-mode"
-								:value="CardUseMode.Click"
-								id="card-use-mode-click"
-								v-model="settingStore.cardUseMode"
-								hidden
-							/>
-							<label for="card-use-mode-click">
-								<FontAwesomeIcon icon="square-check" v-if="settingStore.cardUseMode == CardUseMode.Click" />
-								点击使用</label
-							>
-						</div>
-						<div>
-							<input
-								type="radio"
-								name="card-use-mode"
-								:value="CardUseMode.Drag"
-								id="card-use-mode-drag"
-								v-model="settingStore.cardUseMode"
-								hidden
-							/>
-							<label for="card-use-mode-drag">
-								<FontAwesomeIcon icon="square-check" v-if="settingStore.cardUseMode == CardUseMode.Drag" />
-								拖动使用</label
-							>
-						</div>
-					</div>
-				</div>
 				<div class="setting-item">
 					<div class="label">音乐自动播放</div>
 					<div class="content">

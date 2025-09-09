@@ -1,20 +1,13 @@
 <script setup lang="ts">
-import { useGameInfo, useSettig, useUserInfo } from "@src/store";
+import { useGameData, useSettig, useUserInfo } from "@src/store";
 import { computed, provide, ref, watch, toRaw } from "vue";
-import { ChanceCardInfo } from "@src/interfaces/game";
 import ChanceCard from "./chance-card.vue";
 import { useUtil } from "@src/store";
-import { CardUseMode } from "@src/enums/bace";
 
-const gameInfoStore = useGameInfo();
+const gameInfoStore = useGameData();
 const userInfoStore = useUserInfo();
 const utilStore = useUtil();
 const settingStore = useSettig();
-
-const cardUseModeMap: Record<CardUseMode, string> = {
-	[CardUseMode.Click]: "点击",
-	[CardUseMode.Drag]: "拖动",
-};
 
 const _chanceCardsList = computed(() => {
 	const player = gameInfoStore.playersList.find((player) => player.id === userInfoStore.userId);
@@ -30,9 +23,7 @@ const _canUseChanceCard = computed(() => utilStore.canUseCard);
 
 <template>
 	<div class="chance-card-container-vue" :style="{ '--num': _chanceCardsList.length }">
-		<div v-show="utilStore.canUseCard" class="tips">
-			{{ cardUseModeMap[settingStore.cardUseMode] }}卡片使用机会卡，一回合使用一张
-		</div>
+		<div v-show="utilStore.canUseCard" class="tips">点击卡片使用机会卡，一回合使用一张</div>
 		<TransitionGroup name="card">
 			<ChanceCard
 				v-chanceCardSource="card"

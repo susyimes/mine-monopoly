@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, onMounted, computed, ref, onUpdated } from "vue";
 import { useUserInfo, useUserList, useRoomList, useRoomInfo, useLoading } from "@src/store";
-import { useMonopolyClient } from "@src/classes/monopoly-client/MonopolyClient";
+import { useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 import userCard from "@src/components/common/user-card.vue";
 import router from "@src/router";
 import { getUserByToken } from "@src/utils/api/user";

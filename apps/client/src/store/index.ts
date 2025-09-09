@@ -1,10 +1,19 @@
 import { defineStore } from "pinia";
-import { User, Room, Role, ChatMessage, UserInRoomInfo, GameLog } from "@src/interfaces/bace";
-import { MapItem, PlayerInfo, PropertyInfo, ItemType, ChanceCardInfo, Street, Model } from "@src/interfaces/game";
-import { GameOverRule } from "@src/enums/game";
+import { User, Room, ChatMessage, UserInRoomInfo, GameLog, RoleInRoom } from "@src/interfaces/bace";
+import {
+	MapItem,
+	PlayerInfo,
+	PropertyInfo,
+	MapItemType,
+	ChanceCardInfo,
+	Street,
+	GameMap,
+	Role,
+	ResourcesType,
+} from "@fatpaper-monopoly/types";
+import { GameOverRule } from "@fatpaper-monopoly/types";
 import { isFullScreen, isLandscape, setTimeOutAsync } from "@src/utils";
 import { getUserByToken } from "@src/utils/api/user";
-import { CardUseMode } from "@src/enums/bace";
 
 export const useLoading = defineStore("loading", {
 	state: () => {
@@ -60,17 +69,16 @@ export const useRoomList = defineStore("roomList", {
 export const useRoomInfo = defineStore("roomInfo", {
 	state: () => {
 		return {
+			mapId: "",
 			roomId: "",
 			ownerId: "",
 			ownerName: "",
 			userList: new Array<UserInRoomInfo>(),
-			roleList: new Array<Role>(),
 			gameSetting: {
 				gameOverRule: GameOverRule.LeftOnePlayer,
 				initMoney: 20000,
 				multiplier: 1,
 				multiplierIncreaseRounds: 2,
-				mapId: "",
 				roundTime: 15,
 				diceNum: 2,
 				chanceCardVisible: true,
@@ -78,43 +86,102 @@ export const useRoomInfo = defineStore("roomInfo", {
 			},
 		};
 	},
+	actions: {},
 	getters: {
-		iAmRoomOwner: (state) => useUserInfo().userId === state.ownerId,
+		amIRoomOwner: (state) => useUserInfo().userId === state.ownerId,
+	},
+});
+
+export const useResourceStore = defineStore("temp-resource", {
+	state: () => {
+		return {
+			recourceMap: new Map<string, ResourcesType>(),
+		};
+	},
+	actions: {
+		add(recource: ResourcesType) {
+			this.recourceMap.set(recource.id, recource);
+		},
+		remove(id: string) {
+			const recource = this.recourceMap.get(id);
+			if (!recource) return;
+			URL.revokeObjectURL(recource.url);
+			this.recourceMap.delete(id);
+		},
+		getRecourceById(id: string) {
+			return this.recourceMap.get(id);
+		},
+		clear() {
+			Array.from(this.recourceMap.values()).forEach((r) => {
+				URL.revokeObjectURL(r.url);
+			});
+			this.recourceMap.clear();
+		},
 	},
 });
 
 export const useMapData = defineStore("map", {
-	state: () => {
-		return {
-			mapId: "",
-			mapName: "",
-			mapBackground: "",
-			mapItemsList: new Array<MapItem>(),
-			mapIndexList: new Array<string>(),
-			itemTypesList: new Array<ItemType>(),
-			playerList: new Array<PlayerInfo>(),
-			properties: new Array<PropertyInfo>(),
-			chanceCards: new Array<ChanceCardInfo>(),
-			streetsList: new Array<Street>(),
-			houseModels: {
-				lv0: undefined as Model | undefined,
-				lv1: undefined as Model | undefined,
-				lv2: undefined as Model | undefined,
-			},
-		};
-	},
-	actions: {
-		getChanceCardInfoById(id: string) {
-			return this.$state.chanceCards.find((p) => p.id === id);
+	state: (): GameMap => ({
+		id: crypto.randomUUID(),
+		info: {
+			name: "",
+			version: "0.0.0",
+			backgroundImageId: "",
+			coverImageId: "",
 		},
-		getArrivedItemInfoById(id: string) {
-			return this.$state.mapItemsList.filter((i) => Boolean(i.arrivedEvent)).find((p) => p.arrivedEvent!.id === id)
-				?.arrivedEvent;
+		mapItems: [],
+		chanceCards: [],
+		mapItemTypes: [],
+		mapIndex: [],
+		streets: [],
+		roles: [],
+		inUse: false,
+		mapEvents: [],
+		phases: {
+			gameRoundStart: [],
+			playerRound: [],
+			gameRoundEnd: [],
+		},
+		buildingModelIdList: ["", "", ""],
+	}),
+	actions: {
+		getMapEventByMapItemId(mapItemId: string) {
+			const mapEventId = this.findMapItemById(mapItemId)?.mapEventId;
+			if (!mapEventId) throw Error("查找MapEvent的Id失败");
+			return this.findMapEventById(mapEventId);
+		},
+
+		// MapItem
+		findMapItemByIndex(index: number) {
+			return this.findMapItemById(this.mapIndex[index]);
+		},
+		findMapItemById(id: string) {
+			return this.mapItems.find((m) => m.id === id);
+		},
+
+		// MapItemType
+		findMapItemTypeById(id: string) {
+			return this.mapItemTypes.find((m) => m.id === id);
+		},
+
+		// MapEvent
+		findMapEventById(id: string) {
+			return this.mapEvents.find((e) => e.id === id);
+		},
+
+		// ChanceCard
+		findChanceCardById(id: string) {
+			return this.chanceCards.find((c) => c.id === id);
+		},
+
+		// Role
+		findRoleById(id: string) {
+			return this.roles.find((r) => r.id === id);
 		},
 	},
 });
 
-export const useGameInfo = defineStore("gameInfo", {
+export const useGameData = defineStore("gameData", {
 	state: () => {
 		return {
 			ping: 0,
@@ -130,7 +197,7 @@ export const useGameInfo = defineStore("gameInfo", {
 		isMyTurn: (state) => useUserInfo().userId === state.currentPlayerIdInRound,
 		getMyInfo: (state) => state.playersList.find((p) => p.id === useUserInfo().userId),
 		canIOperate: (state) => {
-			const _this = useGameInfo();
+			const _this = useGameData();
 			const amIBankrupted = _this.getMyInfo && _this.getMyInfo.isBankrupted;
 			return !amIBankrupted && _this.isMyTurn;
 		},
@@ -152,8 +219,8 @@ export const useUtil = defineStore("util", {
 			rollDiceResult: new Array<number>(),
 			waitingFor: { eventMsg: "", remainingTime: 0 },
 			timeOut: false,
-			canUseCard: useGameInfo().canIOperate,
-			canRoll: useGameInfo().canIOperate,
+			canUseCard: useGameData().canIOperate,
+			canRoll: useGameData().canIOperate,
 		};
 	},
 });
@@ -225,7 +292,6 @@ export const useDeviceStatus = defineStore("deviceStatus", {
 export const useSettig = defineStore("setting", {
 	state: () => {
 		return {
-			cardUseMode: CardUseMode.Click,
 			autoMusic: true,
 			musicVolume: 1,
 			lockRole: true,

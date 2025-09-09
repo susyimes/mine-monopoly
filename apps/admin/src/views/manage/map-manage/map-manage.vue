@@ -2,7 +2,7 @@
 import { onMounted, ref } from "vue";
 import MapForm from "./components/map-form.vue";
 import { GameMapInDb } from "@fatpaper-monopoly/types";
-import { getGameMapList } from "@/utils/api/game-map";
+import { getGameMapInfo, getGameMapList } from "@/utils/api/game-map";
 import MapItem from "./components/map-item.vue";
 
 const formVisible = ref(false);
@@ -24,6 +24,15 @@ async function handleGameMapCreated() {
 	await updateList();
 }
 
+async function handleGameMapEdit(mapInfo: GameMapInDb) {
+	currentGameMap.value = mapInfo;
+	formVisible.value = true;
+}
+
+function handleFormClose() {
+	currentGameMap.value = undefined;
+}
+
 onMounted(async () => {
 	updateList();
 });
@@ -42,7 +51,13 @@ onMounted(async () => {
 
 		<a-empty style="flex: 1" v-if="total === 0" description="没有数据" />
 		<div v-else class="map-item-container">
-			<map-item @deleted="updateList" :map-info="mapInfo" v-for="mapInfo in gameMapList" :key="mapInfo.id" />
+			<map-item
+				@edit="handleGameMapEdit"
+				@deleted="updateList"
+				:map-info="mapInfo"
+				v-for="mapInfo in gameMapList"
+				:key="mapInfo.id"
+			/>
 		</div>
 
 		<a-pagination
@@ -54,7 +69,14 @@ onMounted(async () => {
 		/>
 	</div>
 
-	<a-modal destroyOnClose title="上传地图" style="width: 30vw" v-model:open="formVisible" :footer="null">
+	<a-modal
+		@close="handleFormClose"
+		destroyOnClose
+		title="上传地图"
+		style="width: 30vw"
+		v-model:open="formVisible"
+		:footer="null"
+	>
 		<map-form @finish="handleGameMapCreated" :game-map="currentGameMap" />
 	</a-modal>
 </template>

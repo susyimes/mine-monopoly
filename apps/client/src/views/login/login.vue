@@ -6,7 +6,7 @@ import { getUserByToken } from "@src/utils/api/user";
 import { createLoginIframeOnBody, exitFullScreen, randomString, setTimeOutAsync } from "@src/utils";
 import { FPMessage } from "@fatpaper-monopoly/ui";
 import { useUserInfo } from "@src/store";
-import { LoginDiceRenderer } from "@src/classes/three/LoginDiceRenderer";
+import { LoginDiceRenderer } from "@src/core/three/LoginDiceRenderer";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import FpPopover from "@src/components/utils/fp-popover/fp-popover.vue";
 import LoginExtra from "@src/views/login/components/login-extra.vue";
@@ -235,7 +235,7 @@ function toRoomList() {
 		font-size: 1.3rem;
 		cursor: pointer;
 
-		&:hover{
+		&:hover {
 			background-color: #558b2f;
 		}
 	}

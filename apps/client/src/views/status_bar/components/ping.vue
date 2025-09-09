@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useGameInfo } from "@src/store";
+import { useGameData } from "@src/store";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
-const gameInfoStore = useGameInfo();
+const gameInfoStore = useGameData();
 const pingTextColor = computed(() => {
 	const ping = gameInfoStore.ping;
 	let colorName = "success";

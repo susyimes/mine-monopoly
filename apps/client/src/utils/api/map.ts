@@ -1,4 +1,4 @@
-import { GameMap } from "@src/interfaces/game";
+import { GameMapInDb } from "@fatpaper-monopoly/types";
 import axios from "axios";
 
 export const getGameMapList = async (page: number, size: number) => {
@@ -8,5 +8,5 @@ export const getGameMapList = async (page: number, size: number) => {
 
 export const getGameMapById = async (mapId: string) => {
 	const data = (await axios.get("/game-map/info", { params: { id: mapId } })).data as any;
-	return data as GameMap;
+	return data as GameMapInDb;
 };

@@ -1,8 +1,18 @@
 import { EventTiggerTime, GamePhaseMark } from "../../enums/game/game-process";
 import { User } from "../common/index";
-import { Buff, IChanceCard, IProperty, Street } from "./item";
+import { Buff, IChanceCard, IProperty, Role, Street } from "./item";
 import { PlayerMoveType } from "../../enums/game/game";
 import { GameMap } from "../game/map";
+
+export interface GameData {
+	ping: number;
+	currentPlayerIdInRound: string;
+	currentRound: number;
+	currentMultiplier: number;
+	playersList: PlayerInfo[];
+	propertiesList: PropertyInfo[];
+	isGameOver: boolean;
+}
 
 export interface IGameProcess {
 	playerList: IPlayer[];
@@ -78,6 +88,7 @@ export interface IPlayer {
 	//TODO
 	id: string;
 	user: User;
+	role: Role;
 	money: number;
 	properties: PropertyInfo[];
 	chanceCards: ChanceCardInfo[];

@@ -18,3 +18,7 @@ export const getGameMapList = async (page: number, size: number) => {
 export const deleteGameMap = async (id: string) => {
 	return await _axios.delete("/game-map/delete", { params: { id } });
 };
+
+export const getGameMapInfo = async (id: string) => {
+	return await _axios.delete("/game-map/info", { params: { id } });
+};

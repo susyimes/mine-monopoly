@@ -5,7 +5,7 @@ import { __PROTOCOL__ } from "@src/../global.config";
 import { computed } from "vue";
 import ChanceCard from "./chance-card.vue";
 import BuffItem from "./buff-item.vue";
-import { useGameInfo, useRoomInfo } from "@src/store";
+import { useGameData, useRoomInfo } from "@src/store";
 import { PropertyLevel } from "@src/utils/var";
 
 const props = defineProps<{
@@ -13,7 +13,7 @@ const props = defineProps<{
 }>();
 
 const playersPropertyies = computed(() => {
-	return useGameInfo().propertiesList.filter((property) => {
+	return useGameData().propertiesList.filter((property) => {
 		return property.owner && property.owner.id === props.player.id;
 	});
 });

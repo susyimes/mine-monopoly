@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { onMounted, computed, onUnmounted, ref, onBeforeMount, onBeforeUnmount } from "vue";
-import { GameRenderer } from "@src/classes/game/GameRenderer";
-import { useLoading, useMapData, useRoomInfo, useGameInfo, useUtil } from "@src/store";
+import { GameRenderer } from "@src/core/game/GameRenderer";
+import { useLoading, useMapData, useRoomInfo, useGameData, useUtil } from "@src/store";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import router from "@src/router/index";
-import { MonopolyClient, useMonopolyClient } from "@src/classes/monopoly-client/MonopolyClient";
+import { MonopolyClient, useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 import Dices from "./components/dices.vue";
 import ChanceCardContainer from "./components/chance-card-container.vue";
 import CountdownTimer from "./components/countdown-timer.vue";
@@ -14,7 +14,7 @@ import ProgressBar from "@src/views/game/components/progress-bar.vue";
 import PlayerContainer from "./components/player-container.vue";
 
 //pinia仓库
-const gameInfoStore = useGameInfo();
+const gameInfoStore = useGameData();
 const utilStore = useUtil();
 
 const windowWidth = computed(() => window.innerWidth);
@@ -42,14 +42,12 @@ function handleRollDice() {
 onMounted(async () => {
 	try {
 		socketClient = useMonopolyClient();
-		const mapDataStore = useMapData();
-		if (mapDataStore.mapItemsList.length === 0) router.replace("room");
 		useLoading().showLoading("加载数据中...");
 
 		const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
 		const container = document.getElementsByClassName("game-page")[0] as HTMLDivElement;
 		gameRenderer = new GameRenderer(canvas, container);
-		await gameRenderer.init();
+		// await gameRenderer.init();
 		useLoading().showLoading("数据加载完成，等待其他玩家加载...");
 		socketClient.gameInitFinished();
 	} catch (e: any) {

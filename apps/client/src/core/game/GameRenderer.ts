@@ -29,11 +29,11 @@ import {
 
 import gsap from "gsap";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { ChanceCardInfo, ItemType, MapItem, Model, PlayerInfo, PropertyInfo } from "@src/interfaces/game";
-import { useDeviceStatus, useGameInfo, useLoading, useMapData, useSettig, useUserInfo } from "@src/store";
+import { ChanceCardInfo, MapItemType, MapItem, PlayerInfo, PropertyInfo } from "@fatpaper-monopoly/types";
+import { useDeviceStatus, useGameData, useLoading, useMapData, useSettig, useUserInfo } from "@src/store";
 import { Component, ComponentPublicInstance, createApp, toRaw, watch, WatchStopHandle } from "vue";
 import { loadItemTypeModules } from "@src/utils/three/itemtype-loader";
-import { useMonopolyClient } from "@src/classes/monopoly-client/MonopolyClient";
+import { useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 import { CSS2DObject, CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer";
 import PropertyInfoCard from "@src/views/game/utils/components/property-info-card.vue";
 import ArrivedEventCard from "@src/views/game/utils/components/arrived-event-card.vue";
@@ -43,8 +43,8 @@ import { debounce, getScreenPosition, isMobileDevice, throttle } from "@src/util
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
-import { ChanceCardOperateType, ChanceCardType, GameEvents, RoleAnimations } from "@src/enums/game";
-import { PlayerEntity } from "@src/classes/game/PlayerEntity";
+import { ChanceCardOperateType, ChanceCardType, GameEvent, RoleAnimations } from "@fatpaper-monopoly/types";
+import { PlayerEntity } from "@src/core/game/PlayerEntity";
 import useEventBus from "@src/utils/event-bus";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
@@ -185,15 +185,15 @@ export class GameRenderer {
 		);
 	}
 
-	public async init() {
+	public async init(mapFileUrl: string) {
 		loadingMask.loading = true;
-		loadingMask.text = "正在进行初始化加载：背景";
-		//加载背景
-		this.initBackground();
-
 		loadingMask.text = "正在进行初始化加载：地图数据";
 		//加载地图
 		await this.initMap();
+
+		loadingMask.text = "正在进行初始化加载：背景";
+		//加载背景
+		this.initBackground();
 
 		loadingMask.text = "正在进行初始化加载：玩家数据";
 		//加载玩家模型
@@ -247,7 +247,6 @@ export class GameRenderer {
 
 			Array.from(this.playerEntities.values()).forEach((player) => {
 				player.model.lookAt(this.camera.position);
-				player.update();
 			});
 
 			// this.renderer.render(this.scene, this.camera);
@@ -261,87 +260,18 @@ export class GameRenderer {
 	private initBackground() {
 		const bgTextureLoader = new TextureLoader();
 		const mapData = useMapData();
-		const bgTexture = bgTextureLoader.load(`${__PROTOCOL__}://${mapData.mapBackground}`);
+
+		const bgTexture = bgTextureLoader.load(`${__PROTOCOL__}://${mapData.info.backgroundImageId}`);
 
 		this.scene.background = bgTexture;
 		this.scene.add(this.mapContainer);
 	}
 
-	private async initMap() {
-		//加载地图和模型
-		const mapDataStore = useMapData();
+	private async initMap() {}
 
-		//加载模型
-		const mapItemTypeList = mapDataStore.itemTypesList;
-		await this.loadMapModels(mapItemTypeList);
+	private async initPlayer() {}
 
-		//加载屋子的模型
-		const { lv0, lv1, lv2 } = mapDataStore.houseModels;
-		if (lv0 && lv1 && lv2) await this.loadHousesModels({ lv0, lv1, lv2 });
-
-		//加载地图
-		const mapItemsList = mapDataStore.mapItemsList;
-		await this.loadMap(mapItemsList);
-
-		//加载地皮
-		const gameInfo = useGameInfo();
-		gameInfo.propertiesList.forEach((property) => {
-			const textSprite = new TextSprite(
-				`${property.name}\n可购买: ${Math.round(property.sellCost)}￥`,
-				64,
-				"#000000",
-				10,
-				82
-			);
-			textSprite.getSprite().scale.set(2.5, 2.5, 2.5);
-			this.housesItems.set(property.id, {
-				group: new Group(),
-				textSprite: textSprite,
-			});
-			this.updateBuilding(property);
-		});
-
-		//监听地皮等级，进行升级的时候改变模型
-		this.addPropertyLevelWatcher();
-
-		//监听倍数变化，实时更新房屋的显示
-		this.addMultiplierWatcher();
-
-		//监听设置的变化
-		this.addSettingWatcher();
-	}
-
-	private async initPlayer() {
-		const mapDataStore = useMapData();
-		const playersList = mapDataStore.playerList;
-		await this.loadPlayersModules(playersList);
-		this.breakUpPlayersInSameMapItem();
-
-		const gameInfoStore = useGameInfo();
-		gameInfoStore.playersList = playersList;
-		playersList.forEach((player) => {
-			this.updatePlayerPosition(player);
-		});
-
-		//玩家数据监听
-		this.addPlayerStateWatcher();
-
-		//玩家模型移动动画监听
-		this.addPlayerMoveWatcher();
-
-		//回合到切换到自己的视角
-		useEventBus().on("RoundTurn", () => {
-			if (this.isLockingRoleFromSetting) {
-				this.focusMe.bind(this);
-			}
-		});
-
-		this.focusMe();
-	}
-
-	private initChanceCard() {
-		this.addChanceCardUseWatcher();
-	}
+	private initChanceCard() {}
 
 	private initLight() {
 		//创建灯光
@@ -380,25 +310,7 @@ export class GameRenderer {
 		dirLight.shadow.bias = -0.0001;
 	}
 
-	private initOutlinePass() {
-		//模型描边颜色，默认白色
-		this.chanceCardTargetOutlinePass.visibleEdgeColor.set(0x00ff00);
-		//高亮发光描边厚度
-		this.chanceCardTargetOutlinePass.edgeThickness = 1;
-		//高亮描边发光强度
-		this.chanceCardTargetOutlinePass.edgeStrength = 5;
-		//模型闪烁频率控制，默认0不闪烁
-		this.chanceCardTargetOutlinePass.pulsePeriod = 2;
-
-		//模型描边颜色，默认白色
-		this.playerInRoundOutlinePass.visibleEdgeColor.set(0x00ff00);
-		//高亮发光描边厚度
-		this.playerInRoundOutlinePass.edgeThickness = 1;
-		//高亮描边发光强度
-		this.playerInRoundOutlinePass.edgeStrength = 5;
-		//模型闪烁频率控制，默认0不闪烁
-		this.playerInRoundOutlinePass.pulsePeriod = 0;
-	}
+	private initOutlinePass() {}
 
 	private handlePropertyRaycaster(raycaster: Raycaster, pointer: Vector2) {
 		// 通过摄像机和鼠标位置更新射线
@@ -495,343 +407,102 @@ export class GameRenderer {
 		});
 	}
 
-	private addPlayerStateWatcher() {
-		const gameInfoStore = useGameInfo();
-		gameInfoStore.playersList.forEach((player, index) => {
-			const InfoWatcher = watch(
-				() => gameInfoStore.playersList[index],
-				(newInfo) => {
-					const playerEntity = this.getPlayerEntity(player.id);
-					playerEntity && playerEntity.updatePlayerInfo(newInfo);
-				},
-				{ immediate: true, deep: true }
-			);
-			// const moneyWatcher = watch(
-			// 	() => gameInfoStore.playersList[index].money,
-			// 	(newMoney, oldMoney = 0) => {
-			// 		this.createPopoverOnPlayerTop(player.user.userId, moneyPopTip, { money: newMoney - oldMoney }, 2000);
-			// 	},
-			// 	{ immediate: true }
-			// );
-			useEventBus().on(GameEvents.GainMoney + player.id, (player: PlayerInfo, money: number, source?: PlayerInfo) => {
-				this.createPopoverOnPlayerTop(player.user.userId, moneyPopTip, { money: money }, 2000);
-			});
-			useEventBus().on(GameEvents.CostMoney + player.id, (player: PlayerInfo, money: number, target?: PlayerInfo) => {
-				this.createPopoverOnPlayerTop(player.user.userId, moneyPopTip, { money: -money }, 2000);
-			});
-			const bankruptWatcher = watch(
-				() => gameInfoStore.playersList[index].isBankrupted,
-				(isBankrupted) => {
-					if (!isBankrupted) return;
-					// const playerEntity = this.getPlayerEntity(player.id);
-					// playerEntity && playerEntity.doAnimation("failed", true);
-					const playerEntity = this.getPlayerEntity(player.id);
-					playerEntity && this.scene.remove(playerEntity.model);
-					this.playerEntities.delete(player.id);
-					const watchers = this.playerWatchers.get(player.id);
-					if (watchers) {
-						watchers.InfoWatcher && watchers.InfoWatcher();
-						// watchers.moneyWatcher && watchers.moneyWatcher();
-						watchers.bankruptWatcher && watchers.bankruptWatcher();
-					}
-				},
-				{ immediate: true }
-			);
-			this.playerWatchers.set(player.id, {
-				InfoWatcher,
-				// moneyWatcher,
-				bankruptWatcher,
-			});
-		});
-	}
-
-	private addPlayerMoveWatcher() {
-		const mapDataStore = useMapData();
-
-		useEventBus().on("player-walk", async (walkPlayerId: string, step: number, walkId: string) => {
-			//拆散重叠的玩家模型;
-			// this.breakUpPlayersInSameMapItem();
-
-			const playerEntity = this.playerEntities.get(walkPlayerId);
-			if (playerEntity) {
-				const sourcePosition = toRaw(this.playerPosition.get(walkPlayerId)) as number;
-				const mapIndexLength = toRaw(mapDataStore.mapIndexList.length);
-				const model = this.playerEntities.get(walkPlayerId)?.model;
-				if (model) {
-					this.currentFocusModule = model;
-					// this.playerInRoundOutlinePass.selectedObjects = [model];
-				}
-				this.isLockingRole = true;
-				gsap.to(playerEntity.model.scale, {
-					x: Math.sign(playerEntity.model.scale.x),
-					y: Math.sign(playerEntity.model.scale.y),
-					z: Math.sign(playerEntity.model.scale.z),
-				});
-				await this.updatePlayerPositionByStep(walkPlayerId, sourcePosition, step, mapIndexLength);
-				this.currentFocusModule = null;
-				this.isLockingRole = false;
-
-				//拆散重叠的玩家模型;
-				this.breakUpPlayersInSameMapItem();
-				useMonopolyClient().AnimationComplete(walkId);
-			}
-		});
-
-		useEventBus().on("player-tp", async (walkPlayerId: string, positionIndex: number, walkId: string) => {
-			const playerEntity = this.getPlayerEntity(walkPlayerId);
-			if (playerEntity) {
-				const model = this.playerEntities.get(walkPlayerId)?.model;
-				if (model) {
-					this.currentFocusModule = model;
-					// this.playerInRoundOutlinePass.selectedObjects = [model];
-				}
-				this.isLockingRole = true;
-				playerEntity.model.scale.set(
-					Math.sign(playerEntity.model.scale.x),
-					Math.sign(playerEntity.model.scale.y),
-					Math.sign(playerEntity.model.scale.z)
-				);
-				await gsap.to(playerEntity.model.scale, {
-					x: -playerEntity.model.scale.x,
-					direction: 0.2,
-					repeat: 1,
-				});
-				const { x, y, z } = this.getMapItemPosition(positionIndex);
-				playerEntity.model.position.set(x, y + BLOCK_HEIGHT, z);
-				await gsap.to(playerEntity.model.scale, {
-					x: -playerEntity.model.scale.x,
-					direction: 0.2,
-					repeat: 1,
-				});
-				this.playerPosition.set(walkPlayerId, positionIndex);
-
-				this.currentFocusModule = null;
-				this.isLockingRole = false;
-				this.breakUpPlayersInSameMapItem();
-				useMonopolyClient().AnimationComplete(walkId);
-			}
-		});
-	}
-
-	private addPropertyLevelWatcher() {
-		const gameInfoStore = useGameInfo();
-		this.commonWatchers.push(
-			watch(
-				() => gameInfoStore.propertiesList,
-				(newList, oldList) => {
-					for (let i = 0; i < newList.length; i++) {
-						if (
-							!this.housesItems.has(newList[i].id) ||
-							newList[i].owner?.id !== oldList[i].owner?.id ||
-							newList[i].buildingLevel !== oldList[i].buildingLevel
-						) {
-							// 对于新旧数组中不同的元素，更新 Three.js 地图
-							this.updateBuilding(newList[i]);
-						}
-					}
-					this.renderer.render(this.scene, this.camera);
-				}
-			)
-		);
-	}
-
-	private addMultiplierWatcher() {
-		const gameInfoStore = useGameInfo();
-		this.commonWatchers.push(
-			watch(
-				() => gameInfoStore.currentMultiplier,
-				(newMultiplier) => {
-					Array.from(this.housesItems.entries()).forEach((houseItem) => {
-						const propertyId = houseItem[0];
-						const houseItemValue = houseItem[1];
-						const property = gameInfoStore.propertiesList.find((property) => property.id === propertyId);
-						if (!property) return;
-						if (property.owner) {
-							const costList = [property.cost_lv0, property.cost_lv1, property.cost_lv2];
-							houseItemValue.textSprite.updateText(
-								`${property.name}\n过路费: ${Math.round(costList[property.buildingLevel] * newMultiplier)}￥`,
-								property.owner.color
-							);
-						} else {
-							houseItemValue.textSprite.updateText(
-								`${property.name}\n可购买: ${Math.round(property.sellCost)}￥`,
-								"#000000"
-							);
-						}
-					});
-				}
-			)
-		);
-	}
-
-	private addSettingWatcher() {
-		const settingStore = useSettig();
-		const lockRoleWatcher = watch(
-			() => settingStore.lockRole,
-			(newValue) => {
-				this.isLockingRoleFromSetting = newValue;
-			}
-		);
-		this.commonWatchers.push(lockRoleWatcher);
-	}
-
-	private addChanceCardUseWatcher() {
-		const eventEmitter = useEventBus();
-		eventEmitter.on(ChanceCardOperateType.HOVER, handleChanceCardHover.bind(this));
-		eventEmitter.on(ChanceCardOperateType.DROG, handleChanceCardDrog.bind(this));
-
-		function handleChanceCardHover(this: GameRenderer, chanceCard: ChanceCardInfo) {
-			switch (chanceCard.type) {
-				case ChanceCardType.ToSelf:
-					this.outlineModels(this.getModulesByChanceCardType(ChanceCardType.ToSelf));
-					break;
-				case ChanceCardType.ToPlayer:
-					this.outlineModels(this.getModulesByChanceCardType(ChanceCardType.ToPlayer));
-					break;
-				case ChanceCardType.ToOtherPlayer:
-					this.outlineModels(this.getModulesByChanceCardType(ChanceCardType.ToOtherPlayer));
-					break;
-				case ChanceCardType.ToProperty:
-					this.outlineModels(this.getModulesByChanceCardType(ChanceCardType.ToProperty));
-					break;
-			}
-		}
-
-		function handleChanceCardDrog(this: GameRenderer, chanceCard: ChanceCardInfo, mouseX: number, mouseY: number) {
-			const raycaster = new Raycaster();
-			const pointer = new Vector2();
-			pointer.x = (mouseX / this.canvas.clientWidth) * 2 - 1;
-			pointer.y = -(mouseY / this.canvas.clientHeight) * 2 + 1;
-
-			raycaster.setFromCamera(pointer, this.camera);
-			const intersects = raycaster.intersectObjects(this.getModulesByChanceCardType(chanceCard.type), true);
-
-			if (intersects.length > 0) {
-				const firstInstance = intersects[0];
-				let temp: Object3D | null = firstInstance.object;
-				while (temp) {
-					if (temp.userData.id) {
-						useMonopolyClient().useChanceCard(chanceCard.id, temp.userData.id);
-						break;
-					} else {
-						temp = temp.parent;
-					}
-				}
-			} else {
-				//@ts-ignore
-				this.propertyInfoLabelInstance.updateProperty(null);
-			}
-
-			this.chanceCardTargetOutlinePass.selectedObjects = [];
-		}
-	}
-
 	private outlineModels(models: Object3D[]) {
 		this.chanceCardTargetOutlinePass.selectedObjects = models;
 	}
 
 	private async updateBuilding(newProperty: PropertyInfo) {
-		const oldModel = this.housesItems.get(newProperty.id);
-		if (oldModel) {
-			await gsap.to(oldModel.group.scale, { x: 0, y: 0, z: 0, duration: 0.2 });
-			this.mapContainer.remove(oldModel.group);
-		}
-
-		const mapInfo = useMapData();
-		const targetMapItem = mapInfo.mapItemsList.find((item) => item.property?.id === newProperty.id);
-		if (!targetMapItem) return;
-
-		const targetMapItemModel = this.mapItems.get(targetMapItem?.id);
-		if (!targetMapItemModel) return;
-
-		const buildModel = this.housesModules.get(`house_lv${newProperty.buildingLevel}`)?.clone();
-		if (!buildModel) return;
-
-		buildModel.position.copy(targetMapItemModel.position);
-		buildModel.position.y += BLOCK_HEIGHT;
-		buildModel.scale.copy(targetMapItemModel.scale);
-		buildModel.userData = { ...newProperty, isProperty: true };
-
-		buildModel.traverse((object) => {
-			if (object.userData.name) {
-				const meshName = object.userData.name as string;
-				if (meshName.includes("color-block")) {
-					object.traverse((o) => {
-						//@ts-ignore
-						if (o.isMesh) {
-							// const basicMaterial = (<Mesh>o).material as Material;
-							const basicMaterial = new MeshStandardMaterial();
-							if (newProperty.owner) {
-								basicMaterial.color = new Color(Number(newProperty.owner.color.replace("#", "0x")));
-								// const {r, g, b} = hexToRgbNormalized(newProperty.owner.color);
-								// basicMaterial.onBeforeCompile = function (shader) {
-								//     shader.fragmentShader = shader.fragmentShader.replace(
-								//         '#include <dithering_fragment>',
-								//         `
-								//         #include <dithering_fragment>
-								//         gl_FragColor = vec4(${r} * gl_FragColor.r, ${g} * gl_FragColor.g, ${b} * gl_FragColor.b, gl_FragColor.a);
-								//         `
-								//     )
-								// }
-							} else {
-								basicMaterial.color.set("#cccccc");
-							}
-							(<Mesh>o).material = basicMaterial;
-						}
-					});
-				}
-			}
-		});
-
-		const linkMapItem = mapInfo.mapItemsList.find((item) => {
-			if (!item.linkto) return false;
-			if (item.linkto.id === targetMapItem.id) return true;
-		});
-
-		if (linkMapItem && this.mapItems.has(linkMapItem.id)) {
-			const lookat = new Vector3();
-			lookat.copy(this.mapItems.get(linkMapItem.id)!.position);
-			lookat.setY(BLOCK_HEIGHT);
-
-			buildModel.lookAt(lookat);
-			buildModel.rotateY(-Math.PI / 2);
-		}
-		buildModel.scale.set(0, 0, 0);
-
-		this.mapContainer.add(buildModel);
-		gsap.to(buildModel.scale, {
-			x: 0.45,
-			y: 0.45,
-			z: 0.45,
-			duration: 0.4,
-			onComplete: () => {
-				const houseItem = this.housesItems.get(newProperty.id);
-				if (houseItem) {
-					const costList = [newProperty.cost_lv0, newProperty.cost_lv1, newProperty.cost_lv2];
-					if (newProperty.owner) {
-						houseItem.textSprite.updateText(
-							`${newProperty.name}\n过路费: ${Math.round(
-								costList[newProperty.buildingLevel] * useGameInfo().currentMultiplier
-							)}￥`,
-							newProperty.owner.color
-						);
-					} else {
-						houseItem.textSprite.updateText(
-							`${newProperty.name}\n可购买: ${Math.round(newProperty.sellCost)}￥`,
-							"#000000"
-						);
-					}
-					const textSpriteModel = houseItem.textSprite.getSprite();
-
-					const box = new Box3().setFromObject(buildModel);
-					// 计算边界框的高度
-					const size = box.getSize(new Vector3());
-					textSpriteModel.position.y = Math.max(size.y * 2 + 0.5, 1.5);
-					buildModel.add(textSpriteModel);
-					houseItem.group = buildModel;
-				}
-			},
-		});
+		// const oldModel = this.housesItems.get(newProperty.id);
+		// if (oldModel) {
+		// 	await gsap.to(oldModel.group.scale, { x: 0, y: 0, z: 0, duration: 0.2 });
+		// 	this.mapContainer.remove(oldModel.group);
+		// }
+		// const mapInfo = useMapData();
+		// const targetMapItem = mapInfo.mapItemsList.find((item) => item.property?.id === newProperty.id);
+		// if (!targetMapItem) return;
+		// const targetMapItemModel = this.mapItems.get(targetMapItem?.id);
+		// if (!targetMapItemModel) return;
+		// const buildModel = this.housesModules.get(`house_lv${newProperty.buildingLevel}`)?.clone();
+		// if (!buildModel) return;
+		// buildModel.position.copy(targetMapItemModel.position);
+		// buildModel.position.y += BLOCK_HEIGHT;
+		// buildModel.scale.copy(targetMapItemModel.scale);
+		// buildModel.userData = { ...newProperty, isProperty: true };
+		// buildModel.traverse((object) => {
+		// 	if (object.userData.name) {
+		// 		const meshName = object.userData.name as string;
+		// 		if (meshName.includes("color-block")) {
+		// 			object.traverse((o) => {
+		// 				//@ts-ignore
+		// 				if (o.isMesh) {
+		// 					// const basicMaterial = (<Mesh>o).material as Material;
+		// 					const basicMaterial = new MeshStandardMaterial();
+		// 					if (newProperty.owner) {
+		// 						basicMaterial.color = new Color(Number(newProperty.owner.color.replace("#", "0x")));
+		// 						// const {r, g, b} = hexToRgbNormalized(newProperty.owner.color);
+		// 						// basicMaterial.onBeforeCompile = function (shader) {
+		// 						//     shader.fragmentShader = shader.fragmentShader.replace(
+		// 						//         '#include <dithering_fragment>',
+		// 						//         `
+		// 						//         #include <dithering_fragment>
+		// 						//         gl_FragColor = vec4(${r} * gl_FragColor.r, ${g} * gl_FragColor.g, ${b} * gl_FragColor.b, gl_FragColor.a);
+		// 						//         `
+		// 						//     )
+		// 						// }
+		// 					} else {
+		// 						basicMaterial.color.set("#cccccc");
+		// 					}
+		// 					(<Mesh>o).material = basicMaterial;
+		// 				}
+		// 			});
+		// 		}
+		// 	}
+		// });
+		// const linkMapItem = mapInfo.mapItemsList.find((item) => {
+		// 	if (!item.linkto) return false;
+		// 	if (item.linkto.id === targetMapItem.id) return true;
+		// });
+		// if (linkMapItem && this.mapItems.has(linkMapItem.id)) {
+		// 	const lookat = new Vector3();
+		// 	lookat.copy(this.mapItems.get(linkMapItem.id)!.position);
+		// 	lookat.setY(BLOCK_HEIGHT);
+		// 	buildModel.lookAt(lookat);
+		// 	buildModel.rotateY(-Math.PI / 2);
+		// }
+		// buildModel.scale.set(0, 0, 0);
+		// this.mapContainer.add(buildModel);
+		// gsap.to(buildModel.scale, {
+		// 	x: 0.45,
+		// 	y: 0.45,
+		// 	z: 0.45,
+		// 	duration: 0.4,
+		// 	onComplete: () => {
+		// 		const houseItem = this.housesItems.get(newProperty.id);
+		// 		if (houseItem) {
+		// 			const costList = [newProperty.cost_lv0, newProperty.cost_lv1, newProperty.cost_lv2];
+		// 			if (newProperty.owner) {
+		// 				houseItem.textSprite.updateText(
+		// 					`${newProperty.name}\n过路费: ${Math.round(
+		// 						costList[newProperty.buildingLevel] * useGameData().currentMultiplier
+		// 					)}￥`,
+		// 					newProperty.owner.color
+		// 				);
+		// 			} else {
+		// 				houseItem.textSprite.updateText(
+		// 					`${newProperty.name}\n可购买: ${Math.round(newProperty.sellCost)}￥`,
+		// 					"#000000"
+		// 				);
+		// 			}
+		// 			const textSpriteModel = houseItem.textSprite.getSprite();
+		// 			const box = new Box3().setFromObject(buildModel);
+		// 			// 计算边界框的高度
+		// 			const size = box.getSize(new Vector3());
+		// 			textSpriteModel.position.y = Math.max(size.y * 2 + 0.5, 1.5);
+		// 			buildModel.add(textSpriteModel);
+		// 			houseItem.group = buildModel;
+		// 		}
+		// 	},
+		// });
 	}
 
 	private async updatePlayerPositionByStep(playerId: string, sourceIndex: number, stepNum: number, total: number) {
@@ -868,16 +539,9 @@ export class GameRenderer {
 				if (nextMapItem) {
 					const { x: nextMapItemScreenX, y: nextMapItemScreenY } = getScreenPosition(nextMapItem, this.camera);
 					const { x: playerScreenX, y: playerScreenY } = getScreenPosition(playerEntity.model, this.camera);
-					const currentAnimationName = playerEntity.getCurrentAnimationName();
-					if (
-						nextMapItemScreenX > playerScreenX &&
-						(currentAnimationName === RoleAnimations.RoleWalking || currentAnimationName === RoleAnimations.Idle)
-					) {
+					if (nextMapItemScreenX > playerScreenX) {
 						currentAnimation = gsap.to(playerEntity.model.scale, { x: 1, duration: 0.3 });
-					} else if (
-						nextMapItemScreenX < playerScreenX &&
-						(currentAnimationName === RoleAnimations.RoleWalking || currentAnimationName === RoleAnimations.Idle)
-					) {
+					} else if (nextMapItemScreenX < playerScreenX) {
 						currentAnimation = gsap.to(playerEntity.model.scale, { x: -1, duration: 0.3 });
 					}
 					const { x, y, z } = nextMapItem.position;
@@ -902,8 +566,7 @@ export class GameRenderer {
 	}
 
 	private getMapItemPosition(index: number) {
-		const mapStore = useMapData();
-		const mapIndex = mapStore.mapIndexList;
+		const mapIndex = useMapData().mapIndex;
 		const id = mapIndex[index];
 		if (!this.mapItems.has(id)) return new Vector3(0, 0, 0);
 		return this.mapItems.get(id)!.position;
@@ -914,8 +577,7 @@ export class GameRenderer {
 	}
 
 	private getMapItem(index: number) {
-		const mapStore = useMapData();
-		const mapIndex = mapStore.mapIndexList;
+		const mapIndex = useMapData().mapIndex;
 		const id = mapIndex[index];
 		return this.mapItems.get(id);
 	}
@@ -931,141 +593,13 @@ export class GameRenderer {
 		return centerPoint;
 	}
 
-	private getModulesByChanceCardType(type: ChanceCardType) {
-		const chanceCardTargetEachType: Record<ChanceCardType, Object3D[]> = {
-			[ChanceCardType.ToSelf]: (() => {
-				const selfEntity = this.playerEntities.get(useUserInfo().userId);
-				return selfEntity ? [selfEntity.model] : [];
-			})(),
-			[ChanceCardType.ToPlayer]: (() =>
-				Array.from(this.playerEntities.values())
-					.filter((playerEntity) => !playerEntity.playerInfo.isBankrupted)
-					.map((p) => p.model))(),
-			[ChanceCardType.ToOtherPlayer]: (() =>
-				Array.from(this.playerEntities.values())
-					.filter((playerEntity) => {
-						return !playerEntity.playerInfo.isBankrupted && playerEntity.playerInfo.id != useUserInfo().userId;
-					})
-					.map((p) => p.model))(),
-			[ChanceCardType.ToProperty]: (() => Array.from(this.housesItems.values()).map((h) => h.group))(),
-			[ChanceCardType.ToMapItem]: (() => [])(),
-		};
-		return chanceCardTargetEachType[type];
-	}
-
-	private async loadPlayersModules(playerList: Array<PlayerInfo>) {
-		for await (const playerInfo of playerList) {
-			try {
-				this.playerPosition.set(playerInfo.id, toRaw(playerInfo.positionIndex));
-				const playerEntity = new PlayerEntity(
-					PLAY_MODEL_SIZE,
-					`${__PROTOCOL__}://${playerInfo.user.role.baseUrl}/`,
-					playerInfo.user.role.fileName,
-					playerInfo
-				);
-				await playerEntity.load();
-				this.playerEntities.set(playerInfo.id, playerEntity);
-				const textSprite = new TextSprite(
-					`${playerInfo.user.username}${playerInfo.user.userId === useUserInfo().userId ? " (你)" : ""}`,
-					32,
-					playerInfo.user.color,
-					5,
-					0
-				);
-				const nameSprite = textSprite.getSprite();
-				nameSprite.position.set(0, PLAY_MODEL_SIZE + 0.05, 0);
-				playerEntity.model.add(nameSprite);
-				this.scene.add(playerEntity.model);
-			} catch (e) {}
-		}
-	}
-
-	private async loadHousesModels(houseNameList: { lv0: Model; lv1: Model; lv2: Model }) {
-		const modelList = await loadHouseModels(houseNameList);
-		modelList.forEach((model) => {
-			this.housesModules.set(model.name, model.glft.scene);
-		});
-	}
-
-	private async loadMapModels(itemTypeList: ItemType[]) {
-		const modelList = await loadItemTypeModules(itemTypeList);
-		modelList.forEach((model) => {
-			this.mapModules.set(model.id, model.glft.scene);
-		});
-	}
-
-	private async loadMap(mapItemsList: Array<MapItem>) {
-		const textureLoader = new TextureLoader();
-		const mapDataStore = useMapData();
-		const mapIndex = mapDataStore.mapIndexList;
-		mapItemsList.forEach((mapItem) => {
-			const tempModule = this.mapModules.get(mapItem.type.id)!.clone();
-			tempModule.userData = {
-				typeId: mapItem.type.id,
-				itemId: mapItem.id,
-				property: toRaw(mapItem.property) || undefined,
-				arrivedEvent: toRaw(mapItem.arrivedEvent) || undefined,
-				isMapItem: true,
-			};
-			tempModule.scale.set(0.5, 0.5, 0.5);
-			// tempModule.position.set(mapItem.x + mapItem.type.size / 2, 0, mapItem.y + mapItem.type.size / 2);
-			// tempModule.rotation.y = (Math.PI / 2) * mapItem.rotation;
-			if (mapItem.arrivedEvent) {
-				const mapItemsInMapIndex = mapItemsList.filter((i) => mapIndex.includes(i.id));
-				const arrivedEvent = mapItem.arrivedEvent;
-				textureLoader.load(`${__PROTOCOL__}://${arrivedEvent.iconUrl}`, (texture) => {
-					// texture.matrixAutoUpdate = false
-
-					texture.colorSpace = SRGBColorSpace;
-					const planeGeometry = new PlaneGeometry(1, 1);
-					const planeMaterial = new MeshBasicMaterial({
-						map: texture,
-						side: DoubleSide,
-						transparent: true,
-						depthWrite: false,
-					});
-					const iconPlane = new Mesh(planeGeometry, planeMaterial);
-					iconPlane.rotateX(-Math.PI / 2);
-					// if (mapIndex.length > 0) {
-					//     //根据路径优化图标方向
-					//     const currentIndex = mapIndex.findIndex((item) => item === mapItem.id);
-					//     const preMapItem = mapItemsInMapIndex[(currentIndex - 1) < 0 ? (currentIndex - 1 + mapItemsInMapIndex.length) : (currentIndex - 1)]
-					//     const nextMapItem = mapItemsInMapIndex[(currentIndex + 1) % mapItemsInMapIndex.length];
-					//     // 计算两个点之间的向量
-					//     const direction = new Vector3();
-					//     direction.subVectors(new Vector3(preMapItem.x, 0, preMapItem.y), new Vector3(nextMapItem.x, 0, nextMapItem.y)).normalize();
-					//     // 设定一个法向量，图片朝上，y=1
-					//     const normal = new Vector3(0, 1, 0);
-					//     // 计算旋转四元数，使得法向量旋转到direction
-					//     const quaternion = new Quaternion();
-					//     quaternion.setFromUnitVectors(normal, direction);
-					//     //应用
-					//     iconPlane.quaternion.copy(quaternion);
-					//     this.arrivedEventIcons.set(arrivedEvent.id, iconPlane)
-					// }
-					this.arrivedEventIcons.set(arrivedEvent.id, iconPlane);
-					this.mapContainer.add(iconPlane);
-					this.setItemPositionOnMap(iconPlane, mapItem.x, mapItem.y, 0, BLOCK_HEIGHT + 0.01);
-				});
-			}
-			this.setItemPositionOnMap(tempModule, mapItem.x, mapItem.y, mapItem.rotation);
-			this.mapItems.set(mapItem.id, tempModule);
-			this.mapContainer.add(tempModule);
-		});
-	}
-
 	private setItemPositionOnMap(object: Object3D, x: number, z: number, rotation = 0, y: number = 0) {
 		object.position.set(x + 0.5, y, z + 0.5);
 		object.rotation.y = (Math.PI / 2) * rotation;
 	}
 
-	public async reloadMap(mapData: Array<MapItem>) {
-		this.mapContainer.clear();
-		await this.loadMap(mapData);
-	}
-
 	private breakUpPlayersInSameMapItem() {
-		const playersList = useGameInfo().playersList;
+		const playersList = useGameData().playersList;
 		groupByPositionIndex(playersList).forEach((a) => {
 			if (a.length > 1) {
 				const positionIndex = a[0].positionIndex;

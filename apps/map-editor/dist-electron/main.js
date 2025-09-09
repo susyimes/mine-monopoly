@@ -1,143 +1,86 @@
-import { app, BrowserWindow, protocol, net, ipcMain, dialog } from "electron";
-import { createRequire } from "node:module";
-import url, { fileURLToPath } from "node:url";
-import { readFile, writeFile } from "fs/promises";
-import path from "node:path";
-import fs from "node:fs";
-createRequire(import.meta.url);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-process.env.APP_ROOT = path.join(__dirname, "..");
-const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
-const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
-const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
-let win;
-function createWindow() {
-  win = new BrowserWindow({
+import { app as l, BrowserWindow as p, protocol as T, net as g, ipcMain as t, dialog as f } from "electron";
+import { createRequire as S } from "node:module";
+import _, { fileURLToPath as E } from "node:url";
+import { readFile as u, writeFile as y } from "fs/promises";
+import o from "node:path";
+import r from "node:fs";
+S(import.meta.url);
+const m = o.dirname(E(import.meta.url));
+process.env.APP_ROOT = o.join(m, "..");
+const d = process.env.VITE_DEV_SERVER_URL, z = o.join(process.env.APP_ROOT, "dist-electron"), h = o.join(process.env.APP_ROOT, "dist");
+process.env.VITE_PUBLIC = d ? o.join(process.env.APP_ROOT, "public") : h;
+let n;
+function v() {
+  n = new p({
     width: 1200,
     height: 860,
     webPreferences: {
-      nodeIntegration: true,
-      nodeIntegrationInWorker: false,
-      preload: path.join(__dirname, "preload.mjs"),
-      devTools: true,
-      webSecurity: false
+      nodeIntegration: !0,
+      nodeIntegrationInWorker: !1,
+      preload: o.join(m, "preload.mjs"),
+      devTools: !0,
+      webSecurity: !1
     },
-    frame: false
-  });
-  win.webContents.on("did-finish-load", () => {
-    win == null ? void 0 : win.webContents.send("main-process-message", new Date().toLocaleString());
-  });
-  if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL);
-  } else {
-    win.loadFile(path.join(RENDERER_DIST, "frontend/index.html"));
-  }
-  win.webContents.openDevTools();
+    frame: !1
+  }), n.webContents.on("did-finish-load", () => {
+    n == null || n.webContents.send("main-process-message", new Date().toLocaleString());
+  }), d ? n.loadURL(d) : n.loadFile(o.join(h, "frontend/index.html")), n.webContents.openDevTools();
 }
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    cleanTempDir();
-    app.quit();
-    win = null;
-  }
+l.on("window-all-closed", () => {
+  process.platform !== "darwin" && (R(), l.quit(), n = null);
 });
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+l.on("activate", () => {
+  p.getAllWindows().length === 0 && v();
 });
-app.whenReady().then(() => {
-  protocol.handle("local", (request) => {
-    const filePath = request.url.slice("local://".length);
-    console.log("🚀 ~ filePath:", filePath);
-    return net.fetch(url.pathToFileURL(path.join(__dirname, filePath)).toString());
+l.whenReady().then(() => {
+  T.handle("local", (i) => {
+    const e = i.url.slice(8);
+    return console.log("🚀 ~ filePath:", e), g.fetch(_.pathToFileURL(o.join(m, e)).toString());
   });
 });
-ipcMain.on("window-minimize", () => {
-  if (win)
-    win.minimize();
+t.on("window-minimize", () => {
+  n && n.minimize();
 });
-ipcMain.on("window-maximize", () => {
-  if (win) {
-    if (win.isMaximized()) {
-      win.unmaximize();
-    } else {
-      win.maximize();
-    }
-  }
+t.on("window-maximize", () => {
+  n && (n.isMaximized() ? n.unmaximize() : n.maximize());
 });
-ipcMain.on("window-close", () => {
-  if (win)
-    win.close();
+t.on("window-close", () => {
+  n && n.close();
 });
-ipcMain.handle("window-is-maximized", () => {
-  return win ? win.isMaximized() : false;
+t.handle("window-is-maximized", () => n ? n.isMaximized() : !1);
+t.handle("read-file", async (i, e) => await u(e));
+t.handle("write-file", async (i, e, a) => (await y(e, a), e));
+t.handle("write-local-file", async (i, e, a) => (e = o.join(process.cwd(), e), await y(e, a), e));
+t.handle("copy-file", async (i, e, a, s) => {
+  a || (a = o.join(process.cwd(), "temp"), r.mkdirSync(a, { recursive: !0 }));
+  const c = o.extname(e), w = o.join(a, s + c);
+  return r.copyFileSync(e, w), { filePath: w, fileType: c.slice(1) };
 });
-ipcMain.handle("read-file", async (event, path2) => {
-  return await readFile(path2);
+t.handle("get-image-base64", async (i, e) => (await u(e)).toString("base64"));
+t.handle("clear-temp-dir", async (i) => {
+  await R();
 });
-ipcMain.handle("write-file", async (event, targetPath, data) => {
-  await writeFile(targetPath, data);
-  return targetPath;
-});
-ipcMain.handle("write-local-file", async (event, targetPath, data) => {
-  targetPath = path.join(process.cwd(), targetPath);
-  await writeFile(targetPath, data);
-  return targetPath;
-});
-ipcMain.handle("copy-file", async (event, fromFilePath, toFilePathtoFilePath, newFileName) => {
-  if (!toFilePathtoFilePath) {
-    toFilePathtoFilePath = path.join(process.cwd(), "temp");
-    fs.mkdirSync(toFilePathtoFilePath, { recursive: true });
-  }
-  const fileType = path.extname(fromFilePath);
-  const newFilePath = path.join(toFilePathtoFilePath, newFileName + fileType);
-  fs.copyFileSync(fromFilePath, newFilePath);
-  return { filePath: newFilePath, fileType: fileType.slice(1) };
-});
-ipcMain.handle("get-image-base64", async (event, filePath) => {
-  const fileContent = await readFile(filePath);
-  return fileContent.toString("base64");
-});
-ipcMain.handle("clear-temp-dir", async (event) => {
-  await cleanTempDir();
-});
-ipcMain.handle("open-load-dialog", async (event, options) => {
-  return await dialog.showOpenDialog(options);
-});
-ipcMain.handle("open-save-dialog", async (event, options) => {
-  return await dialog.showSaveDialog(options);
-});
-app.whenReady().then(createWindow);
-async function cleanTempDir() {
-  const tempDir = path.join(process.cwd(), "temp");
+t.handle("open-load-dialog", async (i, e) => await f.showOpenDialog(e));
+t.handle("open-save-dialog", async (i, e) => await f.showSaveDialog(e));
+l.whenReady().then(v);
+async function R() {
+  const i = o.join(process.cwd(), "temp");
   try {
-    await fs.accessSync(tempDir);
-    const files = await fs.readdirSync(tempDir);
+    await r.accessSync(i);
+    const e = await r.readdirSync(i);
     await Promise.all(
-      files.map(async (file) => {
-        const filePath = path.join(tempDir, file);
-        const stats = await fs.statSync(filePath);
-        if (stats.isDirectory()) {
-          await fs.rmSync(filePath, { recursive: true });
-        } else {
-          await fs.unlinkSync(filePath);
-        }
+      e.map(async (a) => {
+        const s = o.join(i, a);
+        (await r.statSync(s)).isDirectory() ? await r.rmSync(s, { recursive: !0 }) : await r.unlinkSync(s);
       })
-    );
-    console.log(`已清空临时目录: ${tempDir}`);
-  } catch (error) {
-    if (error.code === "ENOENT") {
-      console.log("临时目录不存在，无需清理");
-    } else {
-      console.error("清理临时目录失败:", error);
-    }
+    ), console.log(`已清空临时目录: ${i}`);
+  } catch (e) {
+    e.code === "ENOENT" ? console.log("临时目录不存在，无需清理") : console.error("清理临时目录失败:", e);
   }
 }
 export {
-  MAIN_DIST,
-  RENDERER_DIST,
-  VITE_DEV_SERVER_URL,
-  cleanTempDir
+  z as MAIN_DIST,
+  h as RENDERER_DIST,
+  d as VITE_DEV_SERVER_URL,
+  R as cleanTempDir
 };

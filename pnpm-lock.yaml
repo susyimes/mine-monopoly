@@ -169,6 +169,9 @@ importers:
       '@fatpaper-monopoly/ui':
         specifier: workspace:*
         version: link:../../packages/components/ui
+      '@fatpaper-monopoly/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       eventemitter3:
         specifier: ^5.0.0
         version: 5.0.1

@@ -91,3 +91,10 @@ export interface MapEvent {
 	iconId: string;
 	effectCode: string;
 }
+
+export type ResourcesType = {
+	id: string;
+	name: string;
+	fileType: string;
+	url: string;
+};

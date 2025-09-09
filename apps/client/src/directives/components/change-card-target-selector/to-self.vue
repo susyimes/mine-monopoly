@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import FpDialog from "@src/components/utils/fp-dialog/fp-dialog.vue";
 import { ChanceCardInfo } from "@src/interfaces/game";
-import { useGameInfo, useMapData } from "@src/store";
+import { useGameData, useMapData } from "@src/store";
 import { computed, nextTick, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import ChanceCard from "@src/views/game/components/chance-card.vue";
 import PlayerCard from "@src/views/game/components/player-card.vue";
 import { generateSvgArrows } from "@src/utils";
 
 const mapDataStore = useMapData();
-const gameInfoStore = useGameInfo();
+const gameInfoStore = useGameData();
 
 const props = defineProps<{ chanceCard: ChanceCardInfo }>();
 const emit = defineEmits<{ (e: "useCard", targetId: string): void; (e: "cancel"): void }>();

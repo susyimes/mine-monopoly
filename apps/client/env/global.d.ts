@@ -30,21 +30,11 @@ interface Window {
 		unmaximize: () => void;
 		close: () => void;
 		isMaximized: () => Promise<boolean>;
-
-		readFile: (filePath: string) => Promise<Buffer>;
-		saveFile: (filePath: string, data: string | Uint8Array) => Promise<string>;
-		saveLocalFile: (filePath: string, data: string | Uint8Array) => Promise<string>;
-		copyFile: (
-			fromFilePath: string,
-			toFilePath: string,
-			newFileName: string
-		) => Promise<{ filePath: string; fileType: string }>;
-		clearTempDir: () => Promise<void>;
-
-		showOpenDialog: (options: OpenDialogOptions) => Promise<OpenDialogReturnValue>;
-		showSaveDialog: (options: SaveDialogOptions) => Promise<SaveDialogReturnValue>;
-
 		getVersion: () => string;
-		getImageBase64: (fliePath: string) => Promise<string>;
+	};
+
+	mapCacheLoader: {
+		save(mapId: string, hash: string, arrayBuffer: ArrayBuffer): Promise<void>;
+		load(mapId: string, hash: string): Promise<ArrayBuffer | undefined>;
 	};
 }

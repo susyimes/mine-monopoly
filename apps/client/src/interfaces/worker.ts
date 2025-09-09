@@ -1,7 +1,7 @@
 import { WorkerCommType } from "@src/enums/worker";
-import { GameSetting, SocketMessage, User, UserInRoomInfo } from "./bace";
-import { GameMap } from "./game";
-import { OperateType } from "@src/enums/game";
+import { GameSetting, ServerSocketMessage, SocketMessage, User, UserInRoomInfo } from "./bace";
+import { GameMap } from "@fatpaper-monopoly/types";
+import { OperateType } from "@fatpaper-monopoly/types";
 
 export type WorkerCommMsg = {
 	[K in keyof WorkerCommDataTypeMap]: {
@@ -24,7 +24,7 @@ interface WorkerCommDataTypeMap {
 
 	//Host Receive
 	[WorkerCommType.WorkerReady]: undefined;
-	[WorkerCommType.SendToUsers]: { userIdList: string[]; data: SocketMessage };
+	[WorkerCommType.SendToUsers]: { userIdList: string[]; data: ServerSocketMessage };
 	[WorkerCommType.GameStart]: undefined;
 	[WorkerCommType.GameOver]: undefined;
 }

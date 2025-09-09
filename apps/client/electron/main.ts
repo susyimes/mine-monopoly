@@ -2,7 +2,7 @@ import { app, ipcMain, BrowserWindow, dialog, OpenDialogOptions, SaveDialogOptio
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import fs from "node:fs";
+import fs from "fs/promises";
 import url from "node:url";
 
 const require = createRequire(import.meta.url);
@@ -83,16 +83,65 @@ ipcMain.on("window-maximize", () => {
 	}
 });
 
-// ipcMain.on("window-unmaximize", () => {
-// 	if (win) win.unmaximize();
-// });
-
 ipcMain.on("window-close", () => {
 	if (win) win.close();
 });
 
 ipcMain.handle("window-is-maximized", () => {
 	return win ? win.isMaximized() : false;
+});
+
+const cacheDir = path.join(app.getAppPath(), "map-cache");
+const indexFile = path.join(cacheDir, "index.json");
+type IndexData = Record<string, string>;
+
+async function loadIndex(): Promise<IndexData> {
+	try {
+		const raw = await fs.readFile(indexFile, "utf-8");
+		return JSON.parse(raw) as IndexData;
+	} catch {
+		return {};
+	}
+}
+
+ipcMain.handle("map-cache:save", async (_event, mapId: string, hash: string, buffer: ArrayBuffer) => {
+	async function ensureCacheDir() {
+		await fs.mkdir(cacheDir, { recursive: true });
+	}
+
+	async function saveIndex(index: IndexData) {
+		await fs.writeFile(indexFile, JSON.stringify(index, null, 2), "utf-8");
+	}
+
+	await ensureCacheDir();
+	const index = await loadIndex();
+	const oldHash = index[mapId];
+
+	// 删除旧文件
+	if (oldHash && oldHash !== hash) {
+		const oldFilePath = path.join(cacheDir, `${mapId}-${oldHash}.bin`);
+		await fs.rm(oldFilePath, { force: true }).catch(() => {});
+	}
+
+	const filePath = path.join(cacheDir, `${mapId}-${hash}.bin`);
+	await fs.writeFile(filePath, new Uint8Array(buffer));
+
+	index[mapId] = hash;
+	await saveIndex(index);
+});
+
+ipcMain.handle("map-cache:load", async (_event, mapId: string, hash: string) => {
+	const index = await loadIndex();
+	if (index[mapId] !== hash) return undefined;
+
+	const filePath = path.join(cacheDir, `${mapId}-${hash}.bin`);
+	try {
+		const buf = await fs.readFile(filePath);
+		console.log("🚀 ~ buf:", buf)
+		return buf.buffer;
+	} catch {
+		return undefined;
+	}
 });
 
 app.whenReady().then(createWindow);

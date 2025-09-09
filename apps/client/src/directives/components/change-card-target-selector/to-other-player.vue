@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import FpDialog from "@src/components/utils/fp-dialog/fp-dialog.vue";
 import { ChanceCardInfo } from "@src/interfaces/game";
-import { useGameInfo, useMapData } from "@src/store";
+import { useGameData, useMapData } from "@src/store";
 import { computed, onBeforeMount, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import ChanceCard from "@src/views/game/components/chance-card.vue";
 import PlayerCard from "@src/views/game/components/player-card.vue";
@@ -45,7 +45,7 @@ onBeforeUnmount(() => {
 });
 
 const mapDataStore = useMapData();
-const gameInfoStore = useGameInfo();
+const gameInfoStore = useGameData();
 
 const targetPlayerList = computed(() => {
 	return gameInfoStore.playersList.filter((p) => p.isBankrupted === false && p.id !== gameInfoStore.getMyInfo?.id);

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ThreeSceneBase } from "@src/classes/three/ThreeSceneBase";
+import { ThreeSceneBase } from "@src/core/three/ThreeSceneBase";
 import { RoleModel } from "@src/views/room/utils/RoleModel";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";

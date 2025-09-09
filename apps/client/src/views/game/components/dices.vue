@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { useUtil } from "@src/store/index";
-import { DiceRenderer } from "@src/classes/three/DiceRenderer";
+import { DiceRenderer } from "@src/core/three/DiceRenderer";
 import { useRoomInfo } from "../../../store/index";
 
 const utilStore = useUtil();
