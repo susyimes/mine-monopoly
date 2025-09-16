@@ -1,6 +1,6 @@
 import { WorkerCommType } from "@src/enums/worker";
-import { GameSetting, ServerSocketMessage, SocketMessage, User, UserInRoomInfo } from "./bace";
-import { GameMap } from "@fatpaper-monopoly/types";
+import { GameSetting, ServerSocketMessage, SocketMessage } from "./bace";
+import {GameMap, PlayerOperationResult, UserInRoomInfo} from "@fatpaper-monopoly/types";
 import { OperateType } from "@fatpaper-monopoly/types";
 
 export type WorkerCommMsg = {
@@ -10,6 +10,8 @@ export type WorkerCommMsg = {
 	};
 }[keyof WorkerCommDataTypeMap];
 
+type EmitOperationResult<T extends OperateType> = { userId: string; operateType: T; data: PlayerOperationResult[T] }
+
 interface WorkerCommDataTypeMap {
 	//Worker Receive
 	[WorkerCommType.LoadGameInfo]: {
@@ -18,7 +20,7 @@ interface WorkerCommDataTypeMap {
 		userList: UserInRoomInfo[];
 		roomOwnerId: string;
 	};
-	[WorkerCommType.EmitOperation]: { userId: string; operateType: OperateType; data: SocketMessage };
+	[WorkerCommType.EmitOperation]: EmitOperationResult<OperateType>;
 	[WorkerCommType.UserOffLine]: { userId: string };
 	[WorkerCommType.UserReconnect]: { userId: string };
 

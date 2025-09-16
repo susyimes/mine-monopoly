@@ -1,6 +1,6 @@
 import {
 	ChanceCardInfo,
-	ChanceCardInstanceInfo,
+	ChanceCardClientInfo,
 	ChanceCardType,
 	IChanceCard,
 	IGameProcess,
@@ -55,8 +55,8 @@ export class ChanceCard implements IChanceCard {
 		}
 	}
 
-	public getChanceCardInfo(): ChanceCardInstanceInfo {
-		const chanceCardInfo: ChanceCardInstanceInfo = {
+	public getChanceCardInfo(): ChanceCardClientInfo {
+		const chanceCardInfo: ChanceCardClientInfo = {
 			id: this.id,
 			sourceId: this.sourceId,
 			name: this.name,

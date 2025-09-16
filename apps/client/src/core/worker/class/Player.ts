@@ -6,10 +6,21 @@ import {
 	IGamePhase,
 	IPlayer,
 	IProperty,
+	PlayerBuffTriggerTimingMap,
+	PlayerEvents,
+	PlayerEventsCallback,
 	PlayerInfo,
 	UserInRoomInfo,
 } from "@fatpaper-monopoly/types";
 import { GamePhase } from "./GamePhase";
+import { randomString } from "@src/utils";
+
+type CallbackMapValue<E extends PlayerEvents> = {
+	id: string;
+	fn: PlayerEventsCallback[E]; // 根据 PlayerEvents 类型映射到具体的回调函数类型
+	triggerTimes: number;
+	buff?: Buff;
+};
 
 export class Player implements IPlayer {
 	public extras: Record<string, any> = {};
@@ -26,9 +37,11 @@ export class Player implements IPlayer {
 	private isOffline: boolean; //是否断线
 	private stop: number = 0;
 
+	private callBackMap: Map<PlayerEvents, CallbackMapValue<PlayerEvents>[]> = new Map();
+
 	constructor(user: UserInRoomInfo, initMoney: number, initPositionIndex: number, roundPhasesInfo: GamePhaseInfo[]) {
 		this.roundPhases = roundPhasesInfo.map((roundPhaseInfo) => {
-			return new GamePhase(roundPhaseInfo);
+			return new GamePhase(roundPhaseInfo, );
 		});
 		this.user = user;
 		this.money = initMoney;
@@ -177,5 +190,90 @@ export class Player implements IPlayer {
 		return this.chanceCards[index] || undefined;
 	}
 
+	public getRoundPhases() {
+		return this.roundPhases;
+	}
+
 	public updateBuff(buffId: string, newBuff: Buff) {}
+
+	public addEventListener<K extends PlayerEvents>(
+		eventName: K,
+		fn: PlayerEventsCallback[K],
+		triggerTimes: number = Infinity,
+		buff?: {
+			id?: string;
+			name: string;
+			describe: string;
+			source: string;
+		}
+	) {
+		if (!this.callBackMap.has(eventName)) {
+			this.callBackMap.set(eventName, []);
+		}
+		const fnArr = this.callBackMap.get(eventName);
+		fnArr &&
+			fnArr.unshift({
+				id: randomString(16),
+				fn,
+				triggerTimes,
+				buff: buff
+					? {
+							id: buff.id || randomString(16),
+							...buff,
+							type: eventName,
+							triggerTimes,
+							triggerTiming: PlayerBuffTriggerTimingMap[eventName],
+					  }
+					: undefined,
+			});
+	}
+
+	public removeListener(eventName: PlayerEvents, id: string) {
+		const fnArr = this.callBackMap.get(eventName);
+		if (fnArr) {
+			const removeIndex = fnArr.findIndex((fobj) => fobj.id === id);
+			fnArr.splice(removeIndex, 1);
+		}
+	}
+
+	public removeAllListeners(eventName?: PlayerEvents) {
+		if (eventName) {
+			if (this.callBackMap.has(eventName)) this.callBackMap.delete(eventName);
+		} else {
+			this.callBackMap.clear();
+		}
+	}
+
+	public async emit<K extends keyof PlayerEventsCallback>(
+		eventName: K,
+		...args: Parameters<PlayerEventsCallback[K]>
+	): Promise<ReturnType<PlayerEventsCallback[K]>> {
+		const fnArr = this.callBackMap.get(eventName);
+		let res: ReturnType<PlayerEventsCallback[K]> = undefined as unknown as ReturnType<PlayerEventsCallback[K]>;
+		if (fnArr) {
+			for (let index = 0; index < fnArr.length; index++) {
+				const item = fnArr[index];
+
+				item.triggerTimes--;
+				if (item.triggerTimes >= 0) {
+					const params = res !== undefined ? [res, ...args] : args;
+					console.log("🚀 ~ Player ~ params:", params);
+					res = await (
+						item.fn as (...args: Parameters<PlayerEventsCallback[K]>) => ReturnType<PlayerEventsCallback[K]>
+					)(...(params as Parameters<PlayerEventsCallback[K]>)); // 强制类型转换
+					if (item.triggerTimes === 0) {
+						fnArr.splice(index, 1);
+						index--; // 防止跳过下一个元素
+					}
+				} else {
+					fnArr.splice(index, 1);
+					index--; // 防止跳过下一个元素
+				}
+				if (item.buff) {
+					item.buff.triggerTimes = item.triggerTimes;
+				}
+			}
+		}
+		return res;
+	}
 }

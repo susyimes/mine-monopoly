@@ -41,7 +41,7 @@ export class Room {
 	private userList: Map<string, UserInRoom>;
 	private ownerId: string = "";
 	private gameSetting: GameSetting;
-	private gameProcess: Worker | null = null;
+	private gameProcessWorker: Worker | null = null;
 	public isStarted: boolean;
 
 	constructor(roomId: string) {
@@ -263,8 +263,8 @@ export class Room {
 		const user = this.userList.get(userId);
 		if (!user) return;
 		user.isOffLine = true;
-		if (this.gameProcess) {
-			this.gameProcess.postMessage(<WorkerCommMsg>{
+		if (this.gameProcessWorker) {
+			this.gameProcessWorker.postMessage(<WorkerCommMsg>{
 				type: WorkerCommType.UserOffLine,
 				data: { userId },
 			});
@@ -281,8 +281,8 @@ export class Room {
 		if (oldUser) {
 			oldUser.socketClient = newCoon;
 			this.roomInfoBroadcast();
-			if (this.gameProcess) {
-				this.gameProcess.postMessage(<WorkerCommMsg>{
+			if (this.gameProcessWorker) {
+				this.gameProcessWorker.postMessage(<WorkerCommMsg>{
 					type: WorkerCommType.UserReconnect,
 					data: { userId: oldUser.userId },
 				});
@@ -348,15 +348,15 @@ export class Room {
 			});
 			return;
 		}
-		if (this.isStarted || this.gameProcess) return;
+		if (this.isStarted || this.gameProcessWorker) return;
 		this.roomBroadcast({
 			type: SocketMsgType.GameStart,
 			source: SocketMsgSource.Server,
 			data: "start",
 		});
 		this.isStarted = true;
-		this.gameProcess = new GameProcessWorker();
-		this.gameProcess.addEventListener("message", (ev) => {
+		this.gameProcessWorker = new GameProcessWorker();
+		this.gameProcessWorker.addEventListener("message", (ev) => {
 			const msg: WorkerCommMsg = ev.data;
 			switch (msg.type) {
 				case WorkerCommType.WorkerReady:
@@ -375,20 +375,20 @@ export class Room {
 		});
 
 		window.addEventListener("beforeunload", () => {
-			this.gameProcess && this.gameProcess.terminate();
+			this.gameProcessWorker && this.gameProcessWorker.terminate();
 		});
 
 		const handleWorkerReady = async () => {
-			if (!this.mapId || !this.gameProcess) return;
+			if (!this.mapId || !this.gameProcessWorker) return;
 			useLoading().showLoading("正在获取地图信息...");
-			const mapData = useMapData().$state;
-			console.log("🚀 ~ Room ~ handleWorkerReady ~ mapData:", mapData)
-			console.log("🚀 ~ Room ~ handleWorkerReady ~ this.mapId:", this.mapId)
-			if (this.mapId !== mapData.id) {
-				FPMessage({ type: "error", message: "地图缓存与游戏地图不符" });
-			}
+			const mapData = JSON.parse(JSON.stringify(useMapData().$state));
+			// console.log("🚀 ~ Room ~ handleWorkerReady ~ mapData:", mapData)
+			// console.log("🚀 ~ Room ~ handleWorkerReady ~ this.mapId:", this.mapId)
+			// if (this.mapId !== mapData.id) {
+			// 	FPMessage({ type: "error", message: "地图缓存与游戏地图不符" });
+			// }
 			useLoading().showLoading("正在加载地图...");
-			this.gameProcess.postMessage(<WorkerCommMsg>{
+			this.gameProcessWorker.postMessage(<WorkerCommMsg>{
 				type: WorkerCommType.LoadGameInfo,
 				data: {
 					setting: this.gameSetting,
@@ -402,8 +402,8 @@ export class Room {
 			});
 			const deviceStatusStore = useDeviceStatus();
 			deviceStatusStore.$subscribe((mutation, state) => {
-				if (this.gameProcess)
-					this.gameProcess.postMessage(<WorkerCommMsg>{
+				if (this.gameProcessWorker)
+					this.gameProcessWorker.postMessage(<WorkerCommMsg>{
 						type: WorkerCommType.EmitOperation,
 						data: {
 							userId: this.ownerId,
@@ -430,8 +430,8 @@ export class Room {
 		});
 		this.roomInfoBroadcast();
 		console.log("🚀 ~ Room ~ handleGameOver ~ 游戏结束啦:");
-		this.gameProcess && this.gameProcess.terminate();
-		this.gameProcess = null;
+		this.gameProcessWorker && this.gameProcessWorker.terminate();
+		this.gameProcessWorker = null;
 		this.isStarted = false;
 	}
 
@@ -454,8 +454,8 @@ export class Room {
 	}
 
 	public emitOperationToWorker(userId: string, operateType: OperateType | string, ...data: any) {
-		if (!this.gameProcess) throw Error("在worker还没创建时给worker发信息");
-		this.gameProcess.postMessage(<WorkerCommMsg>{
+		if (!this.gameProcessWorker) throw Error("在worker还没创建时给worker发信息");
+		this.gameProcessWorker.postMessage(<WorkerCommMsg>{
 			type: WorkerCommType.EmitOperation,
 			data: {
 				userId,
@@ -502,6 +502,6 @@ export class Room {
 	}
 
 	public destory() {
-		this.gameProcess && this.gameProcess.terminate();
+		this.gameProcessWorker && this.gameProcessWorker.terminate();
 	}
 }

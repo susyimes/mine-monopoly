@@ -1,6 +1,6 @@
-import { EventTiggerTime, GamePhaseMark } from "../../enums/game/game-process";
+import { EventTiggerTime, GamePhaseMark, PlayerEvents } from "../../enums/game/game-process";
 import { UserInRoomInfo } from "./item";
-import { ChanceCardType, PlayerMoveType } from "../../enums/game/game";
+import { ChanceCardType, OperateType, PlayerMoveType } from "../../enums/game/game";
 import { GameMap } from "../game/map";
 
 // 客户端
@@ -17,23 +17,44 @@ export interface GameData {
 // Host服务端 Worker
 export type GameContext = {
 	cancel?: boolean;
-};
+} & Record<string, any>;
 
 export interface IGameProcess {
+	extraData: Record<string, any>;
 	mapData: GameMap;
 	players: Map<string, IPlayer>;
 	properties: Map<string, IProperty>;
-	chanceCards: Map<string, IChanceCard>;
+	chanceCardInfos: Map<string, ChanceCardInfo>;
 	currentRoundPlayer: IPlayer | null;
 	currentRound: number;
-	gameEventStack: GameEvent<GameContext>[];
+	gameRuntimeStack: IGameRuntimeStack<GameContext>;
+
+	onPlayerOperation<T extends OperateType>(playerId: string, operationType: T): Promise<PlayerOperationResult[T]>;
 
 	pushEventToStack(gameEvent: GameEvent<GameContext>): void;
+
 	start(): Promise<void>;
 }
 
+export interface IGameRuntimeStack<Context extends GameContext> {
+	stack: GameEvent<Context>[];
+
+	run(): Promise<void>;
+
+	isEmpty(): boolean;
+
+	push(...gameEvents: GameEvent<Context>[]): void;
+
+	pop(): GameEvent<Context> | undefined;
+}
+
+export type GameEventFunction<Context extends GameContext> = (ctx: Context) => Promise<void>;
+
 // 游戏事件--游戏循环中的最基础的单位
-export type GameEvent<Context> = (ctx: Context) => Promise<void>;
+export type GameEvent<Context extends GameContext> = {
+	fn: GameEventFunction<Context>;
+	key?: string;
+};
 
 // 游戏阶段--游戏循环的第2级单位, 包含多个游戏事件
 export interface GamePhaseInfo {
@@ -45,34 +66,38 @@ export interface GamePhaseInfo {
 	initEventCode: string;
 }
 
-export interface IGamePhase<GameContext> extends GamePhaseInfo {
-	eventQueue: GameEvent<GameContext>[];
+export interface IGamePhase<Context extends GameContext> extends GamePhaseInfo {
+	eventQueue: GameEvent<Context>[];
+
 	use(tiggerTime: EventTiggerTime, fn: string): void;
 
-	getEventQueue(): GameEvent<GameContext>[];
+	getEventQueue(): GameEvent<Context>[];
 }
 
 // 预设的各个游戏阶段传递的内容参数
 export interface GameRoundStartContext extends GameContext {}
-export interface PlayerRoundStartContext extends GameContext {
+
+export interface PlayerRoundContext extends GameContext {
 	currentRoundPlayer: IPlayer;
 }
-export interface RollDiceContext extends GameContext {
-	currentRoundPlayer: IPlayer;
+
+export interface PlayerRoundStartContext extends PlayerRoundContext {}
+
+export interface RollDiceContext extends PlayerRoundContext {
 	dice: number[];
 }
-export interface PlayerMoveContext extends GameContext {
-	currentRoundPlayer: IPlayer;
+
+export interface PlayerMoveContext extends PlayerRoundContext {
 	type: PlayerMoveType;
 	targetIndex: number;
 }
-export interface ArrivedEventContext extends GameContext {
-	currentRoundPlayer: IPlayer;
+
+export interface ArrivedEventContext extends PlayerRoundContext {
 	arrivedProperty: PropertyInfo;
 }
-export interface PlayerRoundEndContext extends GameContext {
-	currentRoundPlayer: IPlayer;
-}
+
+export interface PlayerRoundEndContext extends PlayerRoundContext {}
+
 export interface GameRoundEndContext extends GameContext {}
 
 export interface IPlayer {
@@ -113,6 +138,7 @@ export interface IPlayer {
 	getIsBankrupted: () => boolean;
 	walk: (step: number) => Promise<void>;
 	tp: (positionIndex: number) => Promise<void>;
+
 	updateBuff(buffId: string, newBuff: Buff): void;
 
 	getPlayerInfo: () => PlayerInfo;
@@ -153,7 +179,7 @@ export interface IChanceCard {
 		gameProcess: IGameProcess
 	) => Promise<void>;
 
-	getChanceCardInfo: () => ChanceCardInstanceInfo;
+	getChanceCardInfo: () => ChanceCardClientInfo;
 }
 
 export interface PlayerInfo {
@@ -161,7 +187,7 @@ export interface PlayerInfo {
 	user: UserInRoomInfo;
 	money: number;
 	properties: PropertyInfo[];
-	chanceCards: ChanceCardInstanceInfo[];
+	chanceCards: ChanceCardClientInfo[];
 	buff: Buff[];
 	positionIndex: number;
 	stop: number;
@@ -184,7 +210,9 @@ export interface PropertyInfo {
 	owner?: UserInRoomInfo;
 }
 
-export interface ChanceCardInstanceInfo extends Omit<ChanceCardInfo, "effectCode"> {
+export interface ChanceCardClientInfo extends Omit<ChanceCardInstanceInfo, "effectCode"> {}
+
+export interface ChanceCardInstanceInfo extends ChanceCardInfo {
 	sourceId: string;
 }
 
@@ -198,21 +226,92 @@ export interface ChanceCardInfo {
 	type: ChanceCardType;
 }
 
-// export interface GameHooks {
-// 	onGameRoundStart?: (tiggerTime: EventTiggerTime, ctx: GameContext) => Promise<void>;
-// 	onPlayerRoundStart?: (tiggerTime: EventTiggerTime, ctx: GameContext) => Promise<void>;
-// 	onRollDice?: (tiggerTime: EventTiggerTime, ctx: GameContext) => Promise<void>;
-// 	onPlayerMove?: (tiggerTime: EventTiggerTime, ctx: GameContext) => Promise<void>;
-// 	onArrivedEvent?: (tiggerTime: EventTiggerTime, ctx: GameContext) => Promise<void>;
-// 	onPlayerRoundEnd?: (tiggerTime: EventTiggerTime, ctx: GameContext) => Promise<void>;
-// 	onGameRoundEnd?: (tiggerTime: EventTiggerTime, ctx: GameContext) => Promise<void>;
-// }
-
 export interface Buff {
 	id: string;
 	name: string;
 	describe: string;
 	source: string;
+	type: PlayerEvents;
 	triggerTiming: string; //TODO
 	triggerTimes: number;
+}
+
+export interface PlayerOperationResult {
+	[OperateType.GameInitFinished]: void;
+	[OperateType.RollDice]: void;
+	[OperateType.UseChanceCard]: { chanceCardId: string; targetIdList: string[] };
+	[OperateType.Animation]: void;
+	[OperateType.BuyProperty]: boolean;
+	[OperateType.BuildHouse]: boolean;
+	[OperateType.PauseGame]: void;
+	[OperateType.ResumeGame]: void;
+}
+
+export interface PlayerEventsCallback {
+	[PlayerEvents.GetPropertiesList]: () => IProperty[];
+	[PlayerEvents.GetCardsList]: () => IChanceCard[];
+	[PlayerEvents.GetMoney]: () => number;
+	[PlayerEvents.GetStop]: () => number;
+	[PlayerEvents.GetIsBankrupted]: () => boolean;
+	[PlayerEvents.AnimationFinished]: (value: void | PromiseLike<void>) => void;
+	[PlayerEvents.Walk]: (walkValue: number) => Promise<number>;
+	[PlayerEvents.Tp]: (tpValue: number) => Promise<number>;
+
+	[PlayerEvents.BeforeSetPropertiesList]: (newPropertiesList: IProperty[]) => IProperty[] | undefined;
+	[PlayerEvents.AfterSetPropertiesList]: (newPropertiesList: IProperty[]) => undefined;
+
+	[PlayerEvents.BeforeRound]: (player: IPlayer) => Promise<IPlayer | undefined | void> | IPlayer | undefined | void;
+	[PlayerEvents.AfterRound]: (player: IPlayer) => Promise<IPlayer | undefined | void> | void;
+
+	[PlayerEvents.BeforeGainProperty]: (
+		newProperty: IProperty
+	) => Promise<IProperty | undefined | void> | IProperty | undefined | void;
+	[PlayerEvents.AfterGainProperty]: (newProperty: IProperty) => Promise<IProperty | undefined | void> | void;
+
+	[PlayerEvents.BeforeLoseProperty]: (
+		lostProperty: IProperty
+	) => Promise<IProperty | undefined | void> | IProperty | undefined | void;
+	[PlayerEvents.AfterLoseProperty]: (lostProperty: IProperty) => Promise<IProperty | undefined | void> | void;
+
+	[PlayerEvents.BeforeSetCardsList]: (
+		newCardList: IChanceCard[]
+	) => Promise<IChanceCard[] | undefined | void> | IChanceCard[] | undefined | void;
+	[PlayerEvents.AfterSetCardsList]: (newCardList: IChanceCard[]) => Promise<IChanceCard[] | undefined | void> | void;
+
+	[PlayerEvents.BeforeGainCard]: (
+		gainCard: IChanceCard
+	) => Promise<IChanceCard | undefined | void> | IChanceCard | undefined | void;
+	[PlayerEvents.AfterGainCard]: (gainCard: IChanceCard) => Promise<IChanceCard | undefined | void> | void;
+
+	[PlayerEvents.BeforeLoseCard]: (
+		lostCard: IChanceCard
+	) => Promise<IChanceCard | undefined | void> | IChanceCard | undefined | void;
+	[PlayerEvents.AfterLoseCard]: (lostCard: IChanceCard) => Promise<IChanceCard | undefined | void> | void;
+
+	[PlayerEvents.BeforeSetMoney]: (moneyValue: number) => Promise<number | undefined | void> | number | undefined | void;
+	[PlayerEvents.AfterSetMoney]: (moneyValue: number) => Promise<number | undefined | void> | void;
+
+	[PlayerEvents.BeforeGain]: (
+		gainMoney: number,
+		source?: IPlayer
+	) => Promise<number | undefined | void> | number | undefined | void;
+	[PlayerEvents.AfterGain]: (gainMoney: number, source?: IPlayer) => Promise<number | undefined | void> | void;
+
+	[PlayerEvents.BeforeCost]: (
+		costMoney: number,
+		target?: IPlayer
+	) => Promise<number | undefined | void> | number | undefined | void;
+	[PlayerEvents.AfterCost]: (costMoney: number, target?: IPlayer) => Promise<number | undefined | void> | void;
+
+	[PlayerEvents.BeforeStop]: (stopValue: number) => Promise<number | undefined | void> | number | undefined | void;
+	[PlayerEvents.AfterStop]: (stopValue: number) => Promise<number | undefined | void> | void;
+
+	[PlayerEvents.BeforeTp]: (tpValue: number) => Promise<number | undefined | void> | number | undefined | void;
+	[PlayerEvents.AfterTp]: (tpValue: number) => Promise<number | undefined | void> | void;
+
+	[PlayerEvents.BeforeWalk]: (walkValue: number) => Promise<number | undefined | void> | number | undefined | void;
+	[PlayerEvents.AfterWalk]: (walkValue: number) => Promise<number | undefined | void> | void;
+
+	[PlayerEvents.BeforeSetBankrupted]: (isBankrupted: boolean) => Promise<boolean> | boolean;
+	[PlayerEvents.AfterSetBankrupted]: (isBankrupted: boolean) => Promise<boolean | undefined | void> | void;
 }

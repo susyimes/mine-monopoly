@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { playerBuffTriggerTimingMap } from "@src/core/worker/enums/game";
-import { Buff } from "@src/interfaces/game";
+import {Buff, PlayerBuffTriggerTimingMap} from "@fatpaper-monopoly/types";
 
 const props = defineProps<{ buff: Buff }>();
 </script>
@@ -9,7 +8,7 @@ const props = defineProps<{ buff: Buff }>();
 	<div class="buff-item">
 		<div class="top-bar">
 			<div class="name">{{ buff.name }}</div>
-			<div class="trigger-timming">{{ playerBuffTriggerTimingMap[buff.type] }} 触发</div>
+			<div class="trigger-timming">{{ PlayerBuffTriggerTimingMap[buff.type] }} 触发</div>
 		</div>
 		<div class="describe">{{ buff.describe }}</div>
 		<div class="foot-bar">
