@@ -79,7 +79,7 @@ function handleUpdateGameSetting() {
 const canStart = computed(
 	() =>
 		!(
-			Boolean(roomInfoStore.mapId) &&
+			Boolean(roomInfoStore.mapInfo) &&
 			roomInfoStore.userList.every((user) => Boolean(user.roleId) || user.userId === ownerId.value || user.isReady) &&
 			!useLoading().loading
 		)

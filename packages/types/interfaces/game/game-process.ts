@@ -62,7 +62,7 @@ export interface IGameProcess {
 	gameLogBroadcast(log: string): void;
 	gameBroadcast(msg: ServerSocketMessage): void;
 
-	showDialogToPlayer<I extends readonly InputOptionItem<string, any>[]>(
+	showDialogToPlayer<I extends InputOptionItem<string, any>[]>(
 		playerId: string,
 		option: DialogOption<I>
 	): Promise<DialogResult<I>>;
@@ -77,8 +77,8 @@ export type InputOptionItem<K extends string, D> = {
 export interface DialogOption<I extends readonly InputOptionItem<string, any>[]> {
 	title: string;
 	content: string;
-	confirmText: string;
-	cancelText: string;
+	confirmText?: string;
+	cancelText?: string;
 	inputOptions?: I;
 }
 
