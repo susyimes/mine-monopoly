@@ -38,6 +38,7 @@ const iconUrl = computed(() => {
 	align-items: center;
 	overflow: hidden;
 	transition: 0.3s;
+	cursor: pointer;
 
 	&.disable {
 		filter: grayscale(1);

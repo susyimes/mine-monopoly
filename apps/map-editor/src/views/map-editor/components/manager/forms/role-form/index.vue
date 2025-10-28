@@ -162,7 +162,7 @@ function handleClose() {
 		<div class="editor-container">
 			<span class="title">
 				<a-alert
-					message="在下面编辑器编写触发代码，游戏进行到响应的触发时机会直接执行下面全部的代码"
+					message="在下面编辑器编写角色代码，在玩家初始化时会执行"
 					type="info"
 					show-icon
 				/>

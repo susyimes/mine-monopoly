@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChanceCard } from "@fatpaper-monopoly/types";
+import { ChanceCardInfo } from "@fatpaper-monopoly/types";
 import { useMapDataStore } from "@src/stores";
 import { computed, ref } from "vue";
 import ChanceCardForm from "./forms/chance-card-form/index.vue";
@@ -18,7 +18,7 @@ const currentPage = ref(1);
 const pageSize = ref(6);
 
 const createChanceCardFormVisible = ref(false);
-const currentChanceCard = ref<ChanceCard | undefined>(undefined);
+const currentChanceCard = ref<ChanceCardInfo | undefined>(undefined);
 
 function handleAdd() {
 	currentChanceCard.value = undefined;

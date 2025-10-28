@@ -18,6 +18,10 @@ export interface User {
 	color: string;
 }
 
+export interface UserInGameInfo extends User {
+	role: Role;
+}
+
 export interface UserInRoomInfo extends User {
 	roleId: string;
 }

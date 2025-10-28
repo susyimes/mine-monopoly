@@ -32,6 +32,7 @@ import {
 	UserInRoomInfo,
 	SelectDialogOption,
 	SelectDialogResult,
+	IChanceCard,
 } from "@fatpaper-monopoly/types";
 
 import Dice from "./class/Dice";
@@ -42,8 +43,7 @@ import { ChanceCard } from "./class/ChanceCard";
 import { compileTsToJs, randomString } from "@src/utils";
 import { GamePhase } from "@src/core/worker/class/GamePhase";
 import { GameRuntimeStack } from "@src/core/worker/class/GameRuntimeStack";
-
-import GameProcessTypes from "./editor-lib?raw";
+import GameProcessTypes from "./editor-lib.d.ts?raw";
 
 const operationListener = new OperateListener();
 let gameProcess: GameProcess | null = null;
@@ -192,11 +192,14 @@ export class GameProcess implements IGameProcess {
 				effectCode: compileTsToJs(chanceCard.effectCode, GameProcessTypes),
 			});
 		});
+		console.log("🚀 ~ GameProcess ~ initMap ~ this.chanceCardInfos:", this.chanceCardInfos)
 	}
 
 	private initPlayer() {
 		this.userList.forEach((u) => {
-			const player = new Player(u, this.gameSetting.initMoney, 0, this.mapData.phases.playerRound);
+			const role = this.mapData.roles.find((r) => r.id === u.roleId);
+			if (!role) throw Error("找不到对应角色");
+			const player = new Player(u, this.gameSetting.initMoney, 0, this.mapData.phases.playerRound, role);
 			player.setPositionIndex(0);
 			this.players.set(player.getId(), player);
 
@@ -398,9 +401,9 @@ export class GameProcess implements IGameProcess {
 	// 	return tempChanceCardList;
 	// }
 
-	private getNewChanceCard(id: string): ChanceCard {
-		const tempChanceCard = this.chanceCardInfos.get(id);
-		if (!tempChanceCard) throw new Error("错误的机会卡ID");
+	public generateNewChanceCard(sourceId: string): IChanceCard {
+		const tempChanceCard = this.chanceCardInfos.get(sourceId);
+		if (!tempChanceCard) throw new Error(`错误的机会卡ID: ${sourceId}`);
 		return new ChanceCard(tempChanceCard);
 	}
 

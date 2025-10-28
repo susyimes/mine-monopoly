@@ -29,6 +29,6 @@ const canChat = computed(() => router.name === "room" || router.name === "game")
 	justify-content: space-around;
   padding: .4rem;
   gap: .6rem;
-	z-index: 10000;
+	z-index: var(--z-ui);
 }
 </style>

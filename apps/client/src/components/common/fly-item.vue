@@ -15,7 +15,7 @@ const flyItemBox = computed(() => {
 
 const maxRotation = 35;
 const getRandomRotation = () => {
-  return Math.floor(Math.random() * (maxRotation * 2 + 1)) - maxRotation;
+	return Math.floor(Math.random() * (maxRotation * 2 + 1)) - maxRotation;
 };
 </script>
 
@@ -25,7 +25,7 @@ const getRandomRotation = () => {
 		class="fly-item"
 		:style="{ left: startX - flyItemBox.width + 'px', top: startY - flyItemBox.height / 2 + 'px', color }"
 	>
-		<span :style="{transform: `rotate(${getRandomRotation()}deg)`}">{{ text }}￥</span>
+		<span :style="{ transform: `rotate(${getRandomRotation()}deg)` }">{{ text }}￥</span>
 	</div>
 </template>
 
@@ -34,7 +34,7 @@ const getRandomRotation = () => {
 	position: absolute;
 	top: 0;
 	left: 0;
-	z-index: 9999;
+	z-index: var(--z-fly-item);
 
 	& > span {
 		display: block;

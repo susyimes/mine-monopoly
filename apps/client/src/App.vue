@@ -21,7 +21,7 @@ const version = isPC() ? window.electronAPI.getVersion() : "none";
 </script>
 
 <template>
-	<TitleBar v-if="isPC()" :bg-color="'#f38b11'">
+	<TitleBar style="z-index: var(--z-topbar)" v-if="isPC()" :bg-color="'#f38b11'">
 		<template #title>
 			<span style="font-size: 12px">FatPaper-Monopoly v{{ version }}</span>
 		</template>

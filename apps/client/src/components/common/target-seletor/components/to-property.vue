@@ -5,7 +5,7 @@ import ChanceCard from "@src/views/game/components/chance-card.vue";
 import MiniMap from "./mini-map.vue";
 import PropertyInfoCard from "@src/views/game/utils/components/property-info-card.vue";
 
-const emits = defineEmits(["targetSelected"]);
+const emits = defineEmits(["target-selected"]);
 
 const mapDataStore = useMapData();
 
@@ -15,7 +15,7 @@ watch(currentSelectedTargetId, (newValue) => {
 	const targetMapItem = mapDataStore.mapItems.find((i) => i.id === newValue);
 	if (!targetMapItem) return;
 	const targetPropertyId = targetMapItem.property?.id;
-	emits("targetSelected", [targetPropertyId]);
+	emits("target-selected", [targetPropertyId]);
 });
 
 const currentSelectedProperty = computed(() => {

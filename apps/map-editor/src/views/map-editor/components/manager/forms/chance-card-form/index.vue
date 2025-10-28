@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { ChanceCard, Street } from "@fatpaper-monopoly/types";
 import CodeEditor from "@src/components/code-editor/index.vue";
 import libContent from "./editor-lib.d.ts?raw";
 import templateText from "./template-text?raw";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
-import { TargetSelectType } from "@fatpaper-monopoly/types";
+import { ChanceCardInfo, TargetSelectType } from "@fatpaper-monopoly/types";
 import { addNewImage } from "@src/utils/file";
 import { Rule } from "ant-design-vue/es/form";
 import ChanceCardPreview from "@src/views/map-editor/components/common/chance-card-preview.vue";
 
-const props = defineProps<{ chanceCard: ChanceCard | undefined }>();
+const props = defineProps<{ chanceCard: ChanceCardInfo | undefined }>();
 const emits = defineEmits(["close"]);
 
 onMounted(async () => {
@@ -26,13 +25,29 @@ onMounted(async () => {
 	chanceCardIconPreview.value = `data:image/png;base64,${content}`;
 });
 
+const targetNameMap: Record<TargetSelectType, string> = {
+	[TargetSelectType.ToSelf]: "对自己生效",
+	[TargetSelectType.ToOtherPlayer]: "对其他玩家生效",
+	[TargetSelectType.ToPlayer]: "对玩家生效",
+	[TargetSelectType.ToProperty]: "对地产生效",
+	[TargetSelectType.ToMapItem]: "对格子生效",
+};
+
+const targetTypeMap: Record<TargetSelectType, string> = {
+	[TargetSelectType.ToSelf]: "IPlayer",
+	[TargetSelectType.ToOtherPlayer]: "IPlayer",
+	[TargetSelectType.ToPlayer]: "IPlayer",
+	[TargetSelectType.ToProperty]: "IProperty",
+	[TargetSelectType.ToMapItem]: "string",
+};
+
 function getInitForm() {
 	const initForm = {
 		id: crypto.randomUUID(),
 		name: "",
 		color: "",
 		description: "",
-		type: TargetSelectType.ToMapItem,
+		type: TargetSelectType.ToSelf,
 		effectCode: "",
 		iconId: "",
 	};
@@ -41,13 +56,31 @@ function getInitForm() {
 
 const iconUrl = ref("");
 
-const chanceCardForm = reactive<ChanceCard>(props.chanceCard || getInitForm());
+const chanceCardForm = reactive<ChanceCardInfo>(props.chanceCard || getInitForm());
+
+watch(
+	() => chanceCardForm.type,
+	(newType, oldType) => {
+		if (!oldType) return;
+		chanceCardForm.effectCode = chanceCardForm.effectCode.replace(
+			`target: ${targetTypeMap[oldType]}`,
+			`target: ${targetTypeMap[newType]}`
+		);
+	},
+	{ immediate: true }
+);
+
+let isIconChange = false;
 
 async function handleAddChanceCard() {
 	try {
 		const mapDataStore = useMapDataStore();
-		const iconId = await addNewImage(iconUrl.value, chanceCardForm.name);
-		chanceCardForm.iconId = iconId;
+
+		if (isIconChange) {
+			if (chanceCardForm.iconId) useResourceStore().removeImage(chanceCardForm.iconId);
+			const iconId = await addNewImage(iconUrl.value, chanceCardForm.name);
+			chanceCardForm.iconId = iconId;
+		}
 		if (props.chanceCard) {
 			mapDataStore.editChanceCard(chanceCardForm);
 			message.success(`修改 "${chanceCardForm.name}" 成功`);
@@ -70,9 +103,11 @@ async function handleAddIcon() {
 		iconUrl.value = res.filePaths[0];
 		const content = await window.electronAPI.getImageBase64(iconUrl.value);
 		chanceCardIconPreview.value = `data:image/png;base64,${content}`;
+		isIconChange = true;
 	} else {
 		iconUrl.value = "";
 		chanceCardIconPreview.value = "";
+		isIconChange = false;
 	}
 }
 
@@ -105,6 +140,13 @@ const iconRule = async (_rule: Rule, value: string) => {
 				</a-form-item>
 				<a-form-item label="机会卡描述" name="description" :rules="[{ required: true, message: '请输入机会卡描述' }]">
 					<a-input v-model:value="chanceCardForm.description" />
+				</a-form-item>
+				<a-form-item label="机会卡类型" name="type" :rules="[{ required: true, message: '请选择机会卡目标类型' }]">
+					<a-select v-model:value="chanceCardForm.type">
+						<a-select-option v-for="(value, key) in targetNameMap" :value="key" :key="key">
+							{{ value }}
+						</a-select-option>
+					</a-select>
 				</a-form-item>
 				<a-form-item label="颜色" name="color" :rules="[{ required: true, message: '请输入机会卡颜色' }]">
 					<input type="color" v-model="chanceCardForm.color" />
@@ -148,8 +190,7 @@ const iconRule = async (_rule: Rule, value: string) => {
 		padding-right: 10px;
 
 		.chance-card-preview {
-			font-size: 14px;
-			margin-bottom: 10px;
+			margin: 10px 0;
 		}
 	}
 

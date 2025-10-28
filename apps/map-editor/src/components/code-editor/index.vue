@@ -15,7 +15,6 @@ let editor: monaco.editor.IStandaloneCodeEditor | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
 const initEditor = async () => {
-	console.log("🚀 ~ initEditor ~ containerRef.value:", containerRef.value)
 	if (containerRef.value && !editor) {
 		loader.config({ monaco });
 		const monacoInstance = await loader.init();

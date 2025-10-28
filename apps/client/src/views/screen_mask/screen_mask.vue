@@ -32,7 +32,7 @@ const isLandscape = computed(() => deviceStatus.isLandscape);
 	position: absolute;
 	top: 0;
 	left: 0;
-	z-index: 999999;
+	z-index: var(--z-loading);
 	background-color: #000000;
 	color: #ffffff;
 	font-size: 2.5rem;

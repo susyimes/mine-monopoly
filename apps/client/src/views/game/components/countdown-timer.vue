@@ -40,7 +40,7 @@ const _blockWidth = computed(() => `${(_waitingFor.value.remainingTime / _roundT
 	transition: width 0.3s ease-in-out;
 
 	position: relative;
-	z-index: 100000;
+	z-index: var(--z-countdown-timer);
 
 	& > .block {
 		position: absolute;

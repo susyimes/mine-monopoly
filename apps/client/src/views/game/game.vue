@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
 }
 
 #game-canvas {
-	z-index: 500;
+	z-index: var(--z-game);
 	display: block;
 }
 

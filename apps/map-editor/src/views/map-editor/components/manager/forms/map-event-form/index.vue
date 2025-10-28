@@ -42,11 +42,16 @@ const iconUrl = ref("");
 
 const mapEventForm = reactive<MapEvent>(props.mapEvent || getInitForm());
 
+let isIconChange = false;
+
 async function handleAddMapEvent() {
 	try {
 		const mapDataStore = useMapDataStore();
-		const iconId = await addNewImage(iconUrl.value, mapEventForm.name);
-		mapEventForm.iconId = iconId;
+		if (isIconChange) {
+			if (mapEventForm.iconId) useResourceStore().removeImage(mapEventForm.iconId);
+			const iconId = await addNewImage(iconUrl.value, mapEventForm.name);
+			mapEventForm.iconId = iconId;
+		}
 		if (props.mapEvent) {
 			mapDataStore.editMapEvent(mapEventForm);
 			message.success(`修改 "${mapEventForm.name}" 成功`);
@@ -69,9 +74,11 @@ async function handleAddIcon() {
 		iconUrl.value = res.filePaths[0];
 		const content = await window.electronAPI.getImageBase64(iconUrl.value);
 		mapEventIconPreview.value = `data:image/png;base64,${content}`;
+		isIconChange = true;
 	} else {
 		iconUrl.value = "";
 		mapEventIconPreview.value = "";
+		isIconChange = false;
 	}
 }
 

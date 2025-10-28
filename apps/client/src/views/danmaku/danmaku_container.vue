@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useChat } from "@src/store";
-import { ChatMessage } from "@src/interfaces/bace";
+import { ChatMessage } from "@fatpaper-monopoly/types";
 import DanmakuItem from "@src/views/danmaku/components/danmaku_item.vue";
 import { reactive, ref, watch } from "vue";
 
@@ -50,7 +50,7 @@ function randomHeight() {
 	left: 0;
 	width: 100vw;
 	height: 100vh;
-	z-index: 10001;
+	z-index: var(--z-danmaku);
 	pointer-events: none;
 }
 

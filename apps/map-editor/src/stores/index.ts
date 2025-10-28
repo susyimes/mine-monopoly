@@ -145,13 +145,14 @@ export const useMapDataStore = defineStore("MapData", {
 			const index = this.mapEvents.findIndex((s) => s.id === mapEvent.id);
 			if (index < 0) throw Error("找不到目标地图事件");
 			const old = this.mapEvents[index];
-			useResourceStore().removeImage(old.iconId);
+			if (old.iconId !== mapEvent.iconId) useResourceStore().removeImage(old.iconId);
 			Object.assign(this.mapEvents[index], mapEvent);
 		},
 		reomveMapEvent(id: string) {
 			const deleteIndex = this.mapEvents.findIndex((s) => s.id === id);
 			if (deleteIndex < 0) throw Error("找不到目标地图事件");
-			this.mapEvents.splice(deleteIndex, 1);
+			const mapEvent = this.mapEvents.splice(deleteIndex, 1);
+			useResourceStore().removeImage(mapEvent[0].iconId);
 		},
 		linkMapEvent(mapItemId: string, mapEventId: string | undefined) {
 			const mapItem = this.findMapItemById(mapItemId);
@@ -176,13 +177,14 @@ export const useMapDataStore = defineStore("MapData", {
 			const index = this.chanceCards.findIndex((s) => s.id === chanceCard.id);
 			if (index < 0) throw Error("找不到目标机会卡");
 			const old = this.chanceCards[index];
-			useResourceStore().removeImage(old.iconId);
+			if (old.iconId !== chanceCard.iconId) useResourceStore().removeImage(old.iconId);
 			Object.assign(this.chanceCards[index], chanceCard);
 		},
 		reomveChanceCard(id: string) {
 			const deleteIndex = this.chanceCards.findIndex((s) => s.id === id);
 			if (deleteIndex < 0) throw Error("找不到目标机会卡");
-			this.chanceCards.splice(deleteIndex, 1);
+			const chanceCard = this.chanceCards.splice(deleteIndex, 1);
+			useResourceStore().removeImage(chanceCard[0].iconId);
 		},
 
 		// Property

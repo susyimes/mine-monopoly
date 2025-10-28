@@ -10,10 +10,12 @@ import {
 	PlayerEvents,
 	PlayerEventsCallback,
 	PlayerInfo,
+	Role,
 	UserInRoomInfo,
 } from "@fatpaper-monopoly/types";
 import { GamePhase } from "./GamePhase";
-import { randomString } from "@src/utils";
+import { compileTsToJs, randomString } from "@src/utils";
+import GameProcessTypes from "../editor-lib.d.ts?raw";
 
 type CallbackMapValue<E extends PlayerEvents> = {
 	id: string;
@@ -39,7 +41,13 @@ export class Player implements IPlayer {
 
 	private callBackMap: Map<PlayerEvents, CallbackMapValue<PlayerEvents>[]> = new Map();
 
-	constructor(user: UserInRoomInfo, initMoney: number, initPositionIndex: number, roundPhasesInfo: GamePhaseInfo[]) {
+	constructor(
+		user: UserInRoomInfo,
+		initMoney: number,
+		initPositionIndex: number,
+		roundPhasesInfo: GamePhaseInfo[],
+		role: Role
+	) {
 		this.roundPhases = roundPhasesInfo.map((roundPhaseInfo) => {
 			return new GamePhase(roundPhaseInfo);
 		});
@@ -48,6 +56,10 @@ export class Player implements IPlayer {
 		this.positionIndex = initPositionIndex;
 		this.isStop = 0;
 		this.isOffline = false;
+
+		const codeCompiled = compileTsToJs(role.initCode, GameProcessTypes);
+		const roleInitFunction = new Function("player", codeCompiled)();
+		roleInitFunction(this);
 	}
 
 	//玩家信息相关

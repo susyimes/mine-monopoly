@@ -1,4 +1,2 @@
 //@need-to-parse
-import { ArrivedEventContext, IGamePhase } from "@fatpaper-monopoly/types";
-
-export let arrivedEventPhase: IGamePhase<ArrivedEventContext>;
+export type { IGameProcess } from "@fatpaper-monopoly/types";

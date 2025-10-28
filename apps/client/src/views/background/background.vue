@@ -43,7 +43,7 @@ const isRoll = computed(() => !useDeviceStatus().isMobile);
 	left: 0;
 	width: 100vw;
 	height: 100vh;
-	z-index: -10;
+	z-index: var(--z-background);
 	filter: blur(1px);
 
 	.rool-button {
@@ -52,7 +52,7 @@ const isRoll = computed(() => !useDeviceStatus().isMobile);
 		position: fixed;
 		top: 0;
 		right: 0;
-		z-index: 100;
+		z-index: calc(var(--z-background) + 1);
 		width: $button_size;
 		height: $button_size;
 		margin: 0.5rem;

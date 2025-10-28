@@ -4,6 +4,9 @@ import { computed, provide, ref, watch, toRaw } from "vue";
 import ChanceCard from "./chance-card.vue";
 import { useUtil } from "@src/store";
 import { useGameData } from "@src/store/game";
+import { ChanceCardClientInfo, TargetSelectType } from "@fatpaper-monopoly/types";
+import { showTargetSelector } from "@src/components/common/target-seletor";
+import { useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 
 const gameInfoStore = useGameData();
 const userInfoStore = useUserInfo();
@@ -20,6 +23,20 @@ const _chanceCardsList = computed(() => {
 });
 
 const _canUseChanceCard = computed(() => utilStore.canUseCard);
+
+async function handleChanceCardClick(card: ChanceCardClientInfo) {
+	console.log("🚀 ~ handleChanceCardClick ~ card:", card);
+	if (!utilStore.canUseCard) return;
+	showTargetSelector(card.type, {
+		title: `使用机会卡: ${card.name}`,
+		confirmText: "使用",
+		cancelText: "取消",
+	})
+		.then((target) => {
+			useMonopolyClient().useChanceCard(card.id, target);
+		})
+		.catch();
+}
 </script>
 
 <template>
@@ -27,7 +44,7 @@ const _canUseChanceCard = computed(() => utilStore.canUseCard);
 		<div v-show="utilStore.canUseCard" class="tips">点击卡片使用机会卡，一回合使用一张</div>
 		<TransitionGroup name="card">
 			<ChanceCard
-				v-chanceCardSource="card"
+				@click="handleChanceCardClick(card)"
 				class="chance-card-item"
 				v-for="card in _chanceCardsList"
 				:key="card.id"

@@ -47,7 +47,7 @@ function toRoomList() {
 	justify-content: center;
 	align-items: center;
 	background-color: rgba(0, 0, 0, 0.5);
-	z-index: 10000;
+	z-index: var(--z-scoreboard);
 
 	& > span {
 		margin-top: 0.8em;

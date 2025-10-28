@@ -32,7 +32,7 @@ watch(loading, (newValue) => {
 	justify-content: center;
 	align-items: center;
 	background-color: rgba(0, 0, 0, 0.5);
-	z-index: 999999999999;
+	z-index: var(--z-loading);
 
 	& > span {
 		margin-top: 0.8em;

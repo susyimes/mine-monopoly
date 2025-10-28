@@ -445,6 +445,7 @@ interface IGameProcess {
 	oncePlayerOperation<T extends OperateType>(playerId: string, operationType: T, callback: (res: PlayerOperationResult[T]) => void): void;
 	onPlayerOperation<T extends OperateType>(playerId: string, operationType: T, callback: (res: PlayerOperationResult[T]) => void): void;
 	pushEventToStack(gameEvent: GameEvent<GameContext>): void;
+	generateNewChanceCard(sourceId: string): IChanceCard;
 	createGameLinkItem(type: GameLinkItem, id: string): void;
 	sendToPlayer(id: string, msg: ServerSocketMessage): void;
 	gameInfoBroadcast(): void;
@@ -467,11 +468,11 @@ interface SelectDialogResult<I extends TargetSelectType> {
 	target: TargetSelectResult[I];
 }
 interface TargetSelectResult {
-	[TargetSelectType.ToMapItem]: string;
-	[TargetSelectType.ToPlayer]: string;
-	[TargetSelectType.ToOtherPlayer]: string;
-	[TargetSelectType.ToSelf]: string;
-	[TargetSelectType.ToProperty]: string;
+	[TargetSelectType.ToMapItem]: string[];
+	[TargetSelectType.ToPlayer]: string[];
+	[TargetSelectType.ToOtherPlayer]: string[];
+	[TargetSelectType.ToSelf]: string[];
+	[TargetSelectType.ToProperty]: string[];
 }
 interface ConfirmDialogOption<I extends readonly InputOptionItem<string, any>[]> extends DialogOption {
 	inputOptions?: I;
@@ -508,7 +509,7 @@ interface GamePhaseInfo {
 }
 interface IGamePhase<Context extends GameContext> extends GamePhaseInfo {
 	eventQueue: GameEvent<Context>[];
-	use(tiggerTime: EventTiggerTime, fn: string): void;
+	use(tiggerTime: EventTiggerTime, fn: GameEventFunction<Context>, key?: string): void;
 	getEventQueue(): GameEvent<Context>[];
 }
 interface IPlayer {
@@ -540,6 +541,7 @@ interface IPlayer {
 	tp: (positionIndex: number) => Promise<void>;
 	updateBuff(buffId: string, newBuff: Buff): void;
 	getPlayerInfo: () => PlayerInfo;
+	getRoundPhases: () => IGamePhase<GameContext>[];
 }
 interface IProperty {
 	getId: () => string;

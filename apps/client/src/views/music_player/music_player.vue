@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { getMusicList } from "@src/utils/api/music";
-import { Music } from "@src/interfaces/bace";
+import { Music } from "@fatpaper-monopoly/types";
 import { throttle } from "@src/utils";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import MusicListItem from "@src/views/music_player/components/music_list_item.vue";
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	z-index: 10000;
+	z-index: var(--z-ui);
 	pointer-events: all;
 }
 

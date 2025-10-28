@@ -164,7 +164,7 @@ function handleShowPlayerDetail(player: PlayerInfo) {
 		position: "fixed";
 		left: 0;
 		top: 0;
-		z-index: 99999;
+		z-index: var(--z-ui);
 	}
 }
 </style>

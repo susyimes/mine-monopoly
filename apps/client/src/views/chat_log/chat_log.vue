@@ -143,7 +143,7 @@ function handleHideContainer() {
 	position: absolute;
 	bottom: 0;
 	left: 0.5rem;
-	z-index: 10000;
+	z-index: var(--z-chat-log);
 	width: 23rem;
 	display: flex;
 	flex-direction: column;
@@ -211,7 +211,7 @@ function handleHideContainer() {
 		border-radius: 0 0.5rem 0 0;
 		box-shadow: var(--box-shadow);
 		box-sizing: border-box;
-		z-index: 1011;
+		z-index: calc(var(--z-chat-log) + 1);
 
 		& > input {
 			flex: 1;

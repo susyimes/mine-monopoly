@@ -1,4 +1,5 @@
 import { createApp } from "vue";
+import "@src/assets/layer.scss";
 import "@src/assets/style.scss";
 import "@src/assets/ui.scss";
 import "@src/assets/font/font.css";

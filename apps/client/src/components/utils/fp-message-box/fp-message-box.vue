@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted, VNode, render, isVNode } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 export interface Props {
 	title?: string;
@@ -8,12 +7,7 @@ export interface Props {
 	confirmText?: string;
 	cancelText?: string;
 }
-const props = withDefaults(defineProps<Props>(), {
-	title: "Message Box",
-	content: "",
-	confirmText: "确认",
-	cancelText: "取消",
-});
+const props = defineProps<Props>();
 
 const emits = defineEmits(["confirm", "close"]);
 
@@ -39,14 +33,13 @@ onMounted(() => {
 		<div class="fp-message-box">
 			<div class="fp-message-box__title">
 				<span>{{ title }}</span>
-				<!-- <FontAwesomeIcon @click="handleCancle" class="close__btn" icon="close"></FontAwesomeIcon> -->
 			</div>
 			<div ref="ContentContainer" class="fp-message-box__content">
 				<template v-if="!isVNode(props.content)" v-html="props.content"></template>
 			</div>
 			<div class="fp-message-box__footer">
 				<button class="confirm__btn" @click="handleConfirm">{{ confirmText }}</button>
-				<button class="cancle__btn" @click="handleCancle">{{ cancelText }}</button>
+				<button v-if="props.cancelText" class="cancle__btn" @click="handleCancle">{{ cancelText }}</button>
 			</div>
 		</div>
 	</div>
@@ -59,7 +52,7 @@ onMounted(() => {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	z-index: 40000;
+	z-index: var(--z-dialog);
 	background-color: rgba($color: #000000, $alpha: 0.3);
 
 	& > .fp-message-box {
@@ -76,7 +69,7 @@ onMounted(() => {
 		border-radius: 0.6rem;
 		box-shadow: var(--box-shadow);
 		overflow: hidden;
-		z-index: 4001;
+		z-index: calc(var(--z-dialog) + 1);
 	}
 }
 

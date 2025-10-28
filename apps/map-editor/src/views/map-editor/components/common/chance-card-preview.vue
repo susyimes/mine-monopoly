@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { ChanceCard } from "@fatpaper-monopoly/types";
+import { ChanceCardInfo } from "@fatpaper-monopoly/types";
 import { message } from "ant-design-vue";
 import { useResourceStore } from "@src/stores";
 
-const props = defineProps<{ chanceCard: ChanceCard; disable: boolean; iconPreview: string | undefined }>();
+const props = defineProps<{ chanceCard: ChanceCardInfo; disable: boolean; iconPreview: string | undefined }>();
 
 const _iconPreview = ref("");
 

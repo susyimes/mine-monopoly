@@ -2,6 +2,7 @@ import {
 	EventTiggerTime,
 	GameContext,
 	GameEvent,
+	GameEventFunction,
 	GamePhaseInfo,
 	GamePhaseMark,
 	IGamePhase,
@@ -37,14 +38,11 @@ export class GamePhase implements IGamePhase<GameContext> {
 		this.eventQueue.push(gameEvent);
 	}
 
-	use(tiggerTime: EventTiggerTime, fnCode: string): void {
-		const codeCompiled = compileTsToJs(fnCode, GameProcessTypes);
-		const gameEventGenerator = new Function(codeCompiled);
-		const gameEvent = gameEventGenerator() as GameEvent<GameContext>;
+	use(tiggerTime: EventTiggerTime, gameEventFn: GameEventFunction<GameContext>, key?: string): void {
 		if (tiggerTime === EventTiggerTime.After) {
-			this.eventQueue.push(gameEvent);
+			this.eventQueue.push({ fn: gameEventFn, key });
 		} else {
-			this.eventQueue.unshift(gameEvent);
+			this.eventQueue.unshift({ fn: gameEventFn, key });
 		}
 	}
 

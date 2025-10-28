@@ -3,10 +3,6 @@ declare enum GameOverRule {
 	LeftOnePlayer = 1,//只剩一位玩家
 	Earn100000 = 2
 }
-declare enum PlayerMoveType {
-	Walk = 0,
-	Tp = 1
-}
 declare enum TargetSelectType {
 	ToSelf = "ToSelf",
 	ToOtherPlayer = "ToOtherPlayer",
@@ -449,6 +445,7 @@ interface IGameProcess {
 	oncePlayerOperation<T extends OperateType>(playerId: string, operationType: T, callback: (res: PlayerOperationResult[T]) => void): void;
 	onPlayerOperation<T extends OperateType>(playerId: string, operationType: T, callback: (res: PlayerOperationResult[T]) => void): void;
 	pushEventToStack(gameEvent: GameEvent<GameContext>): void;
+	generateNewChanceCard(sourceId: string): IChanceCard;
 	createGameLinkItem(type: GameLinkItem, id: string): void;
 	sendToPlayer(id: string, msg: ServerSocketMessage): void;
 	gameInfoBroadcast(): void;
@@ -512,23 +509,8 @@ interface GamePhaseInfo {
 }
 interface IGamePhase<Context extends GameContext> extends GamePhaseInfo {
 	eventQueue: GameEvent<Context>[];
-	use(tiggerTime: EventTiggerTime, fn: string): void;
+	use(tiggerTime: EventTiggerTime, fn: GameEventFunction<Context>, key?: string): void;
 	getEventQueue(): GameEvent<Context>[];
-}
-interface PlayerRoundContext extends GameContext {
-	currentRoundPlayer: IPlayer;
-}
-interface PlayerRoundStartContext extends PlayerRoundContext {
-}
-interface RollDiceContext extends PlayerRoundStartContext {
-	dice: number[];
-}
-interface PlayerMoveContext extends RollDiceContext {
-	type: PlayerMoveType;
-	targetIndex: number;
-}
-interface ArrivedEventContext extends PlayerMoveContext {
-	arrivedProperty: PropertyInfo;
 }
 interface IPlayer {
 	extras: Record<string, any>;
@@ -559,6 +541,7 @@ interface IPlayer {
 	tp: (positionIndex: number) => Promise<void>;
 	updateBuff(buffId: string, newBuff: Buff): void;
 	getPlayerInfo: () => PlayerInfo;
+	getRoundPhases: () => IGamePhase<GameContext>[];
 }
 interface IProperty {
 	getId: () => string;
@@ -712,4 +695,3 @@ interface MapEvent {
 	iconId: string;
 	effectCode: string;
 }
-declare let arrivedEventPhase: IGamePhase<ArrivedEventContext>;
