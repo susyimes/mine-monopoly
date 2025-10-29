@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import { PropertyInfo } from "@src/interfaces/game";
+import { PropertyInfo } from "@fatpaper-monopoly/types";
 import { PropertyLevel } from "@src/utils/var";
 
 const props = defineProps<{ property: PropertyInfo | null }>();
@@ -14,8 +14,8 @@ watch(
 	}
 );
 
-const _propertyBuildLevelColor = computed(() => PropertyLevel[_property.value?.buildingLevel || 0].color);
-const _propertyBuildLevelName = computed(() => PropertyLevel[_property.value?.buildingLevel || 0].name);
+const _propertyBuildLevelColor = computed(() => PropertyLevel[_property.value?.level || 0].color);
+const _propertyBuildLevelName = computed(() => PropertyLevel[_property.value?.level || 0].name);
 
 const _playerNameColor = computed(() => {
 	if (_property.value && _property.value.owner) {
@@ -65,7 +65,7 @@ defineExpose({ updateProperty });
 		<div class="owner">
 			<span class="label">拥有人</span
 			><span class="data" :style="{ color: _playerNameColor }">{{
-				_property.owner ? _property.owner.name : "无"
+				_property.owner ? _property.owner.username : "无"
 			}}</span>
 		</div>
 	</div>

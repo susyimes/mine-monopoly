@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { PropertyInfo } from "@src/interfaces/game";
+import { PropertyInfo } from "@fatpaper-monopoly/types";
 import { PropertyLevel } from "@src/utils/var";
 import { computed, ref } from "vue";
 
 const { property } = defineProps<{ property: PropertyInfo | null }>();
 
-const _propertyBuildLevelColor = computed(() => PropertyLevel[_property.value?.buildingLevel || 0].color);
-const _propertyBuildLevelName = computed(() => PropertyLevel[_property.value?.buildingLevel || 0].name);
+const _propertyBuildLevelColor = computed(() => PropertyLevel[_property.value?.level || 0].color);
+const _propertyBuildLevelName = computed(() => PropertyLevel[_property.value?.level || 0].name);
 const _property = ref<PropertyInfo | null>(property);
 </script>
 

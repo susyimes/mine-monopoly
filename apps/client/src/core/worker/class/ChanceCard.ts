@@ -30,8 +30,8 @@ export class ChanceCard implements IChanceCard {
 		this.color = chanceCard.color;
 		this.icon = chanceCard.iconId;
 		this.effectCode = chanceCard.effectCode;
-		const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-		this.effectFunction = new AsyncFunction("sourcePlayer", "target", "gameProcess", this.effectCode);
+		const chanceCardFnGenerator = new Function(this.effectCode);
+		this.effectFunction = chanceCardFnGenerator();
 	}
 
 	public getId = () => this.id;

@@ -192,7 +192,6 @@ export class GameProcess implements IGameProcess {
 				effectCode: compileTsToJs(chanceCard.effectCode, GameProcessTypes),
 			});
 		});
-		console.log("🚀 ~ GameProcess ~ initMap ~ this.chanceCardInfos:", this.chanceCardInfos);
 	}
 
 	private initPlayer() {
@@ -702,13 +701,13 @@ export class GameProcess implements IGameProcess {
 	public removePlayerOperationListener<T extends OperateType>(
 		playerId: string,
 		operationType: T,
-		listener?: (...args: any[]) => PlayerOperationResult[T]
+		listener: (...args: any[]) => PlayerOperationResult[T]
 	): void {
 		operationListener.remove(playerId, operationType, listener);
 	}
 
-	public removePlayerAllOperationListener(playerId: string): void {
-		operationListener.removeAll(playerId);
+	public removePlayerAllOperationListener<T extends OperateType>(playerId: string, operationType?: T): void {
+		operationListener.removeAll(playerId, operationType);
 	}
 
 	private async waitInitFinished() {

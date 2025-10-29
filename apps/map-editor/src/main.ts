@@ -96,3 +96,17 @@ self.MonacoEnvironment = {
 };
 
 monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true);
+monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+	// 关键配置
+	strict: true,
+	noImplicitAny: true,
+	noImplicitReturns: true,
+	noFallthroughCasesInSwitch: true,
+	noUnusedParameters: true,
+	noUnusedLocals: true,
+	// 其他配置
+	target: monaco.languages.typescript.ScriptTarget.ES2020,
+	module: monaco.languages.typescript.ModuleKind.ESNext,
+	allowNonTsExtensions: true,
+	lib: ["ES2020", "DOM"],
+});

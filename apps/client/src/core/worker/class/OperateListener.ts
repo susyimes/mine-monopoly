@@ -56,27 +56,23 @@ export class OperateListener {
 	public remove<T extends OperateType>(
 		playerId: string,
 		eventType: T,
-		listener?: (...args: any[]) => PlayerOperationResult[T]
+		listener: (...args: any[]) => PlayerOperationResult[T]
 	) {
 		const playerEvents = this.evetnMap.get(playerId);
 		if (!playerEvents) return;
 		const eventTypeMap = playerEvents.get(eventType);
 		if (!eventTypeMap) return;
-		if (listener) {
-			const removeIndex = eventTypeMap.findIndex((fobj) => fobj.fn === listener);
-			eventTypeMap.splice(removeIndex, 1);
-		} else {
-			eventTypeMap.length = 0;
-		}
+		const removeIndex = eventTypeMap.findIndex((fobj) => fobj.fn === listener);
+		eventTypeMap.splice(removeIndex, 1);
 	}
 
 	public removeAll(playerId: string, eventType?: OperateType) {
 		const playerEvents = this.evetnMap.get(playerId);
 		if (!playerEvents) return;
 		if (eventType) {
-			playerEvents.has(eventType) || playerEvents.delete(eventType);
+			playerEvents.delete(eventType);
 		} else {
-			this.evetnMap.has(playerId) || this.evetnMap.delete(playerId);
+			this.evetnMap.delete(playerId);
 		}
 	}
 
