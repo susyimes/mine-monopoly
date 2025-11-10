@@ -71,6 +71,8 @@ function closeDialog() {
 		height: 100vh;
 		overflow: hidden;
 		background-color: rgba(0, 0, 0, 0.3);
+		user-select: none;
+		pointer-events: auto;
 	}
 
 	.fp-dialog-main {
@@ -87,6 +89,8 @@ function closeDialog() {
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
+		z-index: calc(var(--z-dialog) + 1);
+		pointer-events: initial;
 	}
 
 	.fp-dialog-header {

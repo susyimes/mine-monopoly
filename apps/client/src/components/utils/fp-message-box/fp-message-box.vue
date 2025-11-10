@@ -54,6 +54,8 @@ onMounted(() => {
 	height: 100%;
 	z-index: var(--z-dialog);
 	background-color: rgba($color: #000000, $alpha: 0.3);
+	user-select: none;
+	pointer-events: auto;
 
 	& > .fp-message-box {
 		position: absolute;
@@ -70,6 +72,7 @@ onMounted(() => {
 		box-shadow: var(--box-shadow);
 		overflow: hidden;
 		z-index: calc(var(--z-dialog) + 1);
+		pointer-events: initial;
 	}
 }
 
