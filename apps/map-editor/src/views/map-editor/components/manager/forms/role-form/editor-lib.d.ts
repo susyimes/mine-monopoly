@@ -93,6 +93,7 @@ interface GameMap {
 	inUse: boolean;
 	mapEvents: MapEvent[];
 	phases: {
+		gameInited: GamePhaseInfo[];
 		gameRoundStart: GamePhaseInfo[];
 		playerRound: GamePhaseInfo[];
 		gameRoundEnd: GamePhaseInfo[];

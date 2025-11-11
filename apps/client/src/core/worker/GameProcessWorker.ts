@@ -166,6 +166,7 @@ export class GameProcess implements IGameProcess {
 		};
 		this.initMap();
 		this.initPlayer();
+		this.runInitedPhase();
 	}
 
 	private initMap() {
@@ -274,6 +275,13 @@ export class GameProcess implements IGameProcess {
 				return positionIndex;
 			});
 		});
+	}
+
+	private async runInitedPhase() {
+		for (const phaseInfo of this.mapData.phases.gameInited) {
+			const gameInitedPhase = new GamePhase(phaseInfo);
+			await this.runGamePhase(gameInitedPhase);
+		}
 	}
 
 	private async gameLoop() {

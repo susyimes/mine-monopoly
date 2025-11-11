@@ -131,7 +131,10 @@ export interface IGameRuntimeStack<Context extends GameContext> {
 	pop(): GameEvent<Context> | undefined;
 }
 
-export type GameEventFunction<Context extends GameContext> = (ctx: Context, gameProcess: IGameProcess) => Promise<void>;
+export type GameEventFunction<Context extends GameContext> = (
+	ctx: Context,
+	gameProcess: IGameProcess,
+) => Promise<void>;
 
 // 游戏事件--游戏循环中的最基础的单位
 export type GameEvent<Context extends GameContext> = {

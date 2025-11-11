@@ -5,6 +5,7 @@ export function getInitPhase() {
 	const gameRoundStartPhases: GamePhaseInfo[] = new Array<GamePhaseInfo>();
 	const playerRoundPhases: GamePhaseInfo[] = new Array<GamePhaseInfo>();
 	const gameRoundEndPhases: GamePhaseInfo[] = new Array<GamePhaseInfo>();
+	const gameInitedPhases: GamePhaseInfo[] = [gameInitedPhase];
 
 	gameRoundStartPhases.push(gameRoundStartPhase);
 	playerRoundPhases.push(playerRoundStartPhase);
@@ -14,11 +15,23 @@ export function getInitPhase() {
 	playerRoundPhases.push(playerRoundEndPhase);
 	gameRoundEndPhases.push(gameRoundEndPhase);
 	return {
+		gameInited: gameInitedPhases,
 		gameRoundStart: gameRoundStartPhases,
 		playerRound: playerRoundPhases,
 		gameRoundEnd: gameRoundEndPhases,
 	};
 }
+
+const gameInitedPhase: GamePhaseInfo = {
+	id: crypto.randomUUID(),
+	name: "游戏初始化结束",
+	description: "游戏初始化结束阶段",
+	from: "系统",
+	mark: GamePhaseMark.GameRoundStart,
+	initEventCode: `return (async (context, gameProcess) => {
+
+}) as GameEventFunction<GameContext>;`,
+};
 
 const gameRoundStartPhase: GamePhaseInfo = {
 	id: crypto.randomUUID(),

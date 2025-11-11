@@ -61,6 +61,27 @@ function removePhase(group: PhaseGroupKey, id: string) {
 		title="流程编辑"
 	>
 		<div class="process-container">
+			<!-- 游戏初始化后阶段 -->
+			<h4>游戏初始化后</h4>
+			<div class="phase-container">
+				<div class="phase-item" v-for="(phase, index) in phases.gameInited">
+					<a-card
+						:key="phase.id"
+						class="process-card"
+						hoverable
+						:class="{ selected: currentGroupKey === 'gameInited' && index === currentIndex }"
+						@click="
+							currentGroupKey = 'gameInited';
+							currentIndex = index;
+						"
+						size="small"
+						:title="phase.name"
+					>
+						{{ phase.description }}
+					</a-card>
+				</div>
+			</div>
+
 			<!-- 轮次开始阶段 -->
 			<h4>轮次开始阶段</h4>
 			<div class="phase-container">
