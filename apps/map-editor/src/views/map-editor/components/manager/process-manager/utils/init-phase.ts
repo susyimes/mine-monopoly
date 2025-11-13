@@ -51,18 +51,79 @@ const playerRoundStartPhase: GamePhaseInfo = {
 	from: "系统",
 	mark: GamePhaseMark.PlayerRoundStart,
 	initEventCode: `return (async (context, gameProcess) => {
-	
+    console.log("玩家回合开始")
+	//通知玩家回合
+	gameProcess.roundTurnNotify(context.currentRoundPlayer.getId());
+	//开始倒计时
+	// gameProcess.roundTimeTimer.start();
 }) as GameEventFunction<PlayerRoundStartContext>;`,
 };
 
 const rollDicePhase: GamePhaseInfo = {
 	id: crypto.randomUUID(),
-	name: "玩家掷骰子",
-	description: "玩家掷骰子阶段",
+	name: "玩家操作",
+	description: "玩家操作阶段",
 	from: "系统",
 	mark: GamePhaseMark.RollDice,
 	initEventCode: `return (async (context, gameProcess) => {
+	const currentPlayer = context.currentRoundPlayer;
+	const currentPlayerId = currentPlayer.getId();
+
+	//回合倒计时结束后自动掷骰子
+	// gameProcess.roundTimeTimer.setTimeOutFunction(() => {
+	//     gameProcess.emitPlayerOperation(currentPlayerId, OperateType.RollDice);
+	// })
+
+	//监听玩家使用机会卡
+	function listenPlayerUseCard() {
+		gameProcess.oncePlayerOperation(currentPlayerId, OperateType.UseChanceCard, async (res) => {
+			const { chanceCardId, targetIdList } = res;
+			const success = await gameProcess.handleUseChanceCard(context.currentRoundPlayer, chanceCardId, targetIdList);
+			if (success) {
+				//使用成功自动掷骰子
+				gameProcess.emitPlayerOperation(currentPlayerId, OperateType.RollDice);
+			} else {
+				//使用失败继续监听
+				listenPlayerUseCard();
+			}
+		});
+	}
+	listenPlayerUseCard();
+
+	//等待玩家点击旋转骰子按钮
+	await gameProcess.oncePlayerOperationAsync(currentPlayerId, OperateType.RollDice);
+	gameProcess.removePlayerAllOperationListener(currentPlayerId, OperateType.UseChanceCard);
 	
+	//倒计时停止走动
+	gameProcess.roundTimeTimer.pause();
+
+	//播放骰子旋转动画
+	gameProcess.gameBroadcast({ type: SocketMsgType.RollDiceStart, data: "" });
+
+	//让骰子转1.5秒
+	await new Promise((resolve) => setTimeout(resolve, 1500));
+
+	//将骰子结果写入上下文
+	if (!context.dice) {
+		gameProcess.diceUtil.roll();
+		context.dice = gameProcess.diceUtil.getResultArray();
+	}
+
+	//向客户端发送骰子结果
+	const msgToRollDice: ServerSocketMessage = {
+		type: SocketMsgType.RollDiceResult,
+		source: SocketMsgSource.Server,
+		data: {
+			rollDiceResult: gameProcess.diceUtil.getResultArray(),
+			rollDiceCount: gameProcess.diceUtil.getResultNumber(),
+			rollDicePlayerId: currentPlayer.getId(),
+		},
+		msg: {
+			type: "info",
+			content: currentPlayer.getName()} + "摇到的点数是: " + gameProcess.diceUtil.getResultArray().join("-"),
+		},
+	};
+	gameProcess.gameBroadcast(msgToRollDice);
 }) as GameEventFunction<RollDiceContext>;`,
 };
 
@@ -73,7 +134,10 @@ const playerMovePhase: GamePhaseInfo = {
 	from: "系统",
 	mark: GamePhaseMark.PlayerMove,
 	initEventCode: `return (async (context, gameProcess) => {
-	
+	//玩家移动
+	const player = context.currentRoundPlayer;
+	await player.walk(context.dice.reduce((p, c) => p + c, 0));
+	context.targetIndex = player.getPositionIndex();
 }) as GameEventFunction<PlayerMoveContext>;`,
 };
 
@@ -84,7 +148,8 @@ const arrivedEventPhase: GamePhaseInfo = {
 	from: "系统",
 	mark: GamePhaseMark.ArrivedEvent,
 	initEventCode: `return (async (context, gameProcess) => {
-	
+	const player = context.currentRoundPlayer;
+	await gameProcess.handleArriveEvent(player);
 }) as GameEventFunction<ArrivedEventContext>;`,
 };
 
