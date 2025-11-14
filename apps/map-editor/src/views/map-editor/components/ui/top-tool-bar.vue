@@ -15,6 +15,7 @@ import StreetManager from "../manager/street-manager.vue";
 import RoleManager from "../manager/role-manager.vue";
 import BuildingModelSeletor from "../manager/components/building-model-seletor.vue";
 import customUiManager from "../manager/custom-ui-manager/custom-ui-manager.vue";
+import mapDataViewer from "../common/map-data-viewer.vue";
 import { eventBus } from "@src/utils/event-bus";
 import { addNewImage } from "@src/utils/file";
 
@@ -122,6 +123,13 @@ const buttonConfigs: ButtonConifg[] = [
 			customUIManagerVisible.value = true;
 		},
 	},
+	{
+		text: "地图JSON数据",
+		icon: "fas fa-database",
+		onClick: () => {
+			mapDataViewerVisible.value = true;
+		},
+	},
 ];
 
 async function seleteMapBackgroundImage() {
@@ -149,6 +157,7 @@ const modelManagerVisible = ref(false);
 const eventManagerVisible = ref(false);
 const chanceCardManagerVisible = ref(false);
 const customUIManagerVisible = ref(false);
+const mapDataViewerVisible = ref(false);
 </script>
 
 <template>
@@ -229,6 +238,7 @@ const customUIManagerVisible = ref(false);
 		<event-manager v-model="eventManagerVisible" />
 		<chance-card-manager v-model="chanceCardManagerVisible" />
 		<custom-ui-manager v-model="customUIManagerVisible" />
+		<map-data-viewer v-model="mapDataViewerVisible" />
 	</div>
 </template>
 
