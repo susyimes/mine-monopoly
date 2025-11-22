@@ -19,11 +19,15 @@ export class ModifierManager<C extends ICommandMap> implements IModifierManager<
 		return false;
 	}
 
-	getFor<K extends keyof C>(cmd: ICommand<C, K>, timing: ModifierTiming) {
-		return this.modifiers.filter((m) => {
+	getFor(cmd: ICommand<C, K>, timing: ModifierTiming) {
+		return this.modifiers
+.filter((m) => {
 			if (m.descriptor.timing !== timing) return false;
 			if (cmd.type !== m.descriptor.commandType) return false;
 			return true;
+})
+			.sort((a, b) => {
+				return (b.descriptor.priority || 0) - (a.descriptor.priority || 0);
 		});
 	}
 
