@@ -69,7 +69,7 @@ library.add(
 	faImage,
 	faHouse,
 	faLayerGroup,
-	faDatabase,
+	faDatabase
 );
 
 eventBus.on("renderer-ready", () => {
@@ -106,11 +106,14 @@ monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
 	noImplicitAny: true,
 	noImplicitReturns: true,
 	noFallthroughCasesInSwitch: true,
-	noUnusedParameters: true,
-	noUnusedLocals: true,
 	// 其他配置
 	target: monaco.languages.typescript.ScriptTarget.ES2020,
 	module: monaco.languages.typescript.ModuleKind.ESNext,
 	allowNonTsExtensions: true,
-	lib: ["ES2020", "DOM"],
+	lib: ["es2020", "dom"],
+});
+
+monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+	noSemanticValidation: false,
+	noSyntaxValidation: false,
 });

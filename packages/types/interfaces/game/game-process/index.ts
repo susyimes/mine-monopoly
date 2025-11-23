@@ -132,7 +132,10 @@ export interface IGameRuntimeStack<Context extends GameContext> {
 	pop(): GameEvent<Context> | undefined;
 }
 
-export type GameEventFunction<Context extends GameContext> = (ctx: Context, gameProcess: IGameProcess) => Promise<void>;
+export type GameEventFunction<Context extends GameContext> = (
+	ctx: Context,
+	gameProcess: IGameProcess
+) => Promise<void> | void;
 
 // 游戏事件--游戏循环中的最基础的单位
 export type GameEvent<Context extends GameContext> = {
@@ -224,7 +227,7 @@ export interface IPlayer {
 	tp: (positionIndex: number) => Promise<void>;
 
 	//注册修饰器
-	registerModifier(modifier: IModifier<PlayerCommandMap>): void;
+	registerModifier<K extends keyof PlayerCommandMap>(modifier: IModifier<PlayerCommandMap, K>): void;
 
 	getPlayerInfo: () => PlayerInfo;
 	getRoundPhases: () => IGamePhase<GameContext>[];

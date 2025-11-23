@@ -85,7 +85,7 @@ function loadCustomUIs(container: HTMLDivElement, customUIs: CustomUI[]) {
 	const renderList: VNode[] = [];
 
 	for (const customUI of customUIs) {
-		const initCodeCompiled = compileTsToJs(customUI.initCode, "");
+		const initCodeCompiled = compileTsToJs(`return ${customUI.initCode}`, "");
 		const initFunction = new Function(initCodeCompiled)();
 
 		const CustomUIWrapper = {

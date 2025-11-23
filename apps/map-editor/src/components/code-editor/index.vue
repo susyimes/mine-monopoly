@@ -23,10 +23,6 @@ const initEditor = async () => {
 		props.extraLibs &&
 			monacoInstance.languages.typescript.typescriptDefaults.setExtraLibs(props.extraLibs.map((s) => ({ content: s })));
 
-		monacoInstance.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-			diagnosticCodesToIgnore: [1108, 6133],
-		});
-
 		editor = monacoInstance.editor.create(containerRef.value, {
 			value: code.value && code.value !== "" ? code.value : props.templateText || "",
 			language: "typescript",

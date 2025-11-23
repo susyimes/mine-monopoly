@@ -1,5 +1,5 @@
 import { IPlayer } from "../game-process";
-import { ICommandMap } from ".";
+import { ICommandMap } from "./command";
 
 export interface PropertyCommandMap extends ICommandMap {
 	//地产主人

@@ -1,3 +1,3 @@
-return (async (arrivedPlayer: IPlayer, gameProcess: IGameProcess) => {
+(async (arrivedPlayer: IPlayer, gameProcess: IGameProcess) => {
   
 });

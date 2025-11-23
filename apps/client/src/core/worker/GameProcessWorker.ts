@@ -159,6 +159,7 @@ export class GameProcess implements IGameProcess {
 			});
 		}
 
+		this.preprocessingEffectCode();
 		this.gameRoundPhase = {
 			roundStartPhase: mapData.phases.gameRoundStart.map((phaseInfo) => new GamePhase(phaseInfo)),
 			roundEndPhase: mapData.phases.gameRoundEnd.map((phaseInfo) => new GamePhase(phaseInfo)),
@@ -166,6 +167,33 @@ export class GameProcess implements IGameProcess {
 		this.initMap();
 		this.initPlayer();
 		this.runInitedPhase();
+	}
+
+	private preprocessingEffectCode() {
+		const { mapEvents, chanceCards, roles, mapItems, phases } = this.mapData;
+		for (const mapEvent of mapEvents) {
+			mapEvent.effectCode = `return ${mapEvent.effectCode}`;
+		}
+
+		for (const chanceCard of chanceCards) {
+			chanceCard.effectCode = `return ${chanceCard.effectCode}`;
+		}
+
+		for (const role of roles) {
+			role.initCode = `return ${role.initCode}`;
+		}
+
+		for (const mapItem of mapItems) {
+			if (mapItem.property && mapItem.property.custom) {
+				mapItem.property.custom.effectCode = `return ${mapItem.property.custom.effectCode}`;
+			}
+		}
+		
+		Object.values(phases).forEach((phaseList) => {
+			for (const phase of phaseList) {
+				phase.initEventCode = `return ${phase.initEventCode}`;
+			}
+		});
 	}
 
 	private initMap() {

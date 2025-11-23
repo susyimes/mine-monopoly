@@ -74,6 +74,9 @@ export default function generateMonacoDTS() {
 				}
 			});
 		},
+		// closeBundle() {
+		// 	scanAndGenerate();
+		// },
 	};
 }
 

@@ -1,4 +1,3 @@
-//触发到达事件前
-arrivedEventPhase.use(EventTiggerTime.Before, async(context, next)=>{
-
-})
+(async (gameProcess: IGameProcess) => {
+	
+});

@@ -47,6 +47,20 @@ declare enum OperateType {
 	ConfirmDialogResult = "ConfirmDialogResult",//由服务端主机调起的dialog的结果返回
 	SelectDialogResult = "SelectDialogResult"
 }
+type ICommand<C extends ICommandMap, K extends keyof C> = {
+	type: K;
+	payload: C[K]["payload"];
+};
+interface ICommandContext<C extends ICommandMap, K extends keyof C> {
+	cancel(): void;
+	setResult(result: C[K]["result"]): void;
+}
+interface ICommandMap {
+	[commandType: string]: {
+		payload: any;
+		result: any;
+	};
+}
 interface PlayerCommandMap extends ICommandMap {
 	"player.property.gain": {
 		payload: {
@@ -133,25 +147,11 @@ interface PlayerCommandMap extends ICommandMap {
 		};
 	};
 }
-type ICommand<C extends ICommandMap, K extends keyof C> = {
-	type: K;
-	payload: C[K]["payload"];
-};
-interface ICommandContext<C extends ICommandMap, K extends keyof C> {
-	cancel(): void;
-	setResult(result: C[K]["result"]): void;
-}
-interface ICommandMap {
-	[commandType: string]: {
-		payload: any;
-		result: any;
-	};
-}
 type ModifierTiming = "before" | "after";
-interface ModifierDescriptor<C extends ICommandMap> {
+interface ModifierDescriptor<C extends ICommandMap, K extends keyof C = keyof C> {
 	id: string;
 	timing: ModifierTiming;
-	commandType: keyof C;
+	commandType: K;
 	remainingTriggers: number;
 	priority?: number;
 	meta?: {
@@ -161,9 +161,9 @@ interface ModifierDescriptor<C extends ICommandMap> {
 		source: string;
 	};
 }
-interface IModifier<C extends ICommandMap> {
-	descriptor: ModifierDescriptor<C>;
-	fn<K extends keyof C>(command: ICommand<C, K>, context: ICommandContext<C, K>): Promise<C[K]["result"]> | C[K]["result"];
+interface IModifier<C extends ICommandMap, K extends keyof C = keyof C> {
+	descriptor: ModifierDescriptor<C, K>;
+	fn(command: ICommand<C, K>, context: ICommandContext<C, K>): Promise<void> | void;
 }
 interface GameMap {
 	id: string;
@@ -585,7 +585,7 @@ interface IGameRuntimeStack<Context extends GameContext> {
 	push(...gameEvents: GameEvent<Context>[]): void;
 	pop(): GameEvent<Context> | undefined;
 }
-type GameEventFunction<Context extends GameContext> = (ctx: Context, gameProcess: IGameProcess) => Promise<void>;
+type GameEventFunction<Context extends GameContext> = (ctx: Context, gameProcess: IGameProcess) => Promise<void> | void;
 type GameEvent<Context extends GameContext> = {
 	fn: GameEventFunction<Context>;
 	key?: string;
@@ -651,7 +651,7 @@ interface IPlayer {
 	getIsBankrupted: () => boolean;
 	walk: (step: number) => Promise<void>;
 	tp: (positionIndex: number) => Promise<void>;
-	registerModifier(modifier: IModifier<PlayerCommandMap>): void;
+	registerModifier<K extends keyof PlayerCommandMap>(modifier: IModifier<PlayerCommandMap, K>): void;
 	getPlayerInfo: () => PlayerInfo;
 	getRoundPhases: () => IGamePhase<GameContext>[];
 }

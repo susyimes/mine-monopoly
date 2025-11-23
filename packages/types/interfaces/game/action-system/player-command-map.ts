@@ -1,5 +1,5 @@
 import { IChanceCard, IPlayer, IProperty } from "../game-process";
-import { ICommandMap } from ".";
+import { ICommandMap } from "./command";
 
 export interface PlayerCommandMap extends ICommandMap {
 	// 地产

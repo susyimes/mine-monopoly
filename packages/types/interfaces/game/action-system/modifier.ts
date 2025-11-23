@@ -2,10 +2,10 @@ import { ICommandMap, ICommand, ICommandContext } from "./command";
 
 export type ModifierTiming = "before" | "after";
 
-export interface ModifierDescriptor<C extends ICommandMap> {
+export interface ModifierDescriptor<C extends ICommandMap, K extends keyof C = keyof C> {
 	id: string;
 	timing: ModifierTiming;
-	commandType: keyof C;
+	commandType: K;
 	remainingTriggers: number;
 	priority?: number;
 	// 可序列化的信息用于给玩家 UI 展示
@@ -17,24 +17,21 @@ export interface ModifierDescriptor<C extends ICommandMap> {
 	};
 }
 
-export interface IModifier<C extends ICommandMap> {
-	descriptor: ModifierDescriptor<C>;
-	fn<K extends keyof C>(
-		command: ICommand<C, K>,
-		context: ICommandContext<C, K>
-	): Promise<C[K]["result"]> | C[K]["result"];
+export interface IModifier<C extends ICommandMap, K extends keyof C = keyof C> {
+	descriptor: ModifierDescriptor<C, K>;
+	fn(command: ICommand<C, K>, context: ICommandContext<C, K>): Promise<void> | void;
 }
 
-export interface IModifierManager<C extends ICommandMap> {
-	add(mod: IModifier<C>): void;
+export interface IModifierManager<C extends ICommandMap, K extends keyof C = keyof C> {
+	add(mod: IModifier<C, K>): void;
 
 	removeById(id: string): boolean;
 
 	clear(): void;
 
-	getModifiersList(): IModifier<C>[];
+	getModifiersList(): IModifier<C, K>[];
 
-	getFor<K extends keyof C>(cmd: ICommand<C, K>, timing: ModifierTiming): IModifier<C>[];
+	getFor(cmd: ICommand<C, K>, timing: ModifierTiming): IModifier<C, K>[];
 
-	decayAfterExecution(appliedMods: IModifier<C>[]): void;
+	decayAfterExecution(appliedMods: IModifier<C, K>[]): void;
 }
