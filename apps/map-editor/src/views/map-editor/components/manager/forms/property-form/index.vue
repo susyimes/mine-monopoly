@@ -1,293 +1,372 @@
 <script setup lang="ts">
+import { reactive, ref, computed, watch, toRaw } from "vue";
 import type { FormInstance, Rule } from "ant-design-vue/es/form";
-import { reactive, ref, toRaw, computed, watch, onMounted, createVNode, nextTick } from "vue";
-import { PropertyInfo, MapItem } from "@fatpaper-monopoly/types";
-import { useEditorStore, useMapDataStore } from "@src/stores";
 import { message } from "ant-design-vue";
+import { PropertyInfo, MapItem } from "@fatpaper-monopoly/types"; // 假设路径正确
+import { useEditorStore, useMapDataStore } from "@src/stores";
 import EffectEditor from "./effect-editor.vue";
 import BuildingModelSeletor from "../../components/building-model-seletor.vue";
+import { clone } from "lodash";
 
-// props & emits
-const emits = defineEmits(["submit"]);
+const editorStore = useEditorStore();
+const mapDataStore = useMapDataStore();
 
-const currentMapItem = computed(() => useEditorStore().currentMapItem);
-const currentMapItemId = computed(() => useEditorStore().currentMapItemId);
-const streetList = computed(() => useMapDataStore().streets);
+const currentMapItemId = computed(() => editorStore.currentMapItemId);
+const streetList = computed(() => mapDataStore.streets);
 
-const propertyId = ref("");
+const formRef = ref<FormInstance>();
+const submitting = ref(false);
 
-// 表单数据
-const propertyForm = reactive<PropertyInfo>({
+const createDefaultData = (): PropertyInfo => ({
 	id: crypto.randomUUID(),
 	name: "",
 	sellCost: 0,
 	buildCost: 0,
 	costList: [0, 0, 0],
 	level: 0,
-	maxLevel: 2,
+	maxLevel: 2, // 建议在普通模式下由 costList.length - 1 决定
 	buildingModelIdList: undefined,
-	streetId: "",
+	streetId: undefined as unknown as string, // 强制类型适配，或者给默认值
 	custom: undefined,
 });
 
-// 表单引用
-const propertyFormRef = ref<FormInstance>();
-
-// 表单规则
-const propertyFormRules: Record<string, Rule[]> = {
-	name: [{ required: true, message: "请填写地皮名称", trigger: "blur" }],
-	maxLevel: [{ required: true, message: "请填写最大等级", trigger: "blur" }],
-	sellCost: [{ required: true, message: "请填写空地价格", trigger: "blur" }],
-	buildCost: [{ required: true, message: "请填写建楼价格", trigger: "blur" }],
-	streetId: [{ required: true, message: "请选择街道", trigger: "change" }],
-};
-
-// 表单回填
-onMounted(() => {
-	updateForm(currentMapItem.value);
-});
-
-watch(
-	currentMapItem,
-	(newMapItem) => {
-		updateForm(newMapItem);
-	},
-	{ deep: true }
-);
-
-function handleCustomModeChange(isCustomMode: boolean) {
-	if (isCustomMode) {
-		propertyForm.custom = {
-			effectCode: "",
-		};
-	} else {
-		propertyForm.custom = undefined;
-	}
-}
-
-function updateForm(newMapItem: MapItem | undefined) {
-	if (newMapItem?.property) {
-		const newProperty = newMapItem.property;
-		propertyId.value = newMapItem.property.id;
-		propertyForm.name = newProperty.name;
-		propertyForm.sellCost = newProperty.sellCost;
-		propertyForm.buildCost = newProperty.buildCost;
-		propertyForm.costList = newProperty.costList;
-		propertyForm.level = newProperty.level;
-		propertyForm.maxLevel = newProperty.maxLevel;
-		propertyForm.streetId = newProperty.streetId;
-		propertyForm.buildingModelIdList = newProperty.buildingModelIdList;
-		propertyForm.custom = newProperty.custom;
-		if (propertyForm.custom) isCustomProperty.value = true;
-	} else {
-		propertyId.value = "";
-		propertyFormRef.value?.resetFields();
-	}
-}
-
-// 表单提交
-async function handleCreateOrUpdateProperty() {
-	if (currentMapItemId.value) {
-		// TODO
-		useMapDataStore().addProperty(currentMapItemId.value, propertyForm);
-		message.success("地皮信息设置成功");
-	}
-}
-
+const formData = reactive<PropertyInfo>(createDefaultData());
 const isCustomProperty = ref(false);
 
-const effectCodeEditorVisible = ref(false);
+const rules: Record<string, Rule[]> = {
+	name: [{ required: true, message: "请输入地皮名称", trigger: "blur" }],
+	sellCost: [{ required: true, message: "请输入空地价格", trigger: "change" }],
+	buildCost: [{ required: true, message: "请输入建楼价格", trigger: "change" }],
+	streetId: [{ required: true, message: "请选择所属街道", trigger: "change" }],
+	// 动态校验 costList
+	costList: [{ type: "array", required: true, message: "请配置过路费", trigger: "change" }],
+};
 
-function handleSubmitEffectCode() {
-	handleCreateOrUpdateProperty();
-	effectCodeEditorVisible.value = false;
+watch(
+	() => currentMapItemId.value,
+	(newItemId) => {
+		initForm(newItemId || "");
+	},
+	{ immediate: true, deep: true }
+);
+
+function initForm(itemId: string) {
+	// 重置表单验证状态
+	formRef.value?.clearValidate();
+
+	const mapItem = useMapDataStore().findMapItemById(itemId);
+
+	if (mapItem && mapItem.property) {
+		const prop = mapItem.property;
+		Object.assign(formData, JSON.parse(JSON.stringify(mapItem.property)));
+		isCustomProperty.value = !!prop.custom;
+	} else {
+		// 重置为默认值
+		Object.assign(formData, createDefaultData());
+		isCustomProperty.value = false;
+	}
 }
 
-const buildingModelVisible = ref(false);
-
-function handleBuildingModelSeletorSubmit(idList: string[]) {
-	propertyForm.buildingModelIdList = idList;
-	buildingModelVisible.value = false;
-}
-
-function handleRemoveBuildingModelList() {
-	propertyForm.buildingModelIdList = undefined;
+function handleCustomModeChange(checked: boolean) {
+	if (checked) {
+		formData.custom = { effectCode: "" };
+	} else {
+		formData.custom = undefined;
+		// 切回普通模式，确保 costList 存在
+		if (!formData.costList || formData.costList.length === 0) {
+			formData.costList = [0, 0, 0];
+			formData.maxLevel = 2;
+		}
+	}
 }
 
 function addCostLevel() {
-	propertyForm.costList.push(0);
-	propertyForm.maxLevel = propertyForm.costList.length - 1;
+	formData.costList.push(0);
+	syncMaxLevel();
 }
 
 function removeCostLevel(index: number) {
-	propertyForm.costList.splice(index, 1);
-	propertyForm.maxLevel = propertyForm.costList.length - 1;
+	formData.costList.splice(index, 1);
+	syncMaxLevel();
+}
+
+function syncMaxLevel() {
+	// 如果逻辑是：数组长度 - 1 = 最大等级
+	formData.maxLevel = Math.max(0, formData.costList.length - 1);
+}
+
+async function handleSubmit() {
+	if (!currentMapItemId.value) return;
+
+	try {
+		await formRef.value?.validate();
+		submitting.value = true;
+
+		// 再次确保 maxLevel 正确 (防御性编程)
+		if (!isCustomProperty.value) {
+			syncMaxLevel();
+		}
+
+		// 提交数据 (toRaw 确保传入 Store 的是纯对象，非 Proxy，视 Store 实现而定)
+		mapDataStore.addProperty(currentMapItemId.value, clone(formData));
+		message.success("保存成功");
+	} catch (error) {
+		console.error(error);
+		// 校验失败会自动提示，无需额外 message
+	} finally {
+		submitting.value = false;
+	}
+}
+
+const effectEditorVisible = ref(false);
+const buildingModelVisible = ref(false);
+
+function onBuildingModelSubmit(ids: string[]) {
+	formData.buildingModelIdList = ids;
+	buildingModelVisible.value = false;
 }
 </script>
 
 <template>
-	<div class="property-form">
-		<div class="title">
-			<h4>地皮设置</h4>
-			<a-switch
-				@change="handleCustomModeChange"
-				v-model:checked="isCustomProperty"
-				checked-children="自定义地皮"
-				un-checked-children="普通地皮"
-			/>
+	<div class="property-editor">
+		<div class="header">
+			<span class="title">地皮设置</span>
+			<a-space>
+				<span>模式：</span>
+				<a-switch
+					v-model:checked="isCustomProperty"
+					@change="handleCustomModeChange"
+					checked-children="自定义"
+					un-checked-children="标准"
+				/>
+			</a-space>
 		</div>
-		<a-form
-			size="small"
-			ref="propertyFormRef"
-			:model="propertyForm"
-			:rules="propertyFormRules"
-			layout="horizontal"
-			label-align="left"
-			:label-col="{ span: 9 }"
-			:wrapper-col="{ span: 14 }"
-			:disabled="currentMapItemId === '' || currentMapItem?.linkto"
-			@finish="handleCreateOrUpdateProperty"
-		>
-			<a-form-item label="地皮名称" name="name">
-				<a-input v-model:value="propertyForm.name" allow-clear />
-			</a-form-item>
 
-			<a-form-item label="空地价格" name="sellCost">
-				<a-input-number :min="0" :step="100" v-model:value="propertyForm.sellCost" style="width: 100%" />
-			</a-form-item>
+		<a-form ref="formRef" :model="formData" :rules="rules" layout="vertical" class="scrollable-form" size="small">
+			<a-row :gutter="16">
+				<a-col :span="24">
+					<a-form-item label="地皮名称" name="name">
+						<a-input v-model:value="formData.name" placeholder="例如：贝克街" allow-clear />
+					</a-form-item>
+				</a-col>
 
-			<a-form-item label="升级价格" name="buildCost">
-				<a-input-number :min="0" :step="100" v-model:value="propertyForm.buildCost" style="width: 100%" />
-			</a-form-item>
+				<a-col :span="12">
+					<a-form-item label="所属街道" name="streetId">
+						<a-select v-model:value="formData.streetId" placeholder="选择街道" allow-clear>
+							<a-select-option v-for="s in streetList" :key="s.id" :value="s.id">
+								{{ s.name }}
+							</a-select-option>
+						</a-select>
+					</a-form-item>
+				</a-col>
+				<a-col :span="12">
+					<a-form-item label="最大等级 (Max Level)" name="maxLevel">
+						<a-input-number
+							v-model:value="formData.maxLevel"
+							:min="0"
+							style="width: 100%"
+							:disabled="!isCustomProperty"
+						/>
+					</a-form-item>
+				</a-col>
 
-			<a-form-item label="所属街道" name="streetId">
-				<a-select v-model:value="propertyForm.streetId" placeholder="选择所属街道" allow-clear>
-					<a-select-option v-for="street in streetList" :key="street.id" :value="street.id">
-						{{ street.name }}
-					</a-select-option>
-				</a-select>
-			</a-form-item>
+				<a-col :span="12">
+					<a-form-item label="购买价格" name="sellCost">
+						<a-input-number
+							v-model:value="formData.sellCost"
+							:min="0"
+							:step="100"
+							style="width: 100%"
+							addon-after="$"
+						/>
+					</a-form-item>
+				</a-col>
+				<a-col :span="12">
+					<a-form-item label="升级成本" name="buildCost">
+						<a-input-number
+							v-model:value="formData.buildCost"
+							:min="0"
+							:step="100"
+							style="width: 100%"
+							addon-after="$"
+						/>
+					</a-form-item>
+				</a-col>
+			</a-row>
 
-			<a-form-item label="最大等级" name="maxLevel">
-				<a-input-number :min="0" v-model:value="propertyForm.maxLevel" style="width: 100%" />
-			</a-form-item>
+			<a-divider style="margin: 12px 0" />
 
 			<template v-if="isCustomProperty">
-				<a-button
-					size="medium"
-					@click="effectCodeEditorVisible = true"
-					type="dashed"
-					style="width: 100%; margin-bottom: 10px"
-					>编辑地皮代码</a-button
-				>
+				<div class="custom-block">
+					<div class="info-text">自定义模式下，地皮触发逻辑由代码控制。</div>
+					<a-button type="dashed" block @click="effectEditorVisible = true">
+						<template #icon><span>⚡</span></template>
+						编辑脚本代码
+					</a-button>
+				</div>
 			</template>
 
 			<template v-else>
-				<a-form-item
-					v-for="(cost, index) in propertyForm.costList"
-					:label="index === 0 ? '空地过路费' : `LV${index}过路费`"
-					:name="['costList', index]"
-					:key="index"
-					:rules="{
-						required: true,
-						message: '过路费不能为空',
-						trigger: 'change',
-					}"
-				>
-					<a-input-number
-						:min="0"
-						:step="100"
-						v-model:value="propertyForm.costList[index]"
-						style="width: 60%; margin-right: 8px"
-					/>
-					<a-button
-						type="primary"
-						danger
-						v-if="index === propertyForm.costList.length - 1"
-						@click="removeCostLevel(index)"
-						>删除</a-button
-					>
-				</a-form-item>
+				<div class="cost-list-header">
+					<span>过路费等级配置</span>
+					<a-button type="link" size="small" @click="addCostLevel">新增等级</a-button>
+				</div>
 
-				<a-form-item :wrapper-col="{ offset: 9 }">
-					<a-button style="width: 100%" type="dashed" @click="addCostLevel">添加一个收费等级</a-button>
-				</a-form-item>
+				<div class="cost-list-container">
+					<template v-for="(cost, index) in formData.costList" :key="index">
+						<a-form-item :name="['costList', index]" :rules="{ required: true, message: '必填' }" class="cost-item">
+							<div class="cost-row">
+								<span class="level-label">LV.{{ index }}</span>
+								<a-input-number v-model:value="formData.costList[index]" :min="0" :step="50" style="flex: 1" />
+								<a-button v-if="formData.costList.length > 1" type="text" danger @click="removeCostLevel(index)">
+									×
+								</a-button>
+							</div>
+						</a-form-item>
+					</template>
+				</div>
 			</template>
 
-			<!-- 操作按钮组 -->
-			<a-form-item style="justify-self: end">
-				<a-space>
-					<a-button type="primary" html-type="submit"> 保存地皮信息 </a-button>
-				</a-space>
+			<a-divider style="margin: 12px 0" />
+
+			<a-form-item label="建筑模型绑定">
+				<div class="model-preview">
+					<div v-if="formData.buildingModelIdList?.length" class="model-tags">
+						已绑定 {{ formData.buildingModelIdList.length }} 个模型ID
+					</div>
+					<div v-else class="text-gray">暂无模型绑定</div>
+
+					<a-space>
+						<a-button size="small" @click="buildingModelVisible = true">
+							{{ formData.buildingModelIdList ? "修改" : "选择" }}
+						</a-button>
+						<a-button
+							v-if="formData.buildingModelIdList"
+							size="small"
+							danger
+							@click="formData.buildingModelIdList = undefined"
+						>
+							清空
+						</a-button>
+					</a-space>
+				</div>
 			</a-form-item>
 		</a-form>
-		<a-divider><h5 style="font-size: 0.75em">额外部分</h5></a-divider>
-		<div class="extra-area">
-			<div>
-				<a-button @click="buildingModelVisible = true" type="dashed">{{
-					propertyForm.buildingModelIdList ? "修改建筑模型" : "添加建筑模型"
-				}}</a-button>
-				<a-button @click="handleRemoveBuildingModelList" type="primary" danger v-if="propertyForm.buildingModelIdList"
-					>删除建筑模型</a-button
-				>
-			</div>
+
+		<div class="footer-actions">
+			<a-button type="primary" block :loading="submitting" @click="handleSubmit"> 保存地皮配置 </a-button>
 		</div>
+
+		<a-modal v-model:open="effectEditorVisible" title="编辑触发代码" width="800px" destroyOnClose :footer="null">
+			<effect-editor v-if="formData.custom" v-model="formData.custom.effectCode" @save="effectEditorVisible = false" />
+		</a-modal>
+
+		<a-modal v-model:open="buildingModelVisible" title="选择建筑模型" destroyOnClose :footer="null">
+			<building-model-seletor :modelIdList="formData.buildingModelIdList" @submit="onBuildingModelSubmit" />
+		</a-modal>
 	</div>
-
-	<a-modal
-		@ok="handleSubmitEffectCode"
-		v-model:open="effectCodeEditorVisible"
-		title="编辑触发代码"
-		width="80vw"
-		closable
-		okText="确定修改"
-		cancelText="取消"
-		destroyOnClose
-	>
-		<effect-editor v-if="propertyForm.custom" v-model="propertyForm.custom.effectCode" />
-	</a-modal>
-
-	<a-modal :title="`${propertyForm.name}的房屋模型`" v-model:open="buildingModelVisible" destroyOnClose :footer="null">
-		<building-model-seletor
-			@submit="handleBuildingModelSeletorSubmit"
-			:modelIdList="propertyForm.buildingModelIdList"
-		/>
-	</a-modal>
 </template>
 
 <style scoped lang="scss">
-.property-form {
-	padding: 15px 20px;
+.property-editor {
 	background: #fff;
 	border-radius: 8px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	width: 30vw;
 	max-height: 70vh;
 	overflow-y: scroll;
+}
+
+.header {
+	padding: 16px 20px;
+	border-bottom: 1px solid #f0f0f0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-shrink: 0;
 
 	.title {
-		margin-bottom: 15px;
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
+		margin: 0;
+		font-weight: 600;
 	}
 }
 
-.extra-area {
-	width: 100%;
+.scrollable-form {
+	flex: 1;
+	overflow-y: auto;
+	padding: 20px;
+}
+
+.custom-block {
+	background: #fafafa;
+	padding: 15px;
+	border-radius: 6px;
+	border: 1px dashed #d9d9d9;
+	text-align: center;
+
+	.info-text {
+		margin-bottom: 10px;
+		color: #888;
+		font-size: 13px;
+	}
+}
+
+.cost-list-header {
 	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	gap: 10px;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 10px;
+	font-weight: 500;
+}
 
-	div {
-		width: 100%;
+.cost-list-container {
+	background: #fafafa;
+	padding: 10px;
+	border-radius: 6px;
+}
+
+.cost-item {
+	margin-bottom: 10px;
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	.cost-row {
 		display: flex;
-		justify-content: center;
-		gap: 10px;
+		align-items: center;
+		gap: 8px;
 
-		button:first-child {
-			flex: 1;
+		.level-label {
+			width: 40px;
+			font-weight: bold;
+			color: #666;
 		}
 	}
+}
+
+.model-preview {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 12px;
+	background: #f5f5f5;
+	border-radius: 4px;
+
+	.model-tags {
+		color: #1890ff;
+		font-weight: 500;
+	}
+
+	.text-gray {
+		color: #ccc;
+	}
+}
+
+.footer-actions {
+	padding: 12px 20px;
+	border-top: 1px solid #f0f0f0;
+	background: #fff;
+	flex-shrink: 0;
 }
 </style>

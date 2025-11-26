@@ -43,6 +43,7 @@ import { compileTsToJs, randomString } from "@src/utils";
 import { GamePhase } from "@src/core/worker/class/GamePhase";
 import { GameRuntimeStack } from "@src/core/worker/class/GameRuntimeStack";
 import GameProcessTypes from "./editor-lib.d.ts?raw";
+import { generatePropertyHtml } from "@src/utils/html";
 
 const operationListener = new OperateListener();
 let gameProcess: GameProcess | null = null;
@@ -599,7 +600,7 @@ export class GameProcess implements IGameProcess {
 				//地皮有主人
 				if (owner.getId() === arrivedPlayer.getId()) {
 					//地产是自己的
-					if (property.getBuildingLevel() < 2) {
+					if (property.getBuildingLevel() < property.getMaxLevel()) {
 						this.roundTimeTimer.setTimeOutFunction(() => {
 							operationListener.emit(arrivedPlayer.getId(), OperateType.ConfirmDialogResult, {
 								id: arrivedPlayer.getId(),
@@ -610,7 +611,9 @@ export class GameProcess implements IGameProcess {
 						//已有房产, 升级房屋
 						const playerRes = await this.showConfirmDialog(arrivedPlayer.getId(), {
 							title: `升级 ${property.getName()}`,
-							content: `${property.getName()}`,
+							content: `${generatePropertyHtml(property.getPropertyInfo())}`,
+							cancelText: `不要`,
+							confirmText: `升！`,
 						});
 						this.roundRemainingTimeBroadcast(0);
 						if (playerRes) {
@@ -661,14 +664,17 @@ export class GameProcess implements IGameProcess {
 				//等待客户端回应买房
 				this.roundRemainingTimeBroadcast(0);
 				const playerRes = await this.showConfirmDialog(arrivedPlayer.getId(), {
-					title: `购买${property.getName()}`,
-					content: `${property.getName()}`,
+					title: `购买 ${property.getName()}`,
+					content: `${generatePropertyHtml(property.getPropertyInfo())}`,
+					cancelText: `不要`,
+					confirmText: `买！`,
 				});
 				if (playerRes.confirm) {
 					await this.handlePlayerBuyProperty(arrivedPlayer, property);
 				}
 			}
 		} else if (arriveItem.mapEventId) {
+			// 特殊地块
 			const mapEvent = this.mapEvents.get(arriveItem.mapEventId);
 			if (!mapEvent) throw Error("找不到对应的MapEvent");
 			const effectCode = mapEvent.effectCode;

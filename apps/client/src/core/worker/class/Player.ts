@@ -57,7 +57,7 @@ export class Player implements IPlayer {
 		this.initCommandBus();
 
 		const codeCompiled = compileTsToJs(role.initCode, GameProcessTypes);
-		const roleInitFunction = new Function("player", codeCompiled)();
+		const roleInitFunction = new Function(codeCompiled)();
 		roleInitFunction(this);
 	}
 

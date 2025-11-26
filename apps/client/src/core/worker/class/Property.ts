@@ -8,6 +8,8 @@ import {
 } from "@fatpaper-monopoly/types";
 import { ModifierManager } from "./action-system/ModifiersManager";
 import { CommandBus } from "./action-system/CommandBus";
+import GameProcessTypes from "../editor-lib.d.ts?raw";
+import { compileTsToJs } from "@src/utils";
 
 export class Property implements IProperty {
 	private id: string;
@@ -21,9 +23,7 @@ export class Property implements IProperty {
 	private owner: IPlayer | undefined = undefined;
 	public modifierManager: IModifierManager<PropertyCommandMap>;
 	public commandBus: ICommandBus<PropertyCommandMap>;
-
-	private isCustom: boolean = false;
-	private effectFunction: Function | undefined;
+	private originalData: PropertyInfo;
 
 	constructor(property: PropertyInfo) {
 		this.id = property.id;
@@ -34,10 +34,18 @@ export class Property implements IProperty {
 		this.costList = property.costList;
 		this.maxLevel = property.maxLevel;
 		this.streetId = property.streetId;
+		this.originalData = property;
 
 		this.modifierManager = new ModifierManager();
 		this.commandBus = new CommandBus<PropertyCommandMap>(this.modifierManager);
+
 		this.initCommandBus();
+
+		if (property.custom) {
+			const codeCompiled = compileTsToJs(property.custom.effectCode, GameProcessTypes);
+			const propertyInitFunction = new Function(codeCompiled)();
+			propertyInitFunction(this);
+		}
 	}
 
 	private initCommandBus() {
@@ -74,13 +82,11 @@ export class Property implements IProperty {
 			return payload;
 		});
 
-		this.commandBus.setHandler("property.arrived", (payload) => {
+		this.commandBus.setHandler("property.arrived", async (payload) => {
 			const { owner, arrivedPlayer, toll } = payload;
-			if (owner && toll !== undefined) {
-				owner.gain(toll);
-				arrivedPlayer.cost(toll);
-			} else {
-				//TODO
+			if (owner !== undefined && toll !== undefined) {
+				await owner.gain(toll);
+				await arrivedPlayer.cost(toll);
 			}
 			return payload;
 		});
@@ -92,25 +98,27 @@ export class Property implements IProperty {
 	public getBuildCost = () => this.buildCost;
 	public getSellCost = () => this.sellCost;
 	public getCostList = () => this.costList;
+	public getMaxLevel = () => this.maxLevel;
 	public getOwner = () => this.owner;
+	public getOriginalData = () => this.originalData;
 
-	public levelUp() {
+	public async levelUp() {
 		this.commandBus.execute({ type: "property.level.up", payload: {} });
 	}
 
-	public levelDown() {
+	public async levelDown() {
 		this.commandBus.execute({ type: "property.level.down", payload: {} });
 	}
 
-	public setLevel(level: number) {
+	public async setLevel(level: number) {
 		this.commandBus.execute({ type: "property.level.set", payload: { oldLevel: this.level, newLevel: level } });
 	}
 
-	public setOwner(player: IPlayer | undefined) {
+	public async setOwner(player: IPlayer | undefined) {
 		this.commandBus.execute({ type: "property.owner.change", payload: { oldOwner: this.owner, newOwner: player } });
 	}
 
-	public arrived(player: IPlayer) {
+	public async arrived(player: IPlayer) {
 		this.commandBus.execute({
 			type: "property.arrived",
 			payload: { owner: this.owner, arrivedPlayer: player, toll: this.costList[this.level] || 0 },

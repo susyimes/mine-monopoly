@@ -524,8 +524,8 @@ interface IGameProcess {
 	gameRuntimeStack: IGameRuntimeStack<GameContext>;
 	roundTimeTimer: IRoundTimeTimer;
 	diceUtil: IDice;
-	handlePlayerRollDice(playerId: string): void;
-	handleArriveEvent(arrivedPlayer: IPlayer): void;
+	handlePlayerRollDice(playerId: string): Promise<void>;
+	handleArriveEvent(arrivedPlayer: IPlayer): Promise<void>;
 	handleUseChanceCard(sourcePlayer: IPlayer, chanceCardId: string, targetIdList: string[]): Promise<boolean>;
 	roundTurnNotify(playerId: string): void;
 	emitPlayerOperation<T extends OperateType>(playerId: string, operationType: T, data: PlayerOperationResult[T]): void;
@@ -626,17 +626,17 @@ interface IPlayer {
 	getName: () => string;
 	getPropertiesList: () => IProperty[];
 	setPropertiesList: (newPropertiesList: IProperty[]) => void;
-	gainProperty: (property: IProperty) => void;
-	loseProperty: (property: IProperty) => void;
+	gainProperty: (property: IProperty) => Promise<void>;
+	loseProperty: (property: IProperty) => Promise<void>;
 	getCardsList: () => IChanceCard[];
 	setCardsList: (newChanceCardList: IChanceCard[]) => void;
 	getCardById: (cardId: string) => IChanceCard | undefined;
-	gainCard: (gainCard: IChanceCard) => void;
-	loseCard: (cardId: string) => void;
+	gainCard: (gainCard: IChanceCard) => Promise<void>;
+	loseCard: (cardId: string) => Promise<void>;
 	setMoney: (money: number) => void;
 	getMoney: () => number;
-	cost: (money: number, target?: IPlayer) => void;
-	gain: (money: number, source?: IPlayer) => void;
+	cost: (money: number, target?: IPlayer) => Promise<void>;
+	gain: (money: number, source?: IPlayer) => Promise<void>;
 	setStop: (stop: number) => void;
 	getStop: () => number;
 	setPositionIndex: (newIndex: number) => void;
@@ -656,12 +656,14 @@ interface IProperty {
 	getBuildCost: () => number;
 	getSellCost: () => number;
 	getCostList: () => number[];
+	getMaxLevel: () => number;
 	getOwner: () => IPlayer | undefined;
-	arrived: (player: IPlayer) => void;
-	levelUp: () => void;
-	levelDown: () => void;
-	setOwner: (player: IPlayer | undefined) => void;
-	setLevel: (level: number) => void;
+	getOriginalData: () => PropertyInfo;
+	levelUp: () => Promise<void>;
+	levelDown: () => Promise<void>;
+	setOwner: (player: IPlayer | undefined) => Promise<void>;
+	setLevel: (level: number) => Promise<void>;
+	arrived: (player: IPlayer) => Promise<void>;
 	getPropertyInfo: () => PropertyInfo;
 }
 interface IChanceCard {

@@ -11,7 +11,6 @@ import DanmakuContainer from "@src/views/danmaku/danmaku_container.vue";
 import { isFullScreen, isMobileDevice } from "@src/utils";
 import { TitleBar } from "@fatpaper-monopoly/ui";
 import { isPC } from "./utils/platform";
-import { throttle } from "lodash";
 import { useDeviceStatus } from "./store";
 import {
 	faBolt,

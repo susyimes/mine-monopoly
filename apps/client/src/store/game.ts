@@ -2,7 +2,6 @@ import { ResourcesType, GameMap, PlayerInfo, PropertyInfo, GameData } from "@fat
 import { defineStore } from "pinia";
 import { useUserInfo } from ".";
 import useEventBus from "@src/utils/event-bus";
-import { isEqual } from "lodash";
 import { compareObjectArrays } from "@src/utils";
 
 export const useResourceStore = defineStore("temp-resource", {
