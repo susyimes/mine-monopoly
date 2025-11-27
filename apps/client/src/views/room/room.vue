@@ -60,7 +60,7 @@ const tempRoleSelectedId = ref<string>("");
 
 function handleChangeRole() {
 	if (socketClient && tempMapSelectedId.value !== currentMap.value?.id) {
-		socketClient.changeRole(tempMapSelectedId.value);
+		socketClient.changeRole(tempRoleSelectedId.value);
 	}
 }
 
