@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useMapDataStore } from "@src/stores";
 import { renderObjectTree } from "@src/utils/object-viewer";
+import { clone } from "lodash";
 import { nextTick, onUpdated, ref } from "vue";
 
 const visible = defineModel({ default: false });
@@ -11,7 +12,12 @@ onUpdated(async () => {
 	if (visible.value) {
 		nextTick(() => {
 			if (!mapDataViewerContainer.value) return;
-			renderObjectTree(mapDataViewerContainer.value, JSON.parse(JSON.stringify(useMapDataStore().$state)));
+			const data = clone(useMapDataStore().$state);
+			const json = {
+				properties: data.mapItems.filter((m) => m.property !== undefined).map((m) => m.property),
+				...data,
+			};
+			renderObjectTree(mapDataViewerContainer.value, json);
 		});
 	}
 });
@@ -27,6 +33,6 @@ onUpdated(async () => {
 .json-viewer-container {
 	width: 100%;
 	height: 70vh;
-  overflow-y: scroll;
+	overflow-y: scroll;
 }
 </style>
