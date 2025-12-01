@@ -39,25 +39,31 @@ defineExpose({ updateProperty });
 		<div class="name">
 			<span class="data">{{ _property.name }}</span>
 		</div>
-
 		<div class="buildingLevel">
 			<span class="label">当前建筑等级</span><span class="data level">LV {{ _property.level }}</span>
 		</div>
-		<div class="buildCost">
-			<span class="label">升级费用</span><span class="data">{{ _property.buildCost }}</span>
-		</div>
-		<div class="sellCost">
-			<span class="label">空地价格</span><span class="data">{{ _property.sellCost }}</span>
-		</div>
-		<div class="cost_item" v-for="(cost, index) in _property.costList">
-			<span class="label">LV{{ index }} 过路费</span><span class="data">{{ cost }}</span>
-		</div>
-		<div class="owner">
-			<span class="label">拥有人</span
-			><span class="data" :style="{ color: _playerNameColor }">{{
-				_property.owner ? _property.owner.username : "无"
-			}}</span>
-		</div>
+
+		<template v-if="_property.custom">
+			<div class="data">{{ _property.custom.description }}</div>
+		</template>
+
+		<template v-else>
+			<div class="buildCost">
+				<span class="label">升级费用</span><span class="data">{{ _property.buildCost }}</span>
+			</div>
+			<div class="sellCost">
+				<span class="label">空地价格</span><span class="data">{{ _property.sellCost }}</span>
+			</div>
+			<div class="cost_item" v-for="(cost, index) in _property.costList">
+				<span class="label">LV{{ index }} 过路费</span><span class="data">{{ cost }}</span>
+			</div>
+			<div class="owner">
+				<span class="label">拥有人</span
+				><span class="data" :style="{ color: _playerNameColor }">{{
+					_property.owner ? _property.owner.username : "无"
+				}}</span>
+			</div>
+		</template>
 	</div>
 </template>
 
@@ -68,7 +74,7 @@ defineExpose({ updateProperty });
 	flex-direction: column;
 	justify-content: space-around;
 	align-items: center;
-	padding: 0.6rem 0.4rem;
+	padding: 0.4rem 0.3rem;
 	background-color: rgba(255, 255, 255, 0.75);
 	border-radius: 0.8rem;
 

@@ -42,6 +42,7 @@ export const useMapData = defineStore("map-data", {
 			backgroundImageId: "",
 			coverImageId: "",
 		},
+		gameSettingForm: [],
 		mapItems: [],
 		chanceCards: [],
 		mapItemTypes: [],
@@ -122,6 +123,7 @@ export const useGameData = defineStore("game-data", {
 			return this.$state.propertiesList.find((p) => p.id === id);
 		},
 		updateGameData(newGamedata: GameData) {
+			console.log("🚀 ~ updateGameData ~ newGamedata:", newGamedata)
 			const eventBus = useEventBus();
 			const oldGameData = JSON.parse(JSON.stringify(this.$state)) as GameData;
 

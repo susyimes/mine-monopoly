@@ -28,6 +28,8 @@ import { PlayerModel } from "@fatpaper-monopoly/utils";
 import { DiceManager } from "./DiceManager";
 import { loadModel } from "@src/utils/three/model-loader";
 import { clone } from "lodash";
+import { getDracoLoader } from "@src/utils/draco/draco";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 const BLOCK_HEIGHT = 0.09;
 const PLAY_MODEL_SIZE = 0.7;
@@ -281,21 +283,24 @@ export class GameRenderer {
 	}
 
 	private async initMap() {
+		await this.initMapModels();
 		await this.initMapItems();
-		await this.initHouses();
 		await this.initProperties();
+	}
+
+	private async initMapModels() {
+		const modelResourcesList = Array.from(useResourceStore().recourceMap.values()).filter((r) => r.type === "model");
+		for await (const modelResource of modelResourcesList) {
+			this.mapModules.set(modelResource.id, await getModelById(modelResource.id));
+		}
 	}
 
 	private async initMapItems() {
 		const textureLoader = new THREE.TextureLoader();
 
-		const itemTypes = this.mapData.mapItemTypes;
-		for (const itemType of itemTypes) {
-			this.mapModules.set(itemType.id, await getModelById(itemType.modelId));
-		}
 		const mapItems = this.mapData.mapItems;
 		for (const mapItem of mapItems) {
-			const model = this.mapModules.get(mapItem.type.id);
+			const model = this.mapModules.get(mapItem.type.modelId);
 			if (!model) throw Error("加载MapItem时找不到模型");
 			const mapItemModel = new THREE.Group().copy(model);
 			mapItemModel.scale.set(0.5, 0.5, 0.5);
@@ -332,13 +337,6 @@ export class GameRenderer {
 				this.mapContainer.add(iconPlane);
 				this.setItemPositionOnMap(iconPlane, mapItem.x, mapItem.y, 0, BLOCK_HEIGHT + 0.01);
 			}
-		}
-	}
-
-	private async initHouses() {
-		const buildingModelIdList = this.mapData.buildingModelIdList;
-		for (const buildingModelId of buildingModelIdList) {
-			this.mapModules.set(buildingModelId, await getModelById(buildingModelId));
 		}
 	}
 
@@ -564,7 +562,6 @@ export class GameRenderer {
 	}
 
 	private async loadPlayersModules(playerList: Array<PlayerInfo>) {
-		console.log("🚀 ~ GameRenderer ~ loadPlayersModules ~ playerList:", playerList);
 		for await (const playerInfo of playerList) {
 			try {
 				this.playerPosition.set(playerInfo.id, toRaw(playerInfo.positionIndex));
@@ -645,17 +642,22 @@ export class GameRenderer {
 		if (!targetMapItem) return;
 		const targetMapItemModel = this.mapItemsInScene.get(targetMapItem?.id);
 		if (!targetMapItemModel) return;
-		let buildModel = this.mapModules.get(mapInfo.buildingModelIdList[newProperty.level]);
-		if (!buildModel) {
-			buildModel = this.mapModules.get(mapInfo.buildingModelIdList[mapInfo.buildingModelIdList.length - 1]);
-		}
+
+		const modelIdList = newProperty.buildingModelIdList ?? mapInfo.buildingModelIdList;
+		if (!modelIdList || modelIdList.length === 0) return;
+		const getModel = (index: number) => {
+			const id = modelIdList[index];
+			return id ? this.mapModules.get(id) : undefined;
+		};
+		const buildModel = getModel(newProperty.level) ?? getModel(modelIdList.length - 1);
+
 		if (!buildModel) return;
-		buildModel = buildModel.clone();
-		buildModel.position.copy(targetMapItemModel.position);
-		buildModel.position.y += BLOCK_HEIGHT;
-		buildModel.scale.copy(targetMapItemModel.scale);
-		buildModel.userData = { ...newProperty, isProperty: true };
-		buildModel.traverse((object) => {
+		const propertyBuildModel = buildModel.clone();
+		propertyBuildModel.position.copy(targetMapItemModel.position);
+		propertyBuildModel.position.y += BLOCK_HEIGHT;
+		propertyBuildModel.scale.copy(targetMapItemModel.scale);
+		propertyBuildModel.userData = { ...newProperty, isProperty: true };
+		propertyBuildModel.traverse((object) => {
 			if (object.userData.name) {
 				const meshName = object.userData.name as string;
 				if (meshName.includes("color-block")) {
@@ -693,12 +695,12 @@ export class GameRenderer {
 			const lookat = new THREE.Vector3();
 			lookat.copy(this.mapItemsInScene.get(linkMapItem.id)!.position);
 			lookat.setY(BLOCK_HEIGHT);
-			buildModel.lookAt(lookat);
-			buildModel.rotateY(-Math.PI / 2);
+			propertyBuildModel.lookAt(lookat);
+			propertyBuildModel.rotateY(-Math.PI / 2);
 		}
-		buildModel.scale.set(0, 0, 0);
-		this.mapContainer.add(buildModel);
-		gsap.to(buildModel.scale, {
+		propertyBuildModel.scale.set(0, 0, 0);
+		this.mapContainer.add(propertyBuildModel);
+		gsap.to(propertyBuildModel.scale, {
 			x: 0.45,
 			y: 0.45,
 			z: 0.45,
@@ -721,12 +723,12 @@ export class GameRenderer {
 						);
 					}
 					const textSpriteModel = houseItem.textSprite.getSprite();
-					const box = new THREE.Box3().setFromObject(buildModel);
+					const box = new THREE.Box3().setFromObject(propertyBuildModel);
 					// 计算边界框的高度
 					const size = box.getSize(new THREE.Vector3());
 					textSpriteModel.position.y = Math.max(size.y * 2 + 0.5, 1.5);
-					buildModel.add(textSpriteModel);
-					houseItem.group = buildModel;
+					propertyBuildModel.add(textSpriteModel);
+					houseItem.group = propertyBuildModel;
 				}
 			},
 		});

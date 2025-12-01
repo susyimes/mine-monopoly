@@ -1,6 +1,6 @@
 import { GameLinkItem, TargetSelectType, PlayerMoveType } from "../../../../types/enums/game/game";
 import { OperateType, GamePhaseMark, EventTiggerTime } from "../../../../types/enums/game/game-process";
-import { IModifier, PlayerCommandMap } from "../action-system";
+import { ICommandBus, IModifier, PlayerCommandMap, PropertyCommandMap } from "../action-system";
 import { UserInRoomInfo } from "../item";
 import { GameMap } from "../map";
 import { ServerSocketMessage } from "../socket";
@@ -233,6 +233,7 @@ export interface IPlayer {
 	tp: (positionIndex: number) => Promise<void>;
 	rollDices: () => Promise<number[]>;
 
+	commandBus: ICommandBus<PlayerCommandMap>;
 	//注册修饰器
 	registerModifier<K extends keyof PlayerCommandMap>(modifier: IModifier<PlayerCommandMap, K>): void;
 
@@ -260,6 +261,10 @@ export interface IProperty {
 	arrived: (player: IPlayer) => Promise<void>;
 
 	getPropertyInfo: () => PropertyInfo;
+
+	commandBus: ICommandBus<PropertyCommandMap>;
+	//注册修饰器
+	registerModifier<K extends keyof PropertyCommandMap>(modifier: IModifier<PropertyCommandMap, K>): void;
 }
 
 export interface IChanceCard {
@@ -305,9 +310,12 @@ export interface PropertyInfo {
 	streetId: string;
 	buildingModelIdList?: string[];
 	owner?: UserInRoomInfo;
-	custom?: {
-		effectCode: string;
-	};
+	custom?: PropertyCustom;
+}
+
+export interface PropertyCustom {
+	effectCode: string;
+	description: string;
 }
 
 export interface ChanceCardClientInfo extends Omit<ChanceCardInstanceInfo, "effectCode"> {}

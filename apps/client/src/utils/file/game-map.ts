@@ -84,6 +84,7 @@ async function loadMapDataToResourceStore(mapData: {
 			name: imageResource.name,
 			fileType: imageResource.filetype,
 			url: imageUrl,
+			type: "image",
 		});
 	}
 	for (const modelResource of mapData.modelFiles) {
@@ -95,6 +96,7 @@ async function loadMapDataToResourceStore(mapData: {
 			name: modelResource.name,
 			fileType: modelResource.filetype,
 			url: modelUrl,
+			type: "model",
 		});
 	}
 }

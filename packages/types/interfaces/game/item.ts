@@ -78,6 +78,7 @@ export type ResourcesType = {
 	name: string;
 	fileType: string;
 	url: string;
+	type: "image" | "model";
 };
 
 export interface CustomUI {

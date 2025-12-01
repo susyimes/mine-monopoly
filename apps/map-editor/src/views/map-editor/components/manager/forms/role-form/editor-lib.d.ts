@@ -46,10 +46,56 @@ interface ICommandContext<C extends ICommandMap, K extends keyof C> {
 	cancel(): void;
 	setResult(result: C[K]["result"]): void;
 }
+interface ICommandBus<C extends ICommandMap> {
+	execute<K extends keyof C>(command: ICommand<C, K>): Promise<C[K]["result"]>;
+	setHandler<K extends keyof C>(type: K, handler: (payload: C[K]["payload"]) => C[K]["result"] | Promise<C[K]["result"]>): void;
+}
 interface ICommandMap {
 	[commandType: string]: {
 		payload: any;
 		result: any;
+	};
+}
+interface PropertyCommandMap extends ICommandMap {
+	"property.owner.change": {
+		payload: {
+			oldOwner: IPlayer | undefined;
+			newOwner: IPlayer | undefined;
+		};
+		result: {
+			oldOwner: IPlayer | undefined;
+			newOwner: IPlayer | undefined;
+		};
+	};
+	"property.level.up": {
+		payload: {};
+		result: {};
+	};
+	"property.level.down": {
+		payload: {};
+		result: {};
+	};
+	"property.level.set": {
+		payload: {
+			oldLevel: number;
+			newLevel: number;
+		};
+		result: {
+			oldLevel: number;
+			newLevel: number;
+		};
+	};
+	"property.arrived": {
+		payload: {
+			owner: IPlayer | undefined;
+			arrivedPlayer: IPlayer;
+			toll?: number;
+		};
+		result: {
+			owner: IPlayer | undefined;
+			arrivedPlayer: IPlayer;
+			toll?: number;
+		};
 	};
 }
 interface IRoundTimeTimer {
@@ -645,6 +691,7 @@ interface IPlayer {
 	walk: (step: number) => Promise<void>;
 	tp: (positionIndex: number) => Promise<void>;
 	rollDices: () => Promise<number[]>;
+	commandBus: ICommandBus<PlayerCommandMap>;
 	registerModifier<K extends keyof PlayerCommandMap>(modifier: IModifier<PlayerCommandMap, K>): void;
 	getPlayerInfo: () => PlayerInfo;
 	getRoundPhases: () => IGamePhase<GameContext>[];
@@ -665,6 +712,8 @@ interface IProperty {
 	setLevel: (level: number) => Promise<void>;
 	arrived: (player: IPlayer) => Promise<void>;
 	getPropertyInfo: () => PropertyInfo;
+	commandBus: ICommandBus<PropertyCommandMap>;
+	registerModifier<K extends keyof PropertyCommandMap>(modifier: IModifier<PropertyCommandMap, K>): void;
 }
 interface IChanceCard {
 	getId: () => string;
@@ -702,9 +751,11 @@ interface PropertyInfo {
 	streetId: string;
 	buildingModelIdList?: string[];
 	owner?: UserInRoomInfo;
-	custom?: {
-		effectCode: string;
-	};
+	custom?: PropertyCustom;
+}
+interface PropertyCustom {
+	effectCode: string;
+	description: string;
 }
 interface ChanceCardClientInfo extends Omit<ChanceCardInstanceInfo, "effectCode"> {
 }

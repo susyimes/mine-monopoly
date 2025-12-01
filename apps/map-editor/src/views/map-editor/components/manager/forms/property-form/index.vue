@@ -69,7 +69,7 @@ function initForm(itemId: string) {
 
 function handleCustomModeChange(checked: boolean) {
 	if (checked) {
-		formData.custom = { effectCode: "" };
+		formData.custom = { effectCode: "", description: "" };
 	} else {
 		formData.custom = undefined;
 		// 切回普通模式，确保 costList 存在
@@ -109,7 +109,7 @@ async function handleSubmit() {
 
 		// 提交数据 (toRaw 确保传入 Store 的是纯对象，非 Proxy，视 Store 实现而定)
 		mapDataStore.addProperty(currentMapItemId.value, clone(formData));
-		message.success("保存成功");
+		message.success("保存地皮信息成功");
 	} catch (error) {
 		console.error(error);
 		// 校验失败会自动提示，无需额外 message
@@ -196,7 +196,14 @@ function onBuildingModelSubmit(ids: string[]) {
 
 			<a-divider style="margin: 12px 0" />
 
-			<template v-if="isCustomProperty">
+			<template v-if="isCustomProperty && formData.custom">
+				<div class="custom-block">
+					<div class="info-text">地皮描述</div>
+					<a-textarea v-model:value="formData.custom.description" placeholder="填写地皮描述" :rows="4" />
+				</div>
+
+				<a-divider style="margin: 12px 0" />
+
 				<div class="custom-block">
 					<div class="info-text">自定义模式下，地皮触发逻辑由代码控制。</div>
 					<a-button type="dashed" block @click="effectEditorVisible = true">

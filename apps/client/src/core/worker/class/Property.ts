@@ -1,9 +1,11 @@
 import {
 	ICommandBus,
+	IModifier,
 	IModifierManager,
 	IPlayer,
 	IProperty,
 	PropertyCommandMap,
+	PropertyCustom,
 	PropertyInfo,
 } from "@fatpaper-monopoly/types";
 import { ModifierManager } from "./action-system/ModifiersManager";
@@ -20,6 +22,9 @@ export class Property implements IProperty {
 	private sellCost: number;
 	private costList: number[];
 	private streetId: string;
+	private buildingModelIdList: string[] | undefined;
+	private custom: PropertyCustom | undefined;
+
 	private owner: IPlayer | undefined = undefined;
 	public modifierManager: IModifierManager<PropertyCommandMap>;
 	public commandBus: ICommandBus<PropertyCommandMap>;
@@ -34,6 +39,8 @@ export class Property implements IProperty {
 		this.costList = property.costList;
 		this.maxLevel = property.maxLevel;
 		this.streetId = property.streetId;
+		this.buildingModelIdList = property.buildingModelIdList;
+		this.custom = property.custom;
 		this.originalData = property;
 
 		this.modifierManager = new ModifierManager();
@@ -137,7 +144,13 @@ export class Property implements IProperty {
 			costList: this.costList,
 			streetId: this.streetId,
 			owner: owner ? owner.getUser() : undefined,
+			buildingModelIdList: this.buildingModelIdList,
+			custom: this.custom ? { effectCode: "", description: this.custom.description } : undefined,
 		};
 		return propertyInfo;
+	}
+
+	public registerModifier(modifier: IModifier<PropertyCommandMap>) {
+		this.modifierManager.add(modifier);
 	}
 }

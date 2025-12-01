@@ -45,9 +45,11 @@ interface PropertyInfo {
 	streetId: string;
 	buildingModelIdList?: string[];
 	owner?: UserInRoomInfo;
-	custom?: {
-		effectCode: string;
-	};
+	custom?: PropertyCustom;
+}
+interface PropertyCustom {
+	effectCode: string;
+	description: string;
 }
 interface ChanceCardClientInfo extends Omit<ChanceCardInstanceInfo, "effectCode"> {
 }
