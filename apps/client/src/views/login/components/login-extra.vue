@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import FpPopover from "@src/components/utils/fp-popover/fp-popover.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
+const version = computed(() => __APP_VERSION__);
 
 function toAFD() {
 	window.open("https://afdian.com/a/fatpaper");
@@ -64,7 +67,7 @@ function toBilibili() {
 			</template>
 		</fp-popover> -->
 
-		<span class="version">v0.1.2</span>
+		<span class="version">v{{ version }}</span>
 	</div>
 </template>
 

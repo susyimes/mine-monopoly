@@ -41,4 +41,11 @@ interface Window {
 		save(mapId: string, hash: string, arrayBuffer: ArrayBuffer): Promise<void>;
 		load(mapId: string, hash: string): Promise<ArrayBuffer | undefined>;
 	};
+
+	updateAPI: {
+		checkForUpdate: () => Promise<any>;
+		startDownload: () => Promise<void>;
+		quitAndInstall: () => Promise<void>;
+		onUpdateStatus: (callback: (data: any) => void) => () => void;
+	};
 }

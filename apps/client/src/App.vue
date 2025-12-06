@@ -39,13 +39,14 @@ import {
 	faWandSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import { icon } from "@fortawesome/fontawesome-svg-core";
+import Update from "./components/common/update.vue";
 
 const isMobile = isMobileDevice();
 const router = useRoute();
 const isInGame = computed(() => router.name === "game");
 const canChat = computed(() => router.name === "room" || router.name === "game");
 const isMusicPlayerVisiable = computed(() => router.name !== "login");
-const version = isPC() ? window.electronAPI.getVersion() : "none";
+const version = __APP_VERSION__;
 const isTitleBarShow = computed(() => isPC() && !useDeviceStatus().isFullScreen);
 
 const fullScreenWatcherStopHandler = watch(
@@ -163,6 +164,7 @@ const backgroundSvgList: string[] = [
 			<RouterView></RouterView>
 		</div>
 	</div>
+	<Update />
 </template>
 
 <style lang="scss" scoped>

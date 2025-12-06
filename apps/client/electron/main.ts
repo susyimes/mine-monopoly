@@ -4,6 +4,14 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "fs/promises";
 import url from "node:url";
+import { autoUpdater } from "electron-updater";
+import log from "electron-log";
+
+autoUpdater.logger = log;
+autoUpdater.autoDownload = false; // 关键：设为 false，防止游戏过程中自动抢网速
+autoUpdater.autoInstallOnAppQuit = true; // 退出时自动安装
+
+log.transports.file.level = "info";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,13 +58,35 @@ function createWindow() {
 	win.webContents.openDevTools();
 
 	win.on("enter-full-screen", () => {
-		console.log("进入全屏（F11 或 API）");
 		win!.webContents.send("fullscreen-changed", true);
 	});
 
 	win.on("leave-full-screen", () => {
-		console.log("退出全屏");
 		win!.webContents.send("fullscreen-changed", false);
+	});
+
+	autoUpdater.on("update-available", (info) => {
+		win && win.webContents.send("update-status", { status: "available", info });
+	});
+
+	// 已经是最新
+	autoUpdater.on("update-not-available", (info) => {
+		win && win.webContents.send("update-status", { status: "not-available", info });
+	});
+
+	// 下载进度
+	autoUpdater.on("download-progress", (progressObj) => {
+		win && win.webContents.send("update-status", { status: "progress", progress: progressObj });
+	});
+
+	// 下载完成
+	autoUpdater.on("update-downloaded", (info) => {
+		win && win.webContents.send("update-status", { status: "downloaded", info });
+	});
+
+	// 错误
+	autoUpdater.on("error", (err) => {
+		win && win.webContents.send("update-status", { status: "error", error: err.message });
 	});
 }
 
@@ -76,7 +106,6 @@ app.on("activate", () => {
 app.whenReady().then(() => {
 	protocol.handle("local", (request) => {
 		const filePath = request.url.slice("local://".length);
-		console.log("🚀 ~ filePath:", filePath);
 		return net.fetch(url.pathToFileURL(path.join(__dirname, filePath)).toString());
 	});
 });
@@ -149,11 +178,26 @@ ipcMain.handle("map-cache:load", async (_event, mapId: string, hash: string) => 
 	const filePath = path.join(cacheDir, `${mapId}-${hash}.bin`);
 	try {
 		const buf = await fs.readFile(filePath);
-		console.log("🚀 ~ buf:", buf);
 		return buf.buffer;
 	} catch {
 		return undefined;
 	}
+});
+
+// A. 检查更新（可以由前端触发，也可以启动时触发）
+ipcMain.handle("check-for-update", () => {
+	if (!app.isPackaged) return "dev-mode"; // 开发环境不检查
+	return autoUpdater.checkForUpdates();
+});
+
+// B. 开始下载
+ipcMain.handle("start-download-update", () => {
+	autoUpdater.downloadUpdate();
+});
+
+// C. 退出并安装
+ipcMain.handle("quit-and-install", () => {
+	autoUpdater.quitAndInstall();
 });
 
 app.whenReady().then(createWindow);

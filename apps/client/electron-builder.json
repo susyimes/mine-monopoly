@@ -1,7 +1,16 @@
 {
 	"appId": "YourAppID",
 	"asar": true,
-	"productName": "FatPaper-Map-Editor",
+	"productName": "FatPaper-Monopoly",
+	"publish": [
+		{
+			"provider": "generic",
+			"url": "http://localhost:81/static/updates/win/"
+		}
+	],
+	"releaseInfo": {
+		"releaseNotesFile": "build/release-notes.md"
+	},
 	"directories": {
 		"output": "dist/electron/${version}"
 	},
@@ -23,7 +32,8 @@
 		"oneClick": false,
 		"perMachine": false,
 		"allowToChangeInstallationDirectory": true,
-		"deleteAppDataOnUninstall": false
+		"deleteAppDataOnUninstall": false,
+		"differentialPackage": true
 	},
 	"linux": {
 		"target": ["AppImage"],
