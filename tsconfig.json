@@ -14,6 +14,7 @@
 			"@fatpaper-monopoly/types": ["packages/types/index.ts"],
 			"@fatpaper-monopoly/types/*": ["packages/types/*"]
 		},
+		"resolveJsonModule": true,
 
 		"types": ["node", "vite/client"],
 		"noEmit": true,

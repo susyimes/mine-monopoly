@@ -7,23 +7,24 @@ import externalGlobals from "rollup-plugin-external-globals";
 import { manifestGenerator } from "./build/plugins/vite-plugin-manifest";
 import electron from "vite-plugin-electron/simple";
 import generateDTS from "./src/plugins/vite-plugin-generate-dts";
+import pkg from "./package.json";
+
+const APP_VERSION_SHORT = pkg.version.split(".").slice(0, 2).join(".");
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
 	return {
 		base: "./",
+		define: {
+			// 全局常量注入
+			__APP_VERSION__: JSON.stringify(pkg.version),
+			__BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+			__COMPATIBLE_VERSION__: JSON.stringify(APP_VERSION_SHORT),
+		},
 		plugins: [
 			vue(),
 			generateDTS(),
 			viteCompression(),
-			// manifestGenerator(pkg.version, pkg.updateMessage),
-			// visualizer({
-			// 	gzipSize: true,
-			// 	brotliSize: true,
-			// 	emitFile: false,
-			// 	filename: "test.html", //分析图生成的文件名
-			// 	open: true, //如果存在本地服务端口，将在打包后自动展示
-			// }),
 			electron({
 				main: {
 					entry: "electron/main.ts",
@@ -36,18 +37,6 @@ export default defineConfig(({ command }) => {
 		],
 		build: {
 			outDir: "dist/frontend",
-			rollupOptions: {
-				plugins: [
-					// externalGlobals({
-					// 	vue: "Vue",
-					// 	"vue-router": "VueRouter",
-					// 	"vue-demi": "VueDemi",
-					// 	pinia: "Pinia",
-					// 	three: "",
-					// 	gsap: "",
-					// }),
-				],
-			},
 		},
 		resolve: {
 			alias: [

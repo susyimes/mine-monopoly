@@ -21,6 +21,7 @@ export const useMapDataStore = defineStore("MapData", {
 			name: "",
 			author: "",
 			version: "0.0.0",
+			editorVersion: __APP_VERSION__,
 			backgroundImageId: "",
 			coverImageId: "",
 		},

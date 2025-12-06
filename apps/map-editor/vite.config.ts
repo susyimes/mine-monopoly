@@ -6,19 +6,17 @@ import Components from "unplugin-vue-components/vite";
 import { AntDesignVueResolver } from "unplugin-vue-components/resolvers";
 import monacoEditorPlugin from "vite-plugin-monaco-editor-esm";
 import generateMonacoDTS from "./plugins/vite-plugin-generate-monaco-dts";
+import pkg from "./package.json";
 
-// https://vite.dev/config/
 export default defineConfig({
-	base: './',
+	base: "./",
+	define: {
+		// 注入全局变量
+		__APP_VERSION__: JSON.stringify(pkg.version),
+		__BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+	},
 	plugins: [
 		vue(),
-		// interfaceToProtoPlugin({
-		// 	inputPath: "../../packages/types/interfaces/game/map.ts",
-		// 	outputPath: "./protos/game_map.proto",
-		// }),
-		// monacoEditorPlugin({
-		// 	languageWorkers: ["editorWorkerService", "typescript", "html"],
-		// }),
 		generateMonacoDTS(),
 		Components({
 			resolvers: [

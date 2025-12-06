@@ -344,7 +344,6 @@ export class Room {
 				type: SocketMsgType.ChangeMap,
 				source: SocketMsgSource.Server,
 				data: data,
-				msg: { type: "info", content: "地图有变更" },
 			});
 			_this.roomInfoBroadcast();
 		}

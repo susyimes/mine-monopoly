@@ -13,6 +13,6 @@
 			"@src/*": ["src/*"]
 		}
 	},
-	"include": ["src/**/*", "electron/**/*", "types/**/*", "../../packages/types/interfaces/game/game-process/vue-h.d.ts"],
+	"include": ["src/**/*", "electron/**/*", "types/**/*", "env/*.d.ts"],
 	"exclude": ["node_modules"]
 }

@@ -7,6 +7,7 @@ export interface GameMapInfo {
 	name: string;
 	author: string;
 	version: SemVer;
+	editorVersion: string;
 	backgroundImageId: string;
 	coverImageId: string;
 }

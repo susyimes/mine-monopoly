@@ -106,6 +106,7 @@ export async function handleOpenProtoFile() {
 export async function handleSaveProtoFile() {
 	const editorStore = useEditorStore();
 	const mapDataStore = useMapDataStore();
+	mapDataStore.info.editorVersion = __APP_VERSION__;
 
 	const path = editorStore.currentFilePath;
 	if (!path) {
@@ -115,7 +116,7 @@ export async function handleSaveProtoFile() {
 		useEditorStore().setLoading(true);
 		await saveGameMapToBinFile(mapDataStore.id, path, mapDataStore.$state);
 		useEditorStore().setLoading(false);
-		message.success("保存成功", 1);
+		message.success("保存地图文件成功", 1);
 	}
 }
 

@@ -186,54 +186,68 @@ const handleRoomInfoReply: ServerMessageHandler<SocketMsgType.RoomInfo> = (msg) 
 };
 
 const handleChangeMap: ServerMessageHandler<SocketMsgType.ChangeMap> = async (msg, client) => {
-	const data = msg.data;
-	useLoading().showLoading("地图更换, 加载中...");
-	let gameMap, mapInfo;
-	switch (data.from) {
-		case "server": {
-			const res = await loadGameMapFromServer(data.data);
-			gameMap = res.gameMap;
-			mapInfo = res.mapInfo;
-			break;
+	try {
+		const data = msg.data;
+		useLoading().showLoading("地图更换, 加载中...");
+		let gameMap, mapInfo;
+		switch (data.from) {
+			case "server": {
+				const res = await loadGameMapFromServer(data.data);
+				gameMap = res.gameMap;
+				mapInfo = res.mapInfo;
+				break;
+			}
+			case "custom": {
+				const dataArrayBuffer = base64ToArrayBuffer(data.data);
+				const res = await loadGameMapFromFile(dataArrayBuffer);
+				gameMap = res.gameMap;
+				mapInfo = res.mapInfo;
+				break;
+			}
 		}
-		case "custom": {
-			const dataArrayBuffer = base64ToArrayBuffer(data.data);
-			const res = await loadGameMapFromFile(dataArrayBuffer);
-			gameMap = res.gameMap;
-			mapInfo = res.mapInfo;
-			break;
+
+		//版本校验
+		const mapVersion = gameMap.info.editorVersion.split(".").slice(0, 2).join("."); //获取前两位版本号
+		const clientVersion = __COMPATIBLE_VERSION__;
+		if (mapVersion !== clientVersion) {
+			throw Error(`版本不匹配！地图编辑器版本: ${mapVersion}, 客户端版本: ${clientVersion}`);
 		}
-	}
-	const tempRoleList: RoleInRoom[] = [];
-	const roles = gameMap.roles;
-	const resourceStore = useResourceStore();
-	for (const role of roles) {
-		const imageResource = resourceStore.getRecourceById(role.imageId);
-		if (!imageResource) {
-			useLoading().hideLoading();
-			FPMessage({ type: "error", message: "获取角色资源错误" });
-			throw Error("获取角色资源错误");
+
+		const tempRoleList: RoleInRoom[] = [];
+		const roles = gameMap.roles;
+		const resourceStore = useResourceStore();
+		for (const role of roles) {
+			const imageResource = resourceStore.getRecourceById(role.imageId);
+			if (!imageResource) {
+				useLoading().hideLoading();
+				FPMessage({ type: "error", message: "获取角色资源错误" });
+				throw Error("获取角色资源错误");
+			}
+			tempRoleList.push({ ...role, imageUrl: imageResource.url });
 		}
-		tempRoleList.push({ ...role, imageUrl: imageResource.url });
+		useRoomInfo().roleList = tempRoleList;
+		useRoomInfo().gameSettingForm = gameMap.gameSettingForm;
+		// 初始随机选择一个角色
+		useMonopolyClient().changeRole(roles[Math.floor(Math.random() * roles.length)].id);
+		// 如果自己是房主,提交默认游戏设置(房间类里不解析游戏数据, 只能靠房主来传)
+		if (useRoomInfo().amIRoomOwner) {
+			const setting: GameSetting = {};
+			gameMap.gameSettingForm.forEach((formSchema) => {
+				setting[formSchema.key] = {
+					label: formSchema.label,
+					value: formSchema.defaultValue,
+					displayValue: getDisplayValueByFormSchema(formSchema, formSchema.defaultValue),
+				};
+			});
+			client.changeGameSetting(setting);
+		}
+		FPMessage({ type: "info", message: `地图更换为: ${mapInfo.name} v${mapInfo.version}` });
+		useRoomInfo().mapInfo = mapInfo;
+		useLoading().hideLoading();
+	} catch (e: any) {
+		FPMessage({ type: "error", message: e.message });
+		useLoading().hideLoading();
 	}
-	useRoomInfo().roleList = tempRoleList;
-	useRoomInfo().gameSettingForm = gameMap.gameSettingForm;
-	// 初始随机选择一个角色
-	useMonopolyClient().changeRole(roles[Math.floor(Math.random() * roles.length)].id);
-	// 如果自己是房主,提交默认游戏设置(房间类里不解析游戏数据, 只能靠房主来传)
-	if (useRoomInfo().amIRoomOwner) {
-		const setting: GameSetting = {};
-		gameMap.gameSettingForm.forEach((formSchema) => {
-			setting[formSchema.key] = {
-				label: formSchema.label,
-				value: formSchema.defaultValue,
-				displayValue: getDisplayValueByFormSchema(formSchema, formSchema.defaultValue),
-			};
-		});
-		client.changeGameSetting(setting);
-	}
-	useRoomInfo().mapInfo = mapInfo;
-	useLoading().hideLoading();
 };
 
 const handleRoomChatReply: ServerMessageHandler<SocketMsgType.RoomChat> = (msg) => {
