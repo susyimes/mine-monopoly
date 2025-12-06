@@ -47,4 +47,11 @@ interface Window {
 		getVersion: () => string;
 		getImageBase64: (fliePath: string) => Promise<string>;
 	};
+
+	updateAPI: {
+		checkForUpdate: () => Promise<any>;
+		startDownload: () => Promise<void>;
+		quitAndInstall: () => Promise<void>;
+		onUpdateStatus: (callback: (data: any) => void) => () => void;
+	};
 }

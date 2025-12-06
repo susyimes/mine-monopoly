@@ -1,10 +1,16 @@
 import { app, ipcMain, BrowserWindow, dialog, OpenDialogOptions, SaveDialogOptions, protocol, net } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { readFile, writeFile, copyFile } from "fs/promises";
+import { readFile, writeFile, copyFile, mkdir } from "fs/promises";
 import path from "node:path";
 import fs from "node:fs";
 import url from "node:url";
+import { autoUpdater } from "electron-updater";
+import log from "electron-log";
+
+autoUpdater.logger = log;
+autoUpdater.autoDownload = false; // 关键：设为 false，防止游戏过程中自动抢网速
+autoUpdater.autoInstallOnAppQuit = true; // 退出时自动安装
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -44,6 +50,30 @@ function createWindow() {
 		// win.loadFile("./dist/index.html");
 		win.loadFile(path.join(RENDERER_DIST, "frontend/index.html"));
 	}
+
+	autoUpdater.on("update-available", (info) => {
+		win && win.webContents.send("update-status", { status: "available", info });
+	});
+
+	// 已经是最新
+	autoUpdater.on("update-not-available", (info) => {
+		win && win.webContents.send("update-status", { status: "not-available", info });
+	});
+
+	// 下载进度
+	autoUpdater.on("download-progress", (progressObj) => {
+		win && win.webContents.send("update-status", { status: "progress", progress: progressObj });
+	});
+
+	// 下载完成
+	autoUpdater.on("update-downloaded", (info) => {
+		win && win.webContents.send("update-status", { status: "downloaded", info });
+	});
+
+	// 错误
+	autoUpdater.on("error", (err) => {
+		win && win.webContents.send("update-status", { status: "error", error: err.message });
+	});
 
 	win.webContents.openDevTools();
 }
@@ -106,9 +136,12 @@ ipcMain.handle("write-file", async (event, targetPath: string, data: string) => 
 });
 
 ipcMain.handle("write-local-file", async (event, targetPath: string, data: string) => {
-	targetPath = path.join(process.cwd(), targetPath);
-	await writeFile(targetPath, data);
-	return targetPath;
+    targetPath = path.join(process.cwd(), targetPath);
+    const dir = path.dirname(targetPath);
+    await mkdir(dir, { recursive: true });
+    await writeFile(targetPath, data);
+    
+    return targetPath;
 });
 
 ipcMain.handle("copy-file", async (event, fromFilePath: string, toFilePathtoFilePath: string, newFileName: string) => {
@@ -140,6 +173,22 @@ ipcMain.handle("open-load-dialog", async (event, options: OpenDialogOptions) => 
 
 ipcMain.handle("open-save-dialog", async (event, options: SaveDialogOptions) => {
 	return await dialog.showSaveDialog(options);
+});
+
+// A. 检查更新（可以由前端触发，也可以启动时触发）
+ipcMain.handle("check-for-update", () => {
+	if (!app.isPackaged) return "dev-mode"; // 开发环境不检查
+	return autoUpdater.checkForUpdates();
+});
+
+// B. 开始下载
+ipcMain.handle("start-download-update", () => {
+	autoUpdater.downloadUpdate();
+});
+
+// C. 退出并安装
+ipcMain.handle("quit-and-install", () => {
+	autoUpdater.quitAndInstall();
 });
 
 app.whenReady().then(createWindow);

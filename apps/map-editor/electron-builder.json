@@ -2,6 +2,15 @@
 	"appId": "YourAppID",
 	"asar": true,
 	"productName": "FatPaper-Map-Editor",
+	"publish": [
+		{
+			"provider": "generic",
+			"url": "http://localhost:81/static/updates/map-editor/win/"
+		}
+	],
+	"releaseInfo": {
+		"releaseNotesFile": "build/release-notes.md"
+	},
 	"directories": {
 		"output": "dist/electron/${version}"
 	},
@@ -23,7 +32,8 @@
 		"oneClick": false,
 		"perMachine": false,
 		"allowToChangeInstallationDirectory": true,
-		"deleteAppDataOnUninstall": false
+		"deleteAppDataOnUninstall": false,
+		"differentialPackage": true
 	},
 	"linux": {
 		"target": ["AppImage"],

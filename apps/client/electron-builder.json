@@ -5,7 +5,7 @@
 	"publish": [
 		{
 			"provider": "generic",
-			"url": "http://localhost:81/static/updates/win/"
+			"url": "http://localhost:81/static/updates/monopoly/win/"
 		}
 	],
 	"releaseInfo": {

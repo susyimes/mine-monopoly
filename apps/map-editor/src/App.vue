@@ -4,6 +4,7 @@ import Header from "./views/header.vue";
 import MapEditor from "./views/map-editor/map-editor.vue";
 import { TitleBar } from "@fatpaper-monopoly/ui";
 import MapEditorAlert from "@src/components/map-edior-alert/index.vue";
+import Update from "@src/components/common/update.vue";
 
 const mapName = useMapDataStore().info.name;
 const version = window.electronAPI.getVersion();
@@ -30,6 +31,7 @@ const isLoading = useEditorStore().isLoading;
 		</div>
 	</a-config-provider>
 	<map-editor-alert />
+	<Update />
 </template>
 
 <style lang="scss" scoped>

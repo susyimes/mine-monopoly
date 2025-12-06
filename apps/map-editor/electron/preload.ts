@@ -35,3 +35,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	getVersion: () => version,
 	getImageBase64: async (filePath: string): Promise<string> => ipcRenderer.invoke("get-image-base64", filePath),
 });
+
+contextBridge.exposeInMainWorld("updateAPI", {
+	// 触发操作
+	checkForUpdate: () => ipcRenderer.invoke("check-for-update"),
+	startDownload: () => ipcRenderer.invoke("start-download-update"),
+	quitAndInstall: () => ipcRenderer.invoke("quit-and-install"),
+
+	// 监听状态
+	onUpdateStatus: (callback: (data: any) => void) => {
+		const subscription = (_: any, value: any) => callback(value);
+		ipcRenderer.on("update-status", subscription);
+		// 返回清理函数
+		return () => ipcRenderer.removeListener("update-status", subscription);
+	},
+});
