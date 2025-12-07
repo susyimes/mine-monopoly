@@ -73,14 +73,14 @@ self.addEventListener("message", (ev) => {
 			break;
 		case WorkerCommType.UserOffLine:
 			{
-				// const { userId } = data.data;
-				// gameProcess && gameProcess.handlePlayerOffline(userId);
+				const { userId } = data.data;
+				gameProcess && gameProcess.handlePlayerOffline(userId);
 			}
 			break;
 		case WorkerCommType.UserReconnect:
 			{
-				// const { userId } = data.data;
-				// gameProcess && gameProcess.handlePlayerReconnect(userId);
+				const { userId } = data.data;
+				gameProcess && gameProcess.handlePlayerReconnect(userId);
 			}
 			break;
 	}
@@ -939,6 +939,42 @@ export class GameProcess implements IGameProcess {
 			Array.from(this.players.values()).map((p) => p.id),
 			msg
 		);
+	}
+
+	public handlePlayerOffline(userId: string) {
+		const player = this.getPlayerById(userId);
+		if (player) {
+			player.setIsOffline(true);
+			this.gameDataBroadcast();
+		}
+	}
+
+	public handlePlayerReconnect(userId: string) {
+		const player = this.players.get(userId);
+		if (player) {
+			player.setIsOffline(false);
+			sendToUsers([userId], {
+				type: SocketMsgType.GameStart,
+				source: SocketMsgSource.Server,
+				data: undefined,
+			});
+
+			sendToUsers([userId], {
+				type: SocketMsgType.GameInit,
+				source: SocketMsgSource.Server,
+				data: this.getGameData(),
+			});
+			operationListener.once(userId, OperateType.GameInitFinished, () => {
+				sendToUsers([userId], {
+					type: SocketMsgType.GameInitFinished,
+					source: SocketMsgSource.Server,
+					data: undefined,
+				});
+			});
+			this.gameDataBroadcast();
+		} else {
+			console.log("奇怪的玩家 in game");
+		}
 	}
 
 	public destroy() {

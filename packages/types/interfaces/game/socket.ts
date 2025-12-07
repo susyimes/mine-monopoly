@@ -281,6 +281,7 @@ export interface PlayerOperationResult {
 	[OperateType.RollDice]: undefined;
 	[OperateType.UseChanceCard]: { chanceCardId: string; targetIdList: string[] };
 	[OperateType.Animation]: string;
+	[OperateType.MapResourceLoaded]: undefined;
 	[OperateType.PauseGame]: undefined;
 	[OperateType.ResumeGame]: undefined;
 	[OperateType.ConfirmDialogResult]: { id: string; confirm: boolean; data: any };

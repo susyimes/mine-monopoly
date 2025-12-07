@@ -42,11 +42,11 @@ export class MonopolyHost {
 				if (this.room.isStarted) {
 					// 房间已经开始游戏
 					if (this.room.isUserInRoom(user.userId)) {
+						clientUserId = user.userId;
 						// 如果是断线的玩家, 处理重连
 						this.room.handleUserReconnect(user.userId, conn);
 						if (_data.type === SocketMsgType.JoinRoom) {
 							if (!this.room) throw Error("在房间没创建时加入了房间");
-							clientUserId = user.userId;
 							this.clientList.set(user.userId, conn);
 							// this.room.join(user, conn);
 							isOnline = true;

@@ -188,7 +188,7 @@ const handleRoomInfoReply: ServerMessageHandler<SocketMsgType.RoomInfo> = (msg) 
 const handleChangeMap: ServerMessageHandler<SocketMsgType.ChangeMap> = async (msg, client) => {
 	try {
 		const data = msg.data;
-		useLoading().showLoading("地图更换, 加载中...");
+		useLoading().showLoading("地图加载中...");
 		let gameMap, mapInfo;
 		switch (data.from) {
 			case "server": {
@@ -241,8 +241,14 @@ const handleChangeMap: ServerMessageHandler<SocketMsgType.ChangeMap> = async (ms
 			});
 			client.changeGameSetting(setting);
 		}
-		FPMessage({ type: "info", message: `地图更换为: ${mapInfo.name} v${mapInfo.version}` });
+		FPMessage({ type: "info", message: `地图加载成功: ${mapInfo.name} v${mapInfo.version}` });
 		useRoomInfo().mapInfo = mapInfo;
+		//地图加载完毕后发送信号
+		client.sendMsg({
+			type: SocketMsgType.Operation,
+			source: SocketMsgSource.Client,
+			data: { operateType: OperateType.MapResourceLoaded, data: undefined },
+		});
 		useLoading().hideLoading();
 	} catch (e: any) {
 		FPMessage({ type: "error", message: e.message });

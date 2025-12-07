@@ -274,11 +274,14 @@ export class Room {
 		this.roomInfoBroadcast();
 	}
 
-	public handleUserReconnect(userId: string, newCoon: DataConnection) {
+	public async handleUserReconnect(userId: string, newCoon: DataConnection) {
 		const oldUser = this.userList.get(userId);
-		if (oldUser) {
+		if (oldUser && this.mapInfo) {
 			oldUser.socketClient = newCoon;
 			this.roomInfoBroadcast();
+			this.sendToClient(oldUser.socketClient, SocketMsgType.ChangeMap, this.mapInfo);
+			await this.operationListener.onceAsync(userId, OperateType.MapResourceLoaded);
+
 			if (this.gameProcessWorker) {
 				this.gameProcessWorker.postMessage(<WorkerCommMsg>{
 					type: WorkerCommType.UserReconnect,
