@@ -1,21 +1,22 @@
-// 基础色
+// ---- 原有基础色 ----
 $color-primary: #ff8f00;
 $color-second: #ffa000;
 $color-third: #ffc10f;
 
-// 语义色基准
+// ---- 原有语义色基准 ----
 $color-success: #67c23a;
 $color-warning: #e6a23c;
 $color-error: #f56c6c;
 $color-info: #909399;
 $color-message: #095fce;
 
-// 中性色基准
+// ---- 原有中性色基准 ----
 $color-black: #000000;
 $color-white: #ffffff;
 $text-base: #303030;
 
 :root {
+  // ---- 原有变量定义 (完整保留) ----
   --color-primary: #{$color-primary};
   --color-primary-110: #{mix($color-black, $color-primary, 10%)};
   --color-second: #{$color-second};
@@ -83,4 +84,83 @@ $text-base: #303030;
 
   --color-mask-white: rgba(255, 255, 255, 0.9);
   --color-mask-black: rgba(0, 0, 0, 0.45);
+
+  // 1. 材质纹理 (CSS Gradient 模拟)
+  // V型针织纹理 (背景用)
+  --texture-knit:
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.03) 10px, rgba(0, 0, 0, 0.03) 20px),
+    repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.02) 10px, rgba(0, 0, 0, 0.02) 20px);
+
+  // 毛毡杂色纹理 (按钮/补丁用)
+  --texture-felt:
+    radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.05) 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.02) 2px, rgba(0, 0, 0, 0.02) 4px);
+
+  // 2. 缝线与深度
+  --stitch-color-light: rgba(255, 255, 255, 0.5); // 亮色缝线
+  --stitch-color-dark: rgba(0, 0, 0, 0.25); // 暗色缝线
+
+  --shadow-depth: 0 0.25rem 0 rgba(0, 0, 0, 0.15); // 布料厚度 (外凸)
+  --shadow-inset: inset 0 0.15rem 0.25rem rgba(0, 0, 0, 0.15); // 剪裁凹陷 (内凹)
+
+  --text-shadow-embroider: 0 1px 1px rgba(255, 255, 255, 0.4); // 刺绣高光
+  --text-shadow-pressed: 0 -1px 0 rgba(0, 0, 0, 0.2); // 压印凹陷
+}
+
+// 带内侧缝线的毛毡补丁
+@mixin felt-patch($bg-color: var(--color-bg-light),
+  $stitch-color: var(--stitch-color-light),
+  $offset: 0.4rem) {
+  background-color: $bg-color;
+  background-image: var(--texture-felt);
+  box-sizing: border-box;
+  border-radius: 0.8rem;
+  box-shadow:
+    var(--shadow-depth),
+    0 0 0 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+  padding: calc($offset + 0.5rem);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: $offset;
+    left: $offset;
+    right: $offset;
+    bottom: $offset;
+
+    border: 2px dashed rgba(0, 0, 0, 0.08);
+    border-radius: inherit;
+
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
+// 剪裁凹槽效果
+@mixin felt-cutout {
+  background-color: rgba(255, 255, 255, 0.85);
+  border: none;
+  border-radius: 0.6rem;
+  box-shadow:
+    var(--shadow-inset),
+    0 1px 0 rgba(255, 255, 255, 0.6); // 底部高光
+}
+
+// 内侧缝线装饰
+@mixin inner-stitch($color: var(--stitch-color-light), $offset: 4px) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: $offset;
+    left: $offset;
+    right: $offset;
+    bottom: $offset;
+    border: 1.5px dashed $color;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+  }
 }

@@ -48,13 +48,13 @@ const closeWindow = () => {
 
 		<!-- 窗口控制按钮 -->
 		<div class="window-controls">
-			<button @click="minimizeWindow" class="control-button minimize">
+			<button @click="minimizeWindow" class="control-button minimize btn-small">
 				<font-awesome-icon style="font-size: 0.8em" :icon="['fas', 'window-minimize']" />
 			</button>
-			<button @click="toggleMaximize" class="control-button maximize">
+			<button @click="toggleMaximize" class="control-button maximize btn-small">
 				<font-awesome-icon style="font-size: 0.95em" :icon="['fas', isMaximized ? 'compress' : 'expand']" />
 			</button>
-			<button @click="closeWindow" class="control-button close">
+			<button @click="closeWindow" class="control-button close btn-small">
 				<font-awesome-icon style="font-size: 1.2em" :icon="['fas', 'xmark']" />
 			</button>
 		</div>
@@ -70,6 +70,7 @@ const closeWindow = () => {
 	min-height: 30px;
 	color: white;
 	user-select: none;
+	overflow: hidden;
 	-webkit-app-region: drag;
 }
 
@@ -99,10 +100,13 @@ const closeWindow = () => {
 	background: transparent;
 	color: white;
 	transition: background-color 0.2s;
+	border-radius: 0;
+	box-shadow: none;
 }
 
 .control-button:hover {
 	background-color: rgba(255, 255, 255, 0.1);
+	box-shadow: none;
 }
 
 .control-button.close:hover {

@@ -11,7 +11,7 @@ const router = useRoute();
 </script>
 
 <template>
-	<button @click="settingVisible = true" class="setting-button"><FontAwesomeIcon icon="gear" /></button>
+	<button @click="settingVisible = true" class="setting-button btn-small"><FontAwesomeIcon icon="gear" /></button>
 	<FpDialog v-model:visible="settingVisible">
 		<template #title>设置</template>
 		<div class="setting-container">
@@ -92,7 +92,6 @@ const router = useRoute();
 .setting-button {
 	height: 2.5rem;
 	width: 2.5rem;
-	border: 0.2rem solid rgba($color: #fff, $alpha: 0.75);
 	border-radius: 0.5rem;
 	font-size: 1.1rem;
 	display: flex;

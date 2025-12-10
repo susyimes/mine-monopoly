@@ -122,7 +122,7 @@ async function handleGetRandomPublicRoom(e: Event) {
 			<userCard :avatar="user.avatar" :username="user.username" :color="user.color" />
 
 			<div class="side-bar">
-				<button class="quit" @click="handleLogout">登出</button>
+				<button class="quit btn-small" @click="handleLogout">登出</button>
 			</div>
 		</div>
 		<div class="join-room">
@@ -150,6 +150,7 @@ async function handleGetRandomPublicRoom(e: Event) {
 </template>
 
 <style lang="scss" scoped>
+@import "@src/assets/variables.scss";
 .hall-page {
 	width: 100%;
 	height: 100%;
@@ -159,7 +160,6 @@ async function handleGetRandomPublicRoom(e: Event) {
 	align-items: center;
 
 	& > div {
-		border: 0.3rem solid rgba(255, 255, 255, 0.65);
 		border-radius: 1.5rem;
 		background-color: rgba(255, 255, 255, 0.65);
 		backdrop-filter: blur(0.2rem);
@@ -173,7 +173,6 @@ async function handleGetRandomPublicRoom(e: Event) {
 		flex-direction: column;
 		justify-content: space-between;
 		position: relative;
-		overflow: hidden;
 
 		& > .side-bar {
 			position: absolute;
@@ -186,15 +185,17 @@ async function handleGetRandomPublicRoom(e: Event) {
 			& > button {
 				width: 100%;
 				height: 1.8rem;
-				border-radius: 0.2rem 1rem 0.2rem 0.6rem;
+				border-radius: 0.6rem 0.8rem 0.6rem 0.6rem;
 				font-size: 0.8rem;
-				padding: 0 0.6rem;
+				padding: 0 0.8rem;
+				z-index: 10;
 			}
 		}
 	}
 
 	.join-room {
-		padding: 1rem;
+		@include felt-patch(#ffedb7);
+		padding: 1.2rem;
 
 		& .title {
 			display: inline-block;

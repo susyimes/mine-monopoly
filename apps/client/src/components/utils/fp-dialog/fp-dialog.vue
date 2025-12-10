@@ -55,7 +55,7 @@ function closeDialog() {
 							<span v-if="title">{{ title }}</span>
 							<slot v-else name="title">默认标题</slot>
 						</div>
-						<button v-if="closable" class="close-button" @click="closeDialog">
+						<button v-if="closable" class="close-button btn-small" @click="closeDialog">
 							<FontAwesomeIcon icon="close" />
 						</button>
 					</div>
@@ -74,6 +74,8 @@ function closeDialog() {
 </template>
 
 <style lang="scss" scoped>
+@import "@src/assets/variables.scss";
+
 .fp-dialog {
 	position: fixed;
 	top: 0;
@@ -100,15 +102,13 @@ function closeDialog() {
 	}
 
 	.fp-dialog-main {
+		@include felt-patch(var(--color-bg-light));
+
 		min-width: 30em;
 		// min-height: 20em;
 		max-width: 90vw;
 		max-height: 80vh;
-		background-color: #fff;
 		position: relative;
-		border-radius: 10px;
-		box-shadow: var(--box-shadow);
-		overflow: hidden;
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
@@ -117,44 +117,42 @@ function closeDialog() {
 	}
 
 	.fp-dialog-header {
-		background-color: var(--color-third); // 默认备选色
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.4rem 1rem; //稍微调整 padding
+		height: 2rem;
+		position: relative;
 
 		.title {
+			@include felt-patch(var(--color-third));
+			position: absolute;
+			top: -1.6rem;
 			color: var(--color-text-white);
 			text-shadow: var(--text-shadow);
+			position: absolute;
+			z-index: 10;
+			transform: rotate(-1.8deg);
 		}
 
 		.close-button {
-			background: transparent;
-			border: none;
-			cursor: pointer;
-			color: #fff;
-			padding: 4px;
-			font-size: 1.2rem;
-			transition: opacity 0.2s;
-
-			&:hover {
-				opacity: 0.8;
-			}
+			width: 2rem;
+			height: 2rem;
+			font-size: 1rem;
+			position: absolute;
+			right: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			background-color: var(--color-third);
 		}
 	}
 
 	.fp-dialog-body {
 		flex: 1;
-		padding: 1.2em;
-		background-color: var(--color-bg-light);
-		overflow-y: auto; // scroll 会导致无论内容多少都有滚动条，auto 更好
+		padding: 0.5rem 1.2em;
+		overflow-y: auto;
 	}
 
 	.fp-dialog-footer {
 		text-align: right;
-		padding: 1em;
-		background-color: var(--color-bg-light);
-		box-shadow: 0 0.5rem 0.8rem 0rem #000;
+		padding: 0.6rem;
 
 		button {
 			padding: 0.5em 1.2em;

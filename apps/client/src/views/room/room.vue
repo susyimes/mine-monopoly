@@ -164,17 +164,19 @@ async function handleUploadMap() {
 	<div class="room-page">
 		<div class="left-container">
 			<div class="room-topbar">
-				<button class="leave-room-button" @click="handleLeaveRoom">退出房间</button>
-				<span style="flex: 1; text-align: center">{{ ownerName }}的房间</span>
+				<button class="leave-room-button btn-small" @click="handleLeaveRoom">退出房间</button>
+				<div class="room-name">
+					<span>{{ ownerName }}的房间</span>
+				</div>
 			</div>
 
 			<div class="room-id">
-				<button v-if="isOwner" class="set-private-button" @click="handleSetPrivate">
+				<button v-if="isOwner" class="set-private-button btn-small" @click="handleSetPrivate">
 					{{ isPrivate ? "点击公开" : "点击隐藏" }}
 				</button>
-				<span @click="handleCopyRoomId" style="flex: 1; text-align: center">
+				<div class="room-id-value" @click="handleCopyRoomId">
 					房间ID:<span>{{ roomId }}</span>
-				</span>
+				</div>
 			</div>
 
 			<div class="map-preview-inroom">
@@ -185,7 +187,7 @@ async function handleUploadMap() {
 				<div class="select-map-button">
 					<FpPopover v-if="isOwner" placement="top">
 						<template #default>
-							<button :class="{ nomap: !Boolean(roomInfoStore.mapId) }" @click="handleUploadMap">
+							<button :class="{ nomap: !Boolean(roomInfoStore.mapId) }" class="btn-small" @click="handleUploadMap">
 								<FontAwesomeIcon style="font-size: 0.9rem" icon="fa-upload" />
 							</button>
 						</template>
@@ -200,7 +202,13 @@ async function handleUploadMap() {
 			</div>
 
 			<div class="game-setting">
-				<button v-if="isOwner && currentMap" @click="gameSettingFormVisible = true">修改地图参数</button>
+				<button
+					class="game-setting-button btn-small"
+					v-if="isOwner && currentMap"
+					@click="gameSettingFormVisible = true"
+				>
+					修改地图参数
+				</button>
 				<div class="game-setting-item" v-for="(setting, key) in gameSettingForShow">
 					<span class="label">{{ setting.label }}:</span>
 					<span class="value">{{ setting.displayValue }}</span>
@@ -276,6 +284,8 @@ async function handleUploadMap() {
 </template>
 
 <style lang="scss" scoped>
+@import "@src/assets/variables.scss";
+
 .room-page {
 	width: 80%;
 	height: 80%;
@@ -290,18 +300,17 @@ async function handleUploadMap() {
 	}
 
 	& > .left-container {
-		width: 20rem;
+		width: 21rem;
 		margin-right: 0.5rem;
 		box-sizing: border-box;
 		border-radius: 0.6rem;
-		background-color: rgba(255, 255, 255, 0.7);
 		backdrop-filter: blur(0.2rem);
 		box-shadow: var(--box-shadow);
-		overflow: hidden;
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
 		align-items: center;
+		@include felt-patch(#ffedb7);
 	}
 
 	& > .right-container {
@@ -321,25 +330,40 @@ async function handleUploadMap() {
 }
 
 .room-topbar {
-	height: 2rem;
-	line-height: 2rem;
+	position: absolute;
+	top: -1rem;
 	width: 100%;
 	color: #ffffff;
-	background-color: rgba(255, 255, 255, 0.65);
-	backdrop-filter: blur(0.2rem);
-	background-color: var(--color-third);
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	box-shadow: var(--box-shadow);
-	text-shadow: var(--text-shadow);
-	overflow: hidden;
+	z-index: 20;
 
 	& > .leave-room-button {
-		height: 100%;
+		height: 2.2rem;
+		position: absolute;
+		top: 0.3rem;
+		left: -0.3rem;
 		padding: 0 0.7rem;
 		font-size: 1rem;
 		text-shadow: var(--text-shadow);
+		border-radius: 0.6rem;
+		transform: rotate(-2.5deg);
+	}
+
+	& > .room-name {
+		background-image: var(--texture-felt);
+		border-radius: 0.6rem;
+		height: 2.7rem;
+		font-size: 1.1rem;
+		display: block;
+		position: absolute;
+		right: 0.5rem;
+		text-align: center;
+		width: 70%;
+		background-color: var(--color-third);
+		text-shadow: var(--text-shadow);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		box-shadow: 0 0.15rem 0 darken($color-second, 12%), 0 0.2rem 0.3rem rgba(0, 0, 0, 0.15);
 	}
 }
 
@@ -348,29 +372,37 @@ async function handleUploadMap() {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	background-color: rgba(255, 255, 255, 0.45);
-	margin-bottom: 0.8rem;
+	gap: 0.6rem;
+	margin-top: 1.5rem;
+	margin-bottom: 0.4rem;
 	padding: 0.3rem;
 
 	& > .set-private-button {
 		font-size: 0.8rem;
-		// min-height: 1.5rem;
 		margin-left: 0.3rem;
 		border-radius: 0.3rem;
+		transform: rotate(-1deg);
 	}
 
-	& > span {
+	& .room-id-value {
+		flex: 1;
+		font-size: 0.8rem;
+		padding: 0.2rem;
+		text-align: center;
+		background-color: rgba(255, 255, 255, 0.5);
 		color: var(--color-third);
 		user-select: none;
 		font-size: 1rem;
+		border-radius: 0.4rem;
+		cursor: pointer;
+
 		& > span {
 			font-size: 1.1rem;
-			margin: 0 0.8rem;
+			margin-left: 0.8rem;
 			user-select: text;
 			color: var(--color-second);
 			border-radius: 0.4rem;
 			padding: 0 0.4rem;
-			cursor: pointer;
 		}
 	}
 }
@@ -419,7 +451,7 @@ async function handleUploadMap() {
 
 				@keyframes identifier {
 					50% {
-						background-color: var(--color-third);
+						background-color: lighten($color-second, 10%);
 					}
 				}
 			}
@@ -464,7 +496,7 @@ async function handleUploadMap() {
 	flex: 1;
 	overflow-y: auto;
 
-	& button {
+	& .game-setting-button {
 		font-size: 0.8rem;
 		padding: 0.5rem;
 		margin-top: 0.1rem;
@@ -473,10 +505,12 @@ async function handleUploadMap() {
 	}
 
 	.game-setting-item {
-		background-color: rgba(255, 255, 255, 0.7);
+		background-color: #ffffff;
+		background-image: var(--texture-felt);
 		margin-top: 0.7rem;
 		padding: 0.5rem 0.8rem;
-		border-radius: 0.3rem;
+		border: 0.2rem solid #ffffff;
+		border-radius: 0.5rem;
 		display: flex;
 		justify-content: space-between;
 
@@ -490,26 +524,17 @@ async function handleUploadMap() {
 }
 
 .room-footbar {
-	height: 2.3rem;
-	line-height: 2.3rem;
 	width: 100%;
-	color: #ffffff;
-	background-color: rgba(255, 255, 255, 0.65);
-	backdrop-filter: blur(0.2rem);
-	background-color: var(--color-third);
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	text-shadow: var(--text-shadow);
-	overflow: hidden;
 
 	& > .ready-button {
 		width: 100%;
-		height: 100%;
+		height: 2.7rem;
 		padding: 0 0.7rem;
 		border: 0;
 		font-size: 1.2rem;
 		text-shadow: var(--text-shadow);
+		margin-bottom: 0;
+		border-radius: 0.5rem;
 	}
 }
 </style>

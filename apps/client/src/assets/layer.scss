@@ -15,7 +15,6 @@ $z-layers: (background: "背景",
 
 // ---- 自动生成 CSS 变量 ----
 :root {
-
   @each $name,
   $comment in $z-layers {
     $index: index($z-layers, ($name $comment));

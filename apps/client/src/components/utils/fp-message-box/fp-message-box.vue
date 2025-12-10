@@ -104,7 +104,7 @@ const handleDialogClose = () => {
 
 		&.btn-cancel {
 			border: 1px solid #b0b1b3;
-			background-color: #f5f7fa;
+			background-color: #ffffff;
 			color: var(--color-third);
 			border-color: var(--color-third);
 			text-shadow: none;

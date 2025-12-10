@@ -1,3 +1,5 @@
+// assets/style.scss
+
 html,
 body {
   width: 100%;
@@ -14,17 +16,19 @@ body {
 
 body {
   position: relative;
+  // ---- 修改：应用针织纹理背景 ----
+  background-color: var(--color-bg); // 使用原本定义的背景色
+  background-image: var(--texture-knit); // 叠加针织纹理
+  background-size: 40px 40px; // 调整纹理比例
 }
-
-// html {
-//   font-size: calc(1.5vmin + 0.13rem);
-// }
 
 * {
   font-family: "ContentFont";
-  -webkit-tap-highlight-color: rgba(0, 0, 0, 0)
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  box-sizing: border-box; // 建议加上，方便布局
 }
 
+// ---- 修改：Loading 效果 (线团风格) ----
 *[loading] {
   position: relative;
   z-index: 0;
@@ -38,50 +42,55 @@ body {
     width: 100%;
     height: 100%;
     z-index: 1;
-    background-color: rgba(0, 0, 0, .2);
+    // 使用带噪点的半透明遮罩
+    background-color: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(2px);
   }
 
   &:after {
     content: '';
     position: absolute;
     display: block;
-    left: calc(50% - 1rem);
-    top: calc(50% - 1rem);
-    width: 2rem;
-    height: 2rem;
+    left: calc(50% - 1.5rem); // 调整大小
+    top: calc(50% - 1.5rem);
+    width: 3rem;
+    height: 3rem;
+    
+    // 缝线线团动画
     border-radius: 50%;
-    border: .2rem solid white;
+    border: 0.3rem dashed white; 
     border-top-color: transparent;
-    animation: spin 1s linear infinite;
+    box-shadow: 0 0.2rem 0.5rem rgba(0,0,0,0.15); // 立体阴影
+    
+    animation: spin 1.2s linear infinite;
     z-index: 2;
 
     @keyframes spin {
-      from {
-        transform: rotate(0deg);
-      }
-
-      to {
-        transform: rotate(360deg);
-      }
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   }
 }
 
+// ---- 修改：滚动条 (织带/拉链风格) ----
 ::-webkit-scrollbar {
-  width: .6rem;
-  height: .6rem;
-  background-color: var(--color-bg-light);
+  width: .7rem;
+  height: .7rem;
+  background-color: transparent;
 }
 
-/*定义滚动条轨道：内阴影+圆角*/
+/* 轨道：布料凹槽 */
 ::-webkit-scrollbar-track {
-  background-color: var(--color-bg-light);
+  background-color: rgba(0,0,0,0.05);
+  border-radius: 1rem;
+  margin: 2px;
 }
 
-/*定义滑块：内阴影+圆角*/
+/* 滑块：缝合补丁 */
 ::-webkit-scrollbar-thumb {
-  border-radius: .2rem;
-  background-color: var(--color-bg);
+  border-radius: 1rem;
+  background-color: var(--color-second);
+  background-clip: padding-box;
 }
 
 .loading {
@@ -100,20 +109,3 @@ body {
   display: flex;
   flex-direction: column;
 }
-
-// .fp-button {
-//   margin: auto;
-//   padding: 10px 20px;
-//   border: 0;
-//   color: #ffb05c;
-//   font-size: 1em;
-//   background-color: #ffffff;
-//   box-shadow: .2rem .2rem .2rem #ffb05c;
-//   border-radius: 10px;
-
-//   &:hover {
-//     color: #ffffff;
-//     cursor: pointer;
-//     background-color: #ffb05c;
-//   }
-// }

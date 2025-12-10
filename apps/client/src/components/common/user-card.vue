@@ -24,37 +24,40 @@ const avatarSrc = computed(() => {
 </template>
 
 <style lang="scss" scoped>
+@import "@src/assets/variables.scss";
+
 .user-card {
 	width: 100%;
 	height: 100%;
 	display: flex;
 	justify-content: space-around;
 	align-items: center;
-	padding: 1.2rem;
 	box-sizing: border-box;
+	@include felt-patch(#ffedb7);
+	padding: 1.5rem;
 
 	& > .avatar {
+		@include felt-patch(#ffffff);
 		$icon-size: 5rem;
 		width: $icon-size;
 		height: $icon-size;
 		min-width: $icon-size;
 		min-height: $icon-size;
-		text-align: center;
 		line-height: $icon-size;
-		border: 0.2rem solid #ffffff;
+		text-align: center;
 		border-radius: 50%;
 		font-size: 2.5rem;
 		color: #ffffff;
-		box-shadow: var(--box-shadow);
 		overflow: hidden;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		background-color: rgba(255, 255, 255, 0.45);
 
 		& > img {
-			width: $icon-size;
-			height: $icon-size;
+			width: calc($icon-size - 0.5rem);
+			height: calc($icon-size - 0.5rem);
+			border-radius: 50%;
+			display: block;
 		}
 	}
 

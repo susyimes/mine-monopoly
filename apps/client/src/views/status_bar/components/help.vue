@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import FpDialog from "@src/components/utils/fp-dialog/fp-dialog.vue";
-import { CardUseMode } from "@src/enums/bace";
-import { useSettig } from "@src/store";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 import { useRoute } from "vue-router";
@@ -11,7 +9,7 @@ const router = useRoute();
 </script>
 
 <template>
-	<button @click="helpVisible = true" class="help-button"><FontAwesomeIcon icon="question" /></button>
+	<button @click="helpVisible = true" class="help-button btn-small"><FontAwesomeIcon icon="question" /></button>
 	<FpDialog :style="'width: 70%; height: 70%;'" v-model:visible="helpVisible">
 		<template #title>帮助 / Tips</template>
 		<div class="help-container">
@@ -46,7 +44,6 @@ const router = useRoute();
 .help-button {
 	height: 2.5rem;
 	width: 2.5rem;
-	border: 0.2rem solid rgba($color: #fff, $alpha: 0.75);
 	border-radius: 0.5rem;
 	font-size: 1.1rem;
 	display: flex;

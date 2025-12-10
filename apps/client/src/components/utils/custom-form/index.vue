@@ -114,7 +114,7 @@ const handleSubmit = () => {
     <button 
       v-if="schema.length !== 0" 
       type="submit" 
-      class="submit-btn" 
+      class="submit-btn btn-small" 
       :disabled="disable"
     >
       {{ submitText }}

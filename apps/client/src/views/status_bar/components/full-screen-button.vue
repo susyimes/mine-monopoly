@@ -13,7 +13,7 @@ function handleFullScreen() {
 </script>
 
 <template>
-	<button @click="handleFullScreen" class="full-screen-button">
+	<button @click="handleFullScreen" class="full-screen-button btn-small">
 		<span>{{ isFullScreen ? "退出全屏" : "全屏" }}</span>
 		<FontAwesomeIcon :icon="isFullScreen ? 'compress' : 'expand'" />
 	</button>
@@ -22,7 +22,6 @@ function handleFullScreen() {
 <style lang="scss" scoped>
 .full-screen-button {
 	height: 2.5rem;
-	border: 0.2rem solid rgba($color: #fff, $alpha: 0.75);
 	border-radius: 0.5rem;
 	font-size: 1.1rem;
 	display: flex;

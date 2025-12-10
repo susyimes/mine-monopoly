@@ -23,7 +23,7 @@ const isMe = computed(() => (user.value ? user.value.userId === useUserInfo().us
 const isRoomOwner = computed(() => (user.value ? user.value.userId === useRoomInfo().ownerId : false));
 const amIRoomOwner = computed(() => useRoomInfo().amIRoomOwner);
 
-const canSelectRole = computed(() => useMapData().roles.length > 0);
+const canSelectRole = computed(() => useMapData().roles.length > 0 && isMe.value);
 const role = computed(() => {
 	if (!user.value) return undefined;
 	return useMapData().getRoleById(user.value?.roleId);
@@ -64,16 +64,16 @@ function handleColorChange(e: Event) {
 		<template v-if="user">
 			<div class="ready-tag" v-if="user.isReady">准备</div>
 
-			<div
+			<button
+				v-else="user"
 				@click="handleRoleSelect"
 				class="choose-role"
-				v-else="user"
 				:style="{ 'background-color': role?.color }"
 				:class="{ 'no-role': role === undefined }"
 				:disabled="!canSelectRole"
 			>
 				<span>{{ role ? role.name : "选择角色" }}</span>
-			</div>
+			</button>
 		</template>
 
 		<div class="is-room-owner" v-if="isRoomOwner"><FontAwesomeIcon icon="crown" /> <span>房主</span></div>
@@ -107,8 +107,10 @@ function handleColorChange(e: Event) {
 </template>
 
 <style lang="scss" scoped>
-$avatar-size: 2.4rem;
-$top-bar-height: $avatar-size;
+@import "@src/assets/variables.scss";
+
+$top-bar-height: 2.8rem;
+
 .room-user-card {
 	width: auto;
 	display: flex;
@@ -116,19 +118,17 @@ $top-bar-height: $avatar-size;
 	align-items: center;
 	position: relative;
 	border-radius: 0.8rem;
-	overflow: hidden;
-	background-color: rgba(255, 255, 255, 0.7);
-	backdrop-filter: blur(0.2rem);
 	box-sizing: border-box;
 	box-shadow: var(--box-shadow);
+	z-index: var(--z-ui);
+	@include felt-patch(#ffedb7);
 
 	& > .right-side {
 		$item-size: 2.4rem;
 
 		position: absolute;
-		width: $item-size;
 		top: $top-bar-height;
-		right: 0;
+		right: 0.5rem;
 		z-index: 101;
 		padding: 0.4rem;
 		display: flex;
@@ -173,7 +173,6 @@ $top-bar-height: $avatar-size;
 			border-radius: 50%;
 			border: 0.3rem solid #ffffff;
 			cursor: pointer;
-			position: absolute;
 			z-index: 101;
 			font-size: 1.2rem;
 			color: #ffffff;
@@ -191,17 +190,15 @@ $top-bar-height: $avatar-size;
 		user-select: none;
 		position: absolute;
 		bottom: 5%;
-		width: 100%;
-		font-size: 1.5rem;
-		height: 2.6rem;
-		line-height: 2.6rem;
+		width: 85%;
+		font-size: 1.3rem;
+		height: 2.8rem;
+		line-height: 2.8rem;
 		color: #ffffff;
-		background-color: rgb(255, 221, 25);
 		text-align: center;
-		box-shadow: 0.13rem 0.13rem 0.2rem rgba(0, 0, 0, 0.1);
-		text-shadow: 0.2rem 0.2rem 0.13rem rgba(0, 0, 0, 0.1);
 		z-index: 100;
 		cursor: pointer;
+		box-shadow: var(--shadow-depth);
 	}
 
 	& > .choose-role {
@@ -229,20 +226,29 @@ $top-bar-height: $avatar-size;
 	}
 
 	& > .is-room-owner {
+		@include felt-patch(var(--color-third));
 		position: absolute;
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		left: 0.4rem;
-		padding: 0.3rem 0.6rem;
+		left: 0.8rem;
+		padding: 0.5rem 0.8rem;
 		top: calc($top-bar-height + 0.4rem);
-		font-size: 1.1rem;
+		font-size: 0.9rem;
 		color: #ffffff;
 		z-index: 101;
 		background-color: var(--color-third);
 		border-radius: 0.6rem;
 		gap: 0.3rem;
 		user-select: none;
+		background-image: var(--texture-felt);
+
+		&:before {
+			top: 0.3rem;
+			left: 0.3rem;
+			right: 0.3rem;
+			bottom: 0.3rem;
+		}
 	}
 
 	& > .ban {
@@ -257,8 +263,10 @@ $top-bar-height: $avatar-size;
 		position: absolute;
 		left: 0;
 		top: 0;
+		$avatar-size: 3rem;
 
 		& > .avatar {
+			@include felt-patch(#ffffff);
 			min-width: $avatar-size;
 			min-height: $avatar-size;
 			width: $avatar-size;
@@ -268,23 +276,46 @@ $top-bar-height: $avatar-size;
 			// border: 4px solid #ffffff;
 			font-size: 1.2rem;
 			color: #ffffff;
-			box-shadow: var(--box-shadow);
-			z-index: 101;
+			z-index: 20;
 			overflow: hidden;
+			position: absolute;
+			left: -0.3rem;
+			top: -0.3rem;
+			display: flex;
+			justify-content: center;
+			align-items: center;
 
 			& > img {
 				width: $avatar-size;
 				height: $avatar-size;
 			}
+
+			&:before {
+				top: 0.3rem;
+				left: 0.3rem;
+				right: 0.3rem;
+				bottom: 0.3rem;
+			}
 		}
 
 		& > .info {
-			height: 2.4rem;
+			@include felt-patch(#ffedb7);
+			width: 90%;
+			height: 2.5rem;
 			text-align: center;
-			flex: 1;
-			// border: 4px solid #ffffff;
-			border-left: 0px;
-			box-shadow: var(--box-shadow);
+			position: absolute;
+			right: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 19;
+
+			&:before {
+				top: 0.3rem;
+				left: 0.3rem;
+				right: 0.3rem;
+				bottom: 0.3rem;
+			}
 
 			& > .username {
 				line-height: 2.4rem;

@@ -1,16 +1,24 @@
+@import './variables.scss';
+
 %form-control {
+  @include felt-cutout;
+
   width: auto;
-  border: 0;
-  border-radius: 0.7rem;
-  padding: 0.5rem 0.7rem;
+  padding: 0.6rem 0.8rem;
   font-size: 1rem;
-  background-color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-primary);
+
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+
   box-sizing: border-box;
   outline: none;
   transition: box-shadow 0.2s ease-in-out, background-color 0.2s;
 
   &:focus {
-    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 0 3px rgba(255, 176, 92, 0.4);
+    background-color: #fff;
+    box-shadow:
+      inset 0 0.1rem 0.2rem rgba(0, 0, 0, 0.1),
+      0 0 0 3px $color-third;
   }
 }
 
@@ -25,37 +33,61 @@ select {
   appearance: none;
   cursor: pointer;
   padding-right: 2rem;
-
   background-image:
     linear-gradient(45deg, transparent 50%, gray 50%),
     linear-gradient(135deg, gray 50%, transparent 50%);
   background-position:
     calc(100% - 1.2rem) 50%,
     calc(100% - 0.9rem) 50%;
-  background-size: 5px 5px;
+  background-size: .4rem .4rem;
   background-repeat: no-repeat;
 }
 
 // Button & Submit
 button,
 input[type="submit"] {
+  position: relative;
   border: 0;
   font-size: 1.1rem;
-  padding: 0.2rem 0.6rem;
+  padding: 0.4rem 1rem;
   color: var(--color-text-white);
   background-color: var(--color-second);
-  text-shadow: var(--text-shadow);
+  background-image: var(--texture-felt);
+  text-shadow: var(--text-shadow-pressed);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
+  margin-bottom: 0.25rem;
+  border-radius: inherit;
+  box-shadow:
+    0 0.25rem 0 darken($color-second, 12%),
+    0 0.4rem 0.5rem rgba(0, 0, 0, 0.15);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    bottom: 4px;
+    border: 2px dashed rgba(255, 255, 255, 0.45);
+    border-radius: 0.6rem;
+    pointer-events: none;
+  }
 
   &:hover {
     background-color: var(--color-primary);
-    transform: translateY(-1px); // 微小的悬浮反馈
+    transform: translateY(-2px);
+    box-shadow:
+      0 0.35rem 0 darken($color-primary, 12%),
+      0 0.6rem 0.8rem rgba(0, 0, 0, 0.2);
   }
 
   &:active {
-    transform: translateY(1px);
+    transform: translateY(0.2rem);
+    box-shadow:
+      0 0.05rem 0 darken($color-primary, 12%),
+      inset 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   &:disabled {
@@ -64,9 +96,58 @@ input[type="submit"] {
     background-color: var(--color-bg-disable);
     transform: none;
     box-shadow: none;
+
+    &::after {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
   }
 
   &:focus-visible {
     box-shadow: 0 0 0 3px rgba(255, 176, 92, 0.4);
   }
+
+  &.btn-small {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.9rem;
+    border-radius: 0.5rem;
+
+    &::after {
+      display: none;
+    }
+
+    box-shadow: 0 0.15rem 0 darken($color-second, 12%),
+    0 0.2rem 0.3rem rgba(0, 0, 0, 0.15);
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 0.2rem 0 darken($color-primary, 12%),
+        0 0.3rem 0.4rem rgba(0, 0, 0, 0.2);
+    }
+
+    &:active {
+      transform: translateY(0.1rem);
+      box-shadow:
+        0 0.05rem 0 darken($color-primary, 12%),
+        inset 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// 毛毡卡片容器
+.felt-card {
+  @include felt-patch(var(--color-bg-light));
+  padding: 1.5rem;
+  position: relative;
+}
+
+// 缝线装饰容器
+.stitched-box {
+  background: var(--color-second);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 2px dashed var(--color-white);
+  box-shadow: var(--shadow-depth);
+  color: white;
+  text-shadow: var(--text-shadow-pressed);
 }

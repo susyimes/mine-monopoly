@@ -79,17 +79,17 @@ function handleHideContainer() {
 	<div class="chat_log">
 		<div class="container" :style="{ height: containerVisible ? '18rem' : '0' }">
 			<div class="chat-container">
-				<button class="button" @click="handleChatShow">
+				<button class="button btn-small" @click="handleChatShow">
 					<FontAwesomeIcon icon="comments" style="margin-right: 0.3rem" />
 					聊天 <span style="font-size: 0.8em">{{ newMessageNotify }}</span>
 				</button>
 
-				<button class="button" @click="handleGameLogShow">
+				<button class="button btn-small" @click="handleGameLogShow">
 					<FontAwesomeIcon icon="book" style="margin-right: 0.3rem" />
 					游戏记录
 				</button>
 
-				<button v-show="containerVisible" class="button" @click="handleHideContainer">
+				<button v-show="containerVisible" class="button btn-small" @click="handleHideContainer">
 					<FontAwesomeIcon icon="angle-down" style="font-size: 1.2rem" />
 				</button>
 
@@ -171,6 +171,7 @@ function handleHideContainer() {
 		border-radius: 0.5rem 0.5rem 0 0;
 		pointer-events: auto;
 		margin-right: 0.3rem;
+		margin-bottom: 0;
 	}
 
 	.containers {
