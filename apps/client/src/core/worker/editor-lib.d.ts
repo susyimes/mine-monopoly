@@ -40,6 +40,7 @@ interface DiceInfo {
 interface DiceResult {
 	diceValues: number[];
 	result: number;
+	prophecy: number | undefined;
 }
 type ComponentType = "number-input" | "select";
 interface SelectOption {
@@ -365,7 +366,7 @@ interface PlayerCommandMap extends ICommandMap {
 			newDice: IDice;
 		};
 		result: {
-			diceId: string;
+			newDice: IDice;
 		};
 	};
 	"player.dice.remove": {
@@ -828,7 +829,7 @@ interface IPlayer {
 	walk: (step: number) => Promise<void>;
 	tp: (positionIndex: number) => Promise<void>;
 	rollDices: () => Promise<DiceResult[]>;
-	addDice: (diceValue?: number[]) => Promise<string>;
+	addDice: (diceValue?: number[]) => Promise<IDice>;
 	removeDice: (id: string) => Promise<IDice | undefined>;
 	commandBus: ICommandBus<PlayerCommandMap>;
 	registerModifier<K extends keyof PlayerCommandMap>(modifier: IModifier<PlayerCommandMap, K>): void;

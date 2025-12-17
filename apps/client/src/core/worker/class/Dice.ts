@@ -21,13 +21,15 @@ class Dice implements IDice {
 
 	public roll() {
 		let r: number;
+		let prophecy = undefined;
 		// 预言
 		if (this.diceProphecyQueue.length > 0) {
-			r = this.diceProphecyQueue.shift() as number;
+			prophecy = this.diceProphecyQueue.shift() as number;
+			r = prophecy;
 		} else {
 			r = this.getRandomInteger();
 		}
-		return { diceValues: this.diceValues, result: r };
+		return { diceValues: this.diceValues, result: r, prophecy };
 	}
 
 	private getRandomInteger() {

@@ -147,7 +147,7 @@ export class Player implements IPlayer {
 		this.commandBus.setHandler("player.dice.add", (payload) => {
 			const { newDice } = payload;
 			this.dices.push(newDice);
-			return { diceId: newDice.id };
+			return { newDice };
 		});
 
 		this.commandBus.setHandler("player.dice.remove", (payload) => {
@@ -282,7 +282,7 @@ export class Player implements IPlayer {
 
 	public async addDice(diceValue?: number[]) {
 		return (await this.commandBus.execute({ type: "player.dice.add", payload: { newDice: new Dice(diceValue) } }))
-			.diceId;
+			.newDice;
 	}
 
 	public async removeDice(id: string) {

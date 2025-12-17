@@ -66,7 +66,7 @@ export interface PlayerCommandMap extends ICommandMap {
 
 	"player.dice.add": {
 		payload: { newDice: IDice };
-		result: { diceId: string };
+		result: { newDice: IDice };
 	};
 
 	"player.dice.remove": {

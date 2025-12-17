@@ -47,7 +47,7 @@ export interface IPlayer {
 	walk: (step: number) => Promise<void>;
 	tp: (positionIndex: number) => Promise<void>;
 	rollDices: () => Promise<DiceResult[]>;
-	addDice: (diceValue?: number[]) => Promise<string>;
+	addDice: (diceValue?: number[]) => Promise<IDice>;
 	removeDice: (id: string) => Promise<IDice | undefined>;
 
 	commandBus: ICommandBus<PlayerCommandMap>;

@@ -26,6 +26,7 @@ export interface DiceInfo {
 export interface DiceResult {
 	diceValues: number[];
 	result: number;
+	prophecy: number | undefined;
 }
 
 export type ComponentType = "number-input" | "select";
