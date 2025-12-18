@@ -68,9 +68,10 @@ export interface IGameProcess {
 	removePlayerAllOperationListener<T extends OperateType>(playerId: string, operationType?: T): void;
 
 	pushEventToStack(gameEvent: GameEvent<GameContext>): void;
-	generateNewChanceCard(sourceId: string): IChanceCard;
 
+	createNewChanceCard(sourceId: string): IChanceCard;
 	createGameLinkItem(type: GameLinkItem, id: string): void;
+
 	sendToPlayer(id: string, msg: ServerSocketMessage): void;
 	gameDataBroadcast(): void;
 	gameMsgNotifyBroadcast(type: "success" | "warning" | "error" | "info", msg: string): void;

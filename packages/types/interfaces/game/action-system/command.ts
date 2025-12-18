@@ -6,6 +6,7 @@ export type ICommand<C extends ICommandMap, K extends keyof C> = {
 export interface ICommandContext<C extends ICommandMap, K extends keyof C> {
 	cancel(): void;
 	setResult(result: C[K]["result"]): void;
+	result?: C[K]["result"];
 }
 
 export interface ICommandBus<C extends ICommandMap> {

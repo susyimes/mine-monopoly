@@ -220,6 +220,7 @@ type ICommand<C extends ICommandMap, K extends keyof C> = {
 interface ICommandContext<C extends ICommandMap, K extends keyof C> {
 	cancel(): void;
 	setResult(result: C[K]["result"]): void;
+	result?: C[K]["result"];
 }
 interface ICommandBus<C extends ICommandMap> {
 	execute<K extends keyof C>(command: ICommand<C, K>): Promise<C[K]["result"]>;
@@ -789,7 +790,7 @@ interface IGameProcess {
 	removePlayerOperationListener<T extends OperateType>(playerId: string, operationType: T, listener: (...args: any[]) => PlayerOperationResult[T]): void;
 	removePlayerAllOperationListener<T extends OperateType>(playerId: string, operationType?: T): void;
 	pushEventToStack(gameEvent: GameEvent<GameContext>): void;
-	generateNewChanceCard(sourceId: string): IChanceCard;
+	createNewChanceCard(sourceId: string): IChanceCard;
 	createGameLinkItem(type: GameLinkItem, id: string): void;
 	sendToPlayer(id: string, msg: ServerSocketMessage): void;
 	gameDataBroadcast(): void;
@@ -903,6 +904,8 @@ interface IGamePhase<Context extends GameContext> extends GamePhaseInfo {
 	use(tiggerTime: EventTiggerTime, fn: GameEventFunction<Context>, key?: string): void;
 	getEventQueue(): GameEvent<Context>[];
 }
+interface GameRoundStartContext extends GameContext {
+}
 interface PlayerRoundContext extends GameContext {
 	currentRoundPlayer: IPlayer;
 }
@@ -917,6 +920,10 @@ interface PlayerMoveContext extends RollDiceContext {
 }
 interface ArrivedEventContext extends PlayerMoveContext {
 	arrivedProperty: PropertyInfo;
+}
+interface PlayerRoundEndContext extends ArrivedEventContext {
+}
+interface GameRoundEndContext extends GameContext {
 }
 type GameRuntimeEvent = {
 	"game-round-start": void;
@@ -1008,4 +1015,3 @@ interface CustomUI {
 	};
 	uiSchema: UISchema;
 }
-declare let arrivedEventPhase: IGamePhase<ArrivedEventContext>;

@@ -216,6 +216,7 @@ type ICommand<C extends ICommandMap, K extends keyof C> = {
 interface ICommandContext<C extends ICommandMap, K extends keyof C> {
 	cancel(): void;
 	setResult(result: C[K]["result"]): void;
+	result?: C[K]["result"];
 }
 interface ICommandBus<C extends ICommandMap> {
 	execute<K extends keyof C>(command: ICommand<C, K>): Promise<C[K]["result"]>;
@@ -785,7 +786,7 @@ interface IGameProcess {
 	removePlayerOperationListener<T extends OperateType>(playerId: string, operationType: T, listener: (...args: any[]) => PlayerOperationResult[T]): void;
 	removePlayerAllOperationListener<T extends OperateType>(playerId: string, operationType?: T): void;
 	pushEventToStack(gameEvent: GameEvent<GameContext>): void;
-	generateNewChanceCard(sourceId: string): IChanceCard;
+	createNewChanceCard(sourceId: string): IChanceCard;
 	createGameLinkItem(type: GameLinkItem, id: string): void;
 	sendToPlayer(id: string, msg: ServerSocketMessage): void;
 	gameDataBroadcast(): void;

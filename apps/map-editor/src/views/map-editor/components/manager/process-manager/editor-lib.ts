@@ -11,5 +11,3 @@ export type {
 	GameEvent,
 	IGameProcess,
 } from "@fatpaper-monopoly/types";
-
-export type { Emitter } from "mitt";

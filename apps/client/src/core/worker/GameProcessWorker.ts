@@ -525,7 +525,7 @@ export class GameProcess implements IGameProcess {
 	// 	return tempChanceCardList;
 	// }
 
-	public generateNewChanceCard(sourceId: string): IChanceCard {
+	public createNewChanceCard(sourceId: string): IChanceCard {
 		const tempChanceCard = this.chanceCardInfos.get(sourceId);
 		if (!tempChanceCard) throw new Error(`错误的机会卡ID: ${sourceId}`);
 		return new ChanceCard(tempChanceCard);

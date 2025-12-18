@@ -51,6 +51,7 @@ export class CommandBus<C extends ICommandMap> implements ICommandBus<C> {
 		if (!handler) throw new Error(`命令: ${String(command.type)}, 没有设置handler`);
 		let result = await handler(command.payload);
 
+		ctx.result = result;
 		// ---------- AFTER ----------
 		for (const m of afterModifiers) {
 			await m.fn(currentCmd, ctx);
