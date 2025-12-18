@@ -15,6 +15,7 @@ import {
 	PlayerCommandMap,
 	PlayerInfo,
 	Role,
+	UISchema,
 	UserInRoomInfo,
 } from "@fatpaper-monopoly/types";
 import { GamePhase } from "./GamePhase";
@@ -37,6 +38,7 @@ export class Player implements IPlayer {
 	public isBankrupted: boolean = false; //是否破产
 	public isOffline: boolean; //是否断线
 	public stop: number = 0;
+	public infoDisplay: UISchema;
 
 	public extras: Record<string, any> = {};
 	public roundPhases: IGamePhase<GameContext>[] = [];
@@ -66,6 +68,41 @@ export class Player implements IPlayer {
 		this.isStop = 0;
 		this.isOffline = false;
 		this.dices = [new Dice(), new Dice()];
+		this.infoDisplay = {
+			id: `info-${this.id}`,
+			type: "div",
+			style: {
+				flex: "1",
+				display: "flex",
+				flexDirection: "column",
+				textAlign: "center",
+				borderRadius: "1.4em",
+				padding: "0.3em 0.5em",
+			},
+			children: [
+				{
+					id: "username-text",
+					type: "text",
+					textBinding: "user.username",
+				},
+				{
+					id: "money-container",
+					type: "div",
+					children: [
+						{
+							id: "money-tag",
+							type: "text",
+							content: "￥",
+						},
+						{
+							id: "money-text",
+							type: "text",
+							textBinding: "money",
+						},
+					],
+				},
+			],
+		};
 
 		this.modifierManager = new ModifierManager();
 		this.commandBus = new CommandBus<PlayerCommandMap>(this.modifierManager);
@@ -234,6 +271,7 @@ export class Player implements IPlayer {
 			stop: this.isStop,
 			isBankrupted: this.isBankrupted,
 			isOffline: this.isOffline,
+			infoDisplay: this.infoDisplay,
 		};
 		return playerInfo;
 	}

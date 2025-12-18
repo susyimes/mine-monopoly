@@ -7,6 +7,7 @@ import BuffItem from "./buff-item.vue";
 import { PlayerInfo } from "@fatpaper-monopoly/types";
 import { useRoomInfo } from "@src/store";
 import { useGameData } from "@src/store/game";
+import UiRenderer from "@src/components/utils/ui-renderer/ui-renderer.vue";
 
 const props = defineProps<{
 	player: PlayerInfo;
@@ -37,8 +38,7 @@ const chanceCardVisible = computed(() => {
 						<FontAwesomeIcon v-else :style="{ color: player.user.color }" icon="gamepad" />
 					</div>
 					<div class="text" :style="{ color: player.user.color }">
-						<div class="username">{{ player.user.username }}</div>
-						<div class="money">￥{{ player.money }}</div>
+						<UiRenderer :schema="player.infoDisplay" :context="player" />
 					</div>
 				</div>
 				<div class="properyies-container">
@@ -65,29 +65,20 @@ const chanceCardVisible = computed(() => {
 				</div>
 			</div>
 		</div>
-		<div class="card-container">
-			<div
-				class="label"
-				:style="{
-					'justify-content': player.chanceCards.length === 4 ? 'space-between' : 'flex-start',
-				}"
-			>
-				<FontAwesomeIcon icon="wand-sparkles" />
-				机会卡( {{ player.chanceCards.length }} / 4 )
-			</div>
-			<div v-if="chanceCardVisible" class="card-list">
-				<ChanceCard v-for="card in player.chanceCards" :chance-card="card" :disable="false" :key="card.id" />
-			</div>
-			<div v-else>房主说不可以看喔😣</div>
-		</div>
 	</div>
 </template>
 
 <style lang="scss" scoped>
+@import "@src/assets/variables.scss";
+
 .player-detail {
+	width: 100%;
+	height: 100%;
 	padding: 1rem;
+	display: flex;
 
 	& > .info {
+		flex: 1;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -102,11 +93,14 @@ const chanceCardVisible = computed(() => {
 			gap: 1.2rem;
 
 			& > .user {
+				@include felt-patch(#fff6d9);
 				width: 100%;
 				display: flex;
 				align-items: center;
 				justify-content: space-around;
 				gap: 0.8rem;
+				padding-left: 1.5rem;
+				padding-right: 1.5rem;
 
 				& > .text {
 					flex: 1;
@@ -114,8 +108,6 @@ const chanceCardVisible = computed(() => {
 					flex-direction: column;
 					font-size: 1.3rem;
 					text-align: center;
-					background-color: rgba(255, 255, 255, 0.75);
-					box-shadow: var(--box-shadow);
 					border-radius: 1.4rem;
 					padding: 0.8rem 1.5rem;
 				}
@@ -147,14 +139,12 @@ const chanceCardVisible = computed(() => {
 			}
 
 			& > .properyies-container {
-				// flex: 1;
-				height: 16rem;
+				@include felt-patch(#fff6d9);
+				flex: 1;
 				width: 20rem;
 				display: flex;
 				flex-direction: column;
 				border-radius: 1.2rem;
-				background-color: rgba(255, 255, 255, 0.8);
-				box-shadow: var(--box-shadow);
 				box-sizing: border-box;
 
 				& > .label {
@@ -195,14 +185,13 @@ const chanceCardVisible = computed(() => {
 		}
 
 		& > .buff-container {
+			@include felt-patch(#fff6d9);
 			flex: 1;
-			height: 20rem;
+			height: 100%;
 			width: 100%;
 			display: flex;
 			flex-direction: column;
 			border-radius: 1.2rem;
-			background-color: rgba(255, 255, 255, 0.8);
-			box-shadow: var(--box-shadow);
 			box-sizing: border-box;
 
 			& > .label {
@@ -220,25 +209,6 @@ const chanceCardVisible = computed(() => {
 				overflow-y: auto;
 				gap: 0.7rem;
 			}
-		}
-	}
-
-	& > .card-container {
-		margin-top: 1.2rem;
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-		border-radius: 1.2rem;
-		background-color: rgba(255, 255, 255, 0.8);
-		box-shadow: var(--box-shadow);
-		padding: 1.2rem;
-		box-sizing: border-box;
-
-		& > .card-list {
-			overflow-x: auto;
-			display: flex;
-			align-items: center;
-			gap: 0.8rem;
 		}
 	}
 }

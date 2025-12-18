@@ -137,7 +137,6 @@ input[type="submit"] {
 // 毛毡卡片容器
 .felt-card {
   @include felt-patch(var(--color-bg-light));
-  padding: 1.5rem;
   position: relative;
 }
 

@@ -1,73 +1,167 @@
 <script setup lang="ts">
 import { Buff } from "@fatpaper-monopoly/types";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 defineProps<{ buff: Buff }>();
 </script>
 
 <template>
-	<div class="buff-item">
-		<div class="top-bar">
-			<div class="name">{{ buff.name }}</div>
-			<div class="trigger-timming">{{ buff.triggerTiming }} 触发</div>
-		</div>
-		<div class="describe">{{ buff.description }}</div>
-		<div class="foot-bar">
-			<div class="trigger-times">
-				{{ buff.triggerTimes === Infinity ? "永久生效" : `剩余生效次数: ${buff.triggerTimes}` }}
+	<div class="buff-item-card">
+		<div class="fabric-strip"></div>
+
+		<div class="content-wrapper">
+			<div class="header">
+				<div class="title-row">
+					<span class="name">{{ buff.name }}</span>
+					<span class="badge timing-badge">
+						{{ buff.triggerTiming }}
+					</span>
+				</div>
 			</div>
-			<div class="source">来源: {{ buff.source }}</div>
+
+			<div class="body">
+				<p class="desc-text">{{ buff.description }}</p>
+			</div>
+
+			<div class="footer">
+				<div class="meta-tag times" :class="{ 'is-infinite': buff.triggerTimes === Infinity }">
+					<font-awesome-icon icon="hourglass-half" class="icon" />
+					<span>{{ buff.triggerTimes === Infinity ? "永久生效" : `剩余: ${buff.triggerTimes}` }}</span>
+				</div>
+				<div class="meta-tag source">
+					<span>{{ buff.source }}</span>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
 
 <style lang="scss" scoped>
-.buff-item {
+@import "@src/assets/variables.scss";
+
+.buff-item-card {
+	position: relative;
 	width: 100%;
-	border-radius: 0 1rem 1rem 0;
-	height: max-content;
+	height: min-content;
 	box-sizing: border-box;
-	box-shadow: var(--box-shadow);
-	border-left: 0.4rem solid var(--color-primary);
 
-	& > .top-bar {
-		border-radius: 0 1rem 0 0;
-		width: 100%;
-		background-color: var(--color-primary);
-		box-sizing: border-box;
-		padding: 0.5rem 0.8rem;
-		color: #fff;
+	// 基础材质：白色毛毡
+	background-color: #fff;
+	background-image: var(--texture-felt);
+	border-radius: 0.6rem;
+
+	// 深度与阴影
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	border: 1px solid rgba(0, 0, 0, 0.03);
+
+	display: flex;
+	margin-bottom: 0.8rem; // 列表项间距
+	transition: transform 0.2s, box-shadow 0.2s;
+
+	&:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+	}
+
+	// 左侧装饰条 (织带风格)
+	.fabric-strip {
+		width: 6px;
+		border-radius: 0.6rem 0 0 0.6rem;
+		background-color: var(--color-primary); // 主色
+		// 模拟斜纹织带纹理
+		background-image: linear-gradient(
+			45deg,
+			rgba(255, 255, 255, 0.15) 25%,
+			transparent 25%,
+			transparent 50%,
+			rgba(255, 255, 255, 0.15) 50%,
+			rgba(255, 255, 255, 0.15) 75%,
+			transparent 75%,
+			transparent
+		);
+		background-size: 8px 8px;
+		flex-shrink: 0;
+	}
+
+	.content-wrapper {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		padding: 0.8rem;
+	}
+}
+
+/* --- 头部区域 --- */
+.header {
+	margin-bottom: 0.5rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 2px dashed rgba(0, 0, 0, 0.06); // 缝线分割
+
+	.title-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 
-		& > .name {
-			font-size: 1.2rem;
+		.name {
+			font-size: 1.1rem;
+			color: var(--color-text-primary);
 		}
 
-		& > .trigger-timming {
-			font-size: 1rem;
+		.timing-badge {
+			font-size: 0.75rem;
+			padding: 0.15rem 0.5rem;
+			border-radius: 4px;
+			background-color: var(--color-bg-warning); // 浅橙色背景
+			color: var(--color-warning); // 深橙色文字
+			border: 1px dashed rgba(0, 0, 0, 0.1);
 		}
 	}
+}
 
-	& > .describe {
-		width: 100%;
-		padding: 0.5rem;
-		box-sizing: border-box;
+/* --- 内容区域 --- */
+.body {
+	flex: 1;
+	margin-bottom: 0.8rem;
+
+	.desc-text {
+		margin: 0;
+		font-size: 0.95rem;
+		color: var(--color-text-regular);
+		line-height: 1.5;
+		text-align: justify;
 	}
+}
 
-	& > .foot-bar {
-		border-radius: 0 0 1rem 0;
-		width: 100%;
-		background-color: var(--color-bg);
-		box-sizing: border-box;
-		padding: 0.3rem 0.8rem;
-		color: #fff;
+/* --- 底部区域 --- */
+.footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 0.8rem;
+
+	.meta-tag {
 		display: flex;
-		justify-content: space-between;
+		justify-content: space-around;
 		align-items: center;
+		gap: 4px;
+		color: var(--color-text-secondary);
+		background: var(--color-bg-disable); // 灰色背景
+		padding: 2px 8px;
+		border-radius: 10px;
 
-		& > .trigger-times,
-		& > .source {
-			font-size: 0.8rem;
+		.icon {
+			font-size: 0.75rem;
+		}
+
+		&.is-infinite {
+			background: var(--color-bg-light);
+			color: var(--color-primary);
+		}
+
+		&.source {
+			background: transparent; // 来源不需要背景，保持干净
+			padding: 0;
+			font-style: italic;
 		}
 	}
 }

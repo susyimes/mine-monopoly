@@ -124,7 +124,13 @@ export class Room {
 	 */
 	public roomBroadcast(msg: ServerSocketMessage) {
 		Array.from(this.userList.values()).forEach((user: UserInRoom) => {
-			user.socketClient.send(JSON.stringify(msg));
+			user.socketClient.send(
+				JSON.stringify(msg, (key, value) => {
+					if (value === Infinity) return "Infinity";
+					if (value === -Infinity) return "-Infinity";
+					return value;
+				})
+			);
 		});
 	}
 
@@ -424,7 +430,13 @@ export class Room {
 		const handleWorkerReady = async () => {
 			if (!this.mapInfo || !this.gameProcessWorker) return;
 			useLoading().showLoading("正在获取地图信息...");
-			const mapData = JSON.parse(JSON.stringify(useMapData().$state));
+			const mapData = JSON.parse(
+				JSON.stringify(useMapData().$state, (key, value) => {
+					if (value === Infinity) return "Infinity";
+					if (value === -Infinity) return "-Infinity";
+					return value;
+				})
+			);
 			// console.log("🚀 ~ Room ~ handleWorkerReady ~ mapData:", mapData)
 			// console.log("🚀 ~ Room ~ handleWorkerReady ~ this.mapId:", this.mapId)
 			// if (this.mapId !== mapData.id) {
@@ -542,7 +554,14 @@ export class Room {
 			msg,
 			extra,
 		};
-		if (socketClient.open) socketClient.send(JSON.stringify(msgToSend));
+		if (socketClient.open)
+			socketClient.send(
+				JSON.stringify(msgToSend, (key, value) => {
+					if (value === Infinity) return "Infinity";
+					if (value === -Infinity) return "-Infinity";
+					return value;
+				})
+			);
 	}
 
 	public destory() {

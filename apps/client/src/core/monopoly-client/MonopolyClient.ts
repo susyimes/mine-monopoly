@@ -77,7 +77,6 @@ export class MonopolyClient {
 	}
 
 	public async joinRoom(roomId: string) {
-		console.log("🚀 ~ MonopolyClient ~ joinRoom ~ roomId:", roomId);
 		try {
 			const data = await joinRoomApi(roomId);
 			const userStore = useUserInfo();
@@ -142,7 +141,11 @@ export class MonopolyClient {
 			);
 
 			this.conn.on("data", (_data: any) => {
-				const data: ServerSocketMessage = JSON.parse(_data);
+				const data: ServerSocketMessage = JSON.parse(_data, (key, value) => {
+					if (value === "Infinity") return Infinity;
+					if (value === "-Infinity") return -Infinity;
+					return value;
+				});
 				if (data.msg) {
 					FPMessage({
 						type: data.msg.type,
@@ -289,7 +292,13 @@ export class MonopolyClient {
 
 	public async sendMsg(msg: ClientSocketMessage) {
 		if (this.conn) {
-			await this.conn.send(JSON.stringify(msg));
+			await this.conn.send(
+				JSON.stringify(msg, (key, value) => {
+					if (value === Infinity) return "Infinity";
+					if (value === -Infinity) return "-Infinity";
+					return value;
+				})
+			);
 		}
 	}
 

@@ -1,6 +1,7 @@
 import { TargetSelectType } from "../../../../types/enums/game/game";
 import { UserInRoomInfo } from "../item";
 import { DiceInfo } from "../util";
+import { UISchema } from "./ui";
 
 export interface GameData {
 	exportData: { [key: string]: any };
@@ -24,6 +25,7 @@ export interface PlayerInfo {
 	stop: number;
 	isBankrupted: boolean;
 	isOffline: boolean;
+	infoDisplay: UISchema;
 }
 
 export interface PropertyInfo {

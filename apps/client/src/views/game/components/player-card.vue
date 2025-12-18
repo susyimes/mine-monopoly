@@ -3,6 +3,7 @@ import { PlayerInfo } from "@fatpaper-monopoly/types";
 import { PropType, computed, ref, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { __PROTOCOL__ } from "@src/../global.config";
+import UiRenderer from "@src/components/utils/ui-renderer/ui-renderer.vue";
 import gsap from "gsap";
 
 // const props = defineProps({
@@ -42,9 +43,9 @@ watch(
 		:class="{ is_bankrupted: _isBankrupted }"
 		:style="{ 'border-color': roundMark ? 'var(--color-third)' : '' }"
 	>
-		<div :style="{ color: _userInfo.color }" class="card-num">
+		<!-- <div :style="{ color: _userInfo.color }" class="card-num">
 			<FontAwesomeIcon icon="wand-sparkles" style="margin-right: 0.3rem" />{{ player.chanceCards.length }}
-		</div>
+		</div> -->
 
 		<div class="avatar">
 			<div v-if="player.isOffline" class="disconnect-marker">
@@ -55,8 +56,7 @@ watch(
 		</div>
 
 		<div class="info" :style="{ color: _userInfo.color }">
-			<span class="username">{{ _userInfo.username }}</span>
-			<span class="money">￥{{ displayNumber }}</span>
+			<UiRenderer :schema="player.infoDisplay" :context="player" />
 		</div>
 	</div>
 </template>

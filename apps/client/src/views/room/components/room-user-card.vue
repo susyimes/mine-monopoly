@@ -64,7 +64,7 @@ function handleColorChange(e: Event) {
 		<template v-if="user">
 			<div class="ready-tag" v-if="user.isReady">准备</div>
 
-			<button
+			<div
 				v-else="user"
 				@click="handleRoleSelect"
 				class="choose-role"
@@ -73,7 +73,7 @@ function handleColorChange(e: Event) {
 				:disabled="!canSelectRole"
 			>
 				<span>{{ role ? role.name : "选择角色" }}</span>
-			</button>
+			</div>
 		</template>
 
 		<div class="is-room-owner" v-if="isRoomOwner"><FontAwesomeIcon icon="crown" /> <span>房主</span></div>
@@ -186,7 +186,8 @@ $top-bar-height: 2.8rem;
 	}
 
 	& > .ready-tag,
-	.choose-role {
+	& > .choose-role {
+		@include felt-patch(#f7c336);
 		user-select: none;
 		position: absolute;
 		bottom: 5%;
@@ -197,29 +198,21 @@ $top-bar-height: 2.8rem;
 		color: #ffffff;
 		text-align: center;
 		z-index: 100;
-		cursor: pointer;
 		box-shadow: var(--shadow-depth);
+		padding: 0;
 	}
 
 	& > .choose-role {
 		background-color: rgba(185, 185, 185, 0.5);
 		padding: 0 0.6rem;
 		box-sizing: border-box;
+		cursor: pointer;
+		transition: 0.2s transform;
 
-		&.no-role:not([disabled]) {
-			background-color: var(--color-second);
-			animation: identifier 1.5s infinite ease-in-out;
-
-			&:hover {
-				background-color: var(--color-third);
-			}
-
-			@keyframes identifier {
-				50% {
-					background-color: var(--color-third);
-				}
-			}
+		&:hover {
+			transform: translateY(-2px);
 		}
+
 		&.no-role[disabled] {
 			cursor: initial;
 		}

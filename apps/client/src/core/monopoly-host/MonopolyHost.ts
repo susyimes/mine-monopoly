@@ -36,7 +36,11 @@ export class MonopolyHost {
 			let clientUserId = "";
 			let isOnline = false;
 			conn.once("data", (_data: any) => {
-				const msg: ClientSocketMessage = JSON.parse(_data);
+				const msg: ClientSocketMessage = JSON.parse(_data, (key, value) => {
+					if (value === "Infinity") return Infinity;
+					if (value === "-Infinity") return -Infinity;
+					return value;
+				});
 				if (msg.type !== SocketMsgType.JoinRoom) return;
 				const user = msg.data;
 				if (this.room.isStarted) {
@@ -104,7 +108,11 @@ export class MonopolyHost {
 			// );
 
 			conn.on("data", function (data: any) {
-				const socketMessage: ClientSocketMessage = JSON.parse(data.toString());
+				const socketMessage: ClientSocketMessage = JSON.parse(data.toString(), (key, value) => {
+					if (value === "Infinity") return Infinity;
+					if (value === "-Infinity") return -Infinity;
+					return value;
+				});
 				handleClientSocketMessage(conn, socketMessage, _this, clientUserId);
 			});
 

@@ -5,6 +5,7 @@ import { DiceResult, IDice } from "../util";
 import { GameContext, IGamePhase } from "./events"; // 引用 events
 import { PlayerInfo, PropertyInfo, ChanceCardClientInfo, PropertyCustom } from "./infos"; // 引用 infos
 import { IGameProcess } from "./core"; // 引用 core
+import { UISchema } from "./ui";
 
 export interface IPlayer {
 	id: string;
@@ -21,6 +22,7 @@ export interface IPlayer {
 	extras: Record<string, any>;
 	roundPhases: IGamePhase<GameContext>[];
 	dices: IDice[];
+	infoDisplay: UISchema;
 
 	getUser: () => UserInRoomInfo;
 

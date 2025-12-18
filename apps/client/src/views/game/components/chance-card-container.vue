@@ -25,7 +25,6 @@ const _chanceCardsList = computed(() => {
 const _canUseChanceCard = computed(() => utilStore.canUseCard);
 
 async function handleChanceCardClick(card: ChanceCardClientInfo) {
-	console.log("🚀 ~ handleChanceCardClick ~ card:", card);
 	if (!utilStore.canUseCard) return;
 	showTargetSelector(card.type, {
 		title: `使用机会卡: ${card.name}`,
@@ -69,7 +68,7 @@ async function handleChanceCardClick(card: ChanceCardClientInfo) {
 
 .chance-card-container {
 	width: 10rem;
-	height: 12rem;
+	height: 15rem;
 	display: flex;
 	justify-content: space-around;
 	padding: 0.8rem;

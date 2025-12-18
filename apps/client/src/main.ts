@@ -131,7 +131,8 @@ library.add(
 	faXmark,
 	faGhost,
 	faUpload,
-	faCheck
+	faCheck,
+	faHourglassHalf
 );
 const pinia = createPinia();
 
