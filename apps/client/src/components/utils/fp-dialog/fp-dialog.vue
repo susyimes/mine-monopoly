@@ -119,6 +119,7 @@ function closeDialog() {
 	.fp-dialog-header {
 		height: 2rem;
 		position: relative;
+		margin-bottom: 0.5rem;
 
 		.title {
 			@include felt-patch(var(--color-third));

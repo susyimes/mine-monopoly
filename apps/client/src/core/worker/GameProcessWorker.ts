@@ -434,6 +434,7 @@ export class GameProcess implements IGameProcess {
 	}
 
 	private async gameLoop() {
+		this.gameDataBroadcast();
 		this.roundTimeTimer.setIntervalFunction(this.roundRemainingTimeBroadcast);
 		//游戏循环
 		while (!this.isGameOver) {
@@ -765,6 +766,7 @@ export class GameProcess implements IGameProcess {
 		this.currentGamePhase = phase;
 		const checkGameOverEvent = {
 			fn: this.checkGameOver.bind(this),
+			key: "GameOverCheck"
 		};
 		this.gameRuntimeStack.push(...[checkGameOverEvent, ...phase.getEventQueue().reverse()]);
 		await this.gameRuntimeStack.run(context, this);

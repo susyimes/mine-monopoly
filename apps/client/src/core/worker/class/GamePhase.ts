@@ -48,7 +48,7 @@ export class GamePhase implements IGamePhase<GameContext> {
 
 	getEventQueue(): GameEvent<GameContext>[] {
 		return this.eventQueue.concat().map((gameEvent) => {
-			gameEvent.key = this.eventKey;
+			gameEvent.key = this.mark + "";
 			return gameEvent;
 		});
 	}
