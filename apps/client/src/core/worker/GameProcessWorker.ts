@@ -100,7 +100,7 @@ function sendToUsers(userIdList: string[], msg: ServerSocketMessage) {
 
 export class GameProcess implements IGameProcess {
 	public eventBus: Emitter<GameRuntimeEvent> = mitt<GameRuntimeEvent>();
-	public extraData: Record<string, any> = {};
+	public customData: Record<string, any> = {};
 	public exportData: Record<string, any> = {};
 
 	public mapData: GameMap;
@@ -766,7 +766,7 @@ export class GameProcess implements IGameProcess {
 		this.currentGamePhase = phase;
 		const checkGameOverEvent = {
 			fn: this.checkGameOver.bind(this),
-			key: "GameOverCheck"
+			key: "GameOverCheck",
 		};
 		this.gameRuntimeStack.push(...[checkGameOverEvent, ...phase.getEventQueue().reverse()]);
 		await this.gameRuntimeStack.run(context, this);

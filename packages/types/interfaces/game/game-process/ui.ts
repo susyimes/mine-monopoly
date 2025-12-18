@@ -69,21 +69,23 @@ export interface MessageCardOption {
 
 export interface UISchema {
 	id: string;
-	type: "div" | "span" | "img" | "button" | "text"; // 允许的标签白名单
-	// v-for 指令: "item in list"
+	// 1. 新增 SVG 相关标签
+	type: "div" | "span" | "img" | "button" | "text" | "svg" | "path" | "circle" | "rect" | "line" | "g";
+
 	vFor?: string;
-	// v-show 指令: 属性路径，例如 "player.isActive"
 	vShow?: string;
-	// :style 绑定: key 是 CSS 属性，value 是数据路径
-	styleBinding?: Record<string, string>;
-	// 静态样式
-	style?: Record<string, string>;
-	// 静态属性 (src, class 等)
-	props?: Record<string, any>;
-	// 文本内容 (如果是 text 类型)
+
+	// 样式
+	style?: Record<string, string>; // 静态样式
+	styleBinding?: Record<string, string>; // 动态样式 (CSS)
+
+	// 属性
+	props?: Record<string, any>; // 静态属性 (src, class, d)
+	propsBinding?: Record<string, string>; // 动态属性绑定 (支持表达式)
+
+	// 内容
 	content?: string;
-	// 动态文本绑定 (覆盖 content)
 	textBinding?: string;
-	// 子节点
+
 	children?: UISchema[];
 }

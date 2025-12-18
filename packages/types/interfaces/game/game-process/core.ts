@@ -25,7 +25,7 @@ export interface GameSetting {
 
 export interface IGameProcess {
 	eventBus: Emitter<GameRuntimeEvent>;
-	extraData: Record<string, any>;
+	customData: Record<string, any>;
 	exportData: Record<string, any>;
 	mapData: GameMap;
 	gameSetting: GameSetting;

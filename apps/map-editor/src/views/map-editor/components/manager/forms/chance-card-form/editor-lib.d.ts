@@ -177,12 +177,13 @@ interface MessageCardOption {
 }
 interface UISchema {
 	id: string;
-	type: "div" | "span" | "img" | "button" | "text";
+	type: "div" | "span" | "img" | "button" | "text" | "svg" | "path" | "circle" | "rect" | "line" | "g";
 	vFor?: string;
 	vShow?: string;
-	styleBinding?: Record<string, string>;
 	style?: Record<string, string>;
+	styleBinding?: Record<string, string>;
 	props?: Record<string, any>;
+	propsBinding?: Record<string, string>;
 	content?: string;
 	textBinding?: string;
 	children?: UISchema[];
@@ -763,7 +764,7 @@ interface GameSetting {
 }
 interface IGameProcess {
 	eventBus: Emitter<GameRuntimeEvent>;
-	extraData: Record<string, any>;
+	customData: Record<string, any>;
 	exportData: Record<string, any>;
 	mapData: GameMap;
 	gameSetting: GameSetting;

@@ -1,20 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent, watch } from "vue";
 import { message } from "ant-design-vue";
-
-// --- 接口定义 ---
-export interface UISchema {
-	id: string;
-	type: "div" | "span" | "img" | "button" | "text";
-	vFor?: string;
-	vShow?: string;
-	styleBinding?: Record<string, string>;
-	style?: Record<string, string>;
-	props?: Record<string, any>;
-	content?: string;
-	textBinding?: string;
-	children?: UISchema[];
-}
+import { UISchema } from "@fatpaper-monopoly/types";
 
 const props = defineProps<{ modelValue: UISchema }>();
 const emit = defineEmits(["update:modelValue"]);
@@ -22,8 +9,13 @@ const emit = defineEmits(["update:modelValue"]);
 const KeyValueEditor = defineAsyncComponent(() => import("./key-value-editor.vue"));
 
 // --- State ---
-const activePanelKeys = ref<string[]>(["1", "2", "3"]);
+const activePanelKeys = ref<string[]>(["1", "2", "3", "4"]);
 const selectedKeys = ref<string[]>([]);
+
+// JSON 导入弹窗的状态
+const isJsonModalVisible = ref(false);
+const jsonImportContent = ref("");
+
 const rootId = computed(() => props.modelValue?.id);
 
 watch(
@@ -42,9 +34,10 @@ const treeData = computed(() => {
 		key: node.id,
 		type: node.type,
 		id: node.id,
-		dataRef: node,
+		dataRef: node, // 保存引用
 		children: node.children ? node.children.map(transform) : [],
 		isLeaf: !node.children || node.children.length === 0,
+		vFor: node.vFor, // 用于在模板里判断是否显示 LOOP 标记
 	});
 	return [transform(props.modelValue)];
 });
@@ -68,6 +61,134 @@ const selectedNode = computed(() => {
 
 // --- Methods ---
 const generateId = () => `node-${Math.random().toString(36).substring(2, 9)}`;
+
+// [核心工具] 递归复制节点并生成新 ID (防止 ID 冲突)
+// 将此函数提取出来供 模板插入 和 JSON导入 使用
+const cloneAndGenerateIds = (node: any): UISchema => {
+	const newNode: UISchema = {
+		...node,
+		id: generateId(), // 强制生成新 ID
+		type: node.type || "div",
+		children: [],
+	};
+
+	if (node.children && Array.isArray(node.children)) {
+		newNode.children = node.children.map((child: any) => cloneAndGenerateIds(child));
+	}
+	return newNode;
+};
+
+// [新增] 复制当前节点 JSON
+const copyNodeJson = async () => {
+	if (!selectedNode.value) return;
+	try {
+		// 格式化 JSON，2空格缩进
+		const jsonStr = JSON.stringify(selectedNode.value, null, 2);
+		await navigator.clipboard.writeText(jsonStr);
+		message.success(`节点 "${selectedNode.value.type}" 已复制到剪贴板`);
+	} catch (err) {
+		message.error("复制失败");
+	}
+};
+
+// [新增] 打开导入弹窗
+const openImportModal = () => {
+	if (!selectedNode.value) return;
+	jsonImportContent.value = "";
+	isJsonModalVisible.value = true;
+};
+
+// [新增] 执行导入 JSON
+const handleImportJson = () => {
+	// 1. 先进行空值检查，并赋值给局部变量 node
+	const node = selectedNode.value;
+	if (!node) return message.warning("请先选择一个节点");
+
+	if (!jsonImportContent.value.trim()) {
+		return message.warning("请输入 JSON 内容");
+	}
+
+	try {
+		const parsed = JSON.parse(jsonImportContent.value);
+
+		if (typeof parsed !== "object" || !parsed.type) {
+			return message.error("无效的 UI Schema 格式 (缺少 type)");
+		}
+
+		const newNode = cloneAndGenerateIds(parsed);
+
+		// 2. 使用局部变量 node 进行操作，TS 就不会报错了
+		if (!node.children) node.children = [];
+		node.children.push(newNode);
+
+		emit("update:modelValue", props.modelValue);
+		message.success("节点已导入");
+		isJsonModalVisible.value = false;
+	} catch (error) {
+		message.error("JSON 解析失败，请检查语法");
+	}
+};
+
+const insertTemplate = (templateName: string) => {
+	if (!selectedNode.value) return;
+
+	let templateNode: Partial<UISchema> = {};
+
+	if (templateName === "loop") {
+		templateNode = {
+			type: "div",
+			vFor: "item in list",
+			style: { padding: "8px", borderBottom: "1px solid #eee" },
+			children: [{ id: "", type: "div", children: [{ id: "", type: "text", textBinding: "item" }] }],
+		};
+	} else if (templateName === "card") {
+		templateNode = {
+			type: "div",
+			style: {
+				border: "1px solid #ddd",
+				borderRadius: "8px",
+				padding: "16px",
+				display: "flex",
+				flexDirection: "column",
+				gap: "8px",
+			},
+			children: [
+				{
+					id: "",
+					type: "img",
+					style: { width: "100%", height: "120px", backgroundColor: "#f0f0f0", objectFit: "cover" },
+				},
+				{ id: "", type: "text", content: "Title", style: { fontWeight: "bold" } },
+			],
+		};
+	} else if (templateName === "icon") {
+		templateNode = {
+			type: "svg",
+			props: {
+				viewBox: "0 0 24 24",
+				width: "24",
+				height: "24",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-width": "2",
+			},
+			children: [
+				{
+					id: "",
+					type: "path",
+					props: { d: "M20 6L9 17l-5-5", "stroke-linecap": "round", "stroke-linejoin": "round" },
+				},
+			],
+		};
+	}
+
+	const newNode = cloneAndGenerateIds(templateNode);
+	if (!selectedNode.value.children) selectedNode.value.children = [];
+	selectedNode.value.children.push(newNode);
+
+	emit("update:modelValue", props.modelValue);
+	message.success("模板已插入");
+};
 
 const addNode = () => {
 	if (!selectedNode.value) return;
@@ -109,12 +230,66 @@ const removeNode = () => {
 			<div class="panel-header">
 				<span class="header-title">组件树</span>
 				<div class="header-actions">
-					<button class="icon-btn" @click="addNode" :disabled="!selectedNode" title="添加子节点">
+					<a-dropdown :trigger="['click']">
+						<button class="icon-btn" title="插入模板" :disabled="!selectedNode">
+							<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+								<rect x="3" y="3" width="7" height="7"></rect>
+								<rect x="14" y="3" width="7" height="7"></rect>
+								<rect x="14" y="14" width="7" height="7"></rect>
+								<rect x="3" y="14" width="7" height="7"></rect>
+							</svg>
+						</button>
+						<template #overlay>
+							<a-menu>
+								<a-menu-item @click="insertTemplate('loop')">插入: 列表循环</a-menu-item>
+								<a-menu-item @click="insertTemplate('card')">插入: 卡片组件</a-menu-item>
+								<a-menu-item @click="insertTemplate('icon')">插入: SVG 图标</a-menu-item>
+							</a-menu>
+						</template>
+					</a-dropdown>
+
+					<button class="icon-btn" @click="openImportModal" :disabled="!selectedNode" title="导入 JSON 添加子节点">
+						<svg
+							viewBox="0 0 24 24"
+							width="16"
+							height="16"
+							stroke="currentColor"
+							stroke-width="2"
+							fill="none"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+							<polyline points="17 8 12 3 7 8"></polyline>
+							<line x1="12" y1="3" x2="12" y2="15"></line>
+						</svg>
+					</button>
+
+					<button class="icon-btn" @click="copyNodeJson" :disabled="!selectedNode" title="复制当前节点 JSON">
+						<svg
+							viewBox="0 0 24 24"
+							width="16"
+							height="16"
+							stroke="currentColor"
+							stroke-width="2"
+							fill="none"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+						</svg>
+					</button>
+
+					<div class="divider-v"></div>
+
+					<button class="icon-btn" @click="addNode" :disabled="!selectedNode" title="添加空白节点">
 						<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
 							<line x1="12" y1="5" x2="12" y2="19"></line>
 							<line x1="5" y1="12" x2="19" y2="12"></line>
 						</svg>
 					</button>
+
 					<button
 						class="icon-btn danger"
 						@click="removeNode"
@@ -143,6 +318,7 @@ const removeNode = () => {
 						<div class="tree-node-content">
 							<span class="type-tag" :class="dataRef.type">{{ dataRef.type }}</span>
 							<span class="node-id">{{ dataRef.id }}</span>
+							<span v-if="dataRef.vFor" class="loop-badge">LOOP</span>
 						</div>
 					</template>
 				</a-tree>
@@ -166,12 +342,22 @@ const removeNode = () => {
 							<a-row :gutter="12">
 								<a-col :span="24">
 									<a-form-item label="组件类型">
-										<a-select v-model:value="selectedNode.type">
-											<a-select-option value="div">容器 (div)</a-select-option>
-											<a-select-option value="span">行内文本 (span)</a-select-option>
-											<a-select-option value="text">纯文本节点 (text)</a-select-option>
-											<a-select-option value="img">图片 (img)</a-select-option>
-											<a-select-option value="button">按钮 (button)</a-select-option>
+										<a-select v-model:value="selectedNode.type" show-search>
+											<a-select-opt-group label="基础组件">
+												<a-select-option value="div">容器 (div)</a-select-option>
+												<a-select-option value="span">行内文本 (span)</a-select-option>
+												<a-select-option value="text">纯文本节点 (text)</a-select-option>
+												<a-select-option value="img">图片 (img)</a-select-option>
+												<a-select-option value="button">按钮 (button)</a-select-option>
+											</a-select-opt-group>
+											<a-select-opt-group label="SVG 矢量图">
+												<a-select-option value="svg">画布 (svg)</a-select-option>
+												<a-select-option value="path">路径 (path)</a-select-option>
+												<a-select-option value="circle">圆形 (circle)</a-select-option>
+												<a-select-option value="rect">矩形 (rect)</a-select-option>
+												<a-select-option value="line">线条 (line)</a-select-option>
+												<a-select-option value="g">分组 (g)</a-select-option>
+											</a-select-opt-group>
 										</a-select>
 									</a-form-item>
 								</a-col>
@@ -220,19 +406,22 @@ const removeNode = () => {
 									<KeyValueEditor v-model:value="selectedNode.style" />
 								</a-collapse-panel>
 								<a-collapse-panel key="2" header="样式绑定 (Dynamic Style)">
-									<p class="panel-desc">绑定数据路径到 CSS 属性</p>
+									<p class="panel-desc">CSS 属性绑定</p>
 									<KeyValueEditor v-model:value="selectedNode.styleBinding" />
 								</a-collapse-panel>
-								<a-collapse-panel key="3" header="原生属性 (HTML Attributes)">
-									<p class="panel-desc">例如: src, alt, class, disabled 等</p>
+								<a-collapse-panel key="3" header="原生属性 (HTML Props)">
+									<p class="panel-desc">静态属性</p>
 									<KeyValueEditor v-model:value="selectedNode.props" />
+								</a-collapse-panel>
+								<a-collapse-panel key="4" header="动态属性 (Props Binding)">
+									<p class="panel-desc">动态属性绑定</p>
+									<KeyValueEditor v-model:value="selectedNode.propsBinding" />
 								</a-collapse-panel>
 							</a-collapse>
 						</div>
 					</a-form>
 				</div>
 			</div>
-
 			<div v-else class="empty-state">
 				<svg viewBox="0 0 24 24" width="48" height="48" stroke="#e0e0e0" stroke-width="1" fill="none">
 					<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -241,11 +430,26 @@ const removeNode = () => {
 				<p>请选择左侧节点进行编辑</p>
 			</div>
 		</div>
+
+		<a-modal
+			v-model:open="isJsonModalVisible"
+			title="导入 JSON 节点"
+			@ok="handleImportJson"
+			okText="导入"
+			cancelText="取消"
+		>
+			<a-textarea
+				v-model:value="jsonImportContent"
+				placeholder="请粘贴 UI Schema JSON (例如: { 'type': 'div', ... })"
+				:rows="10"
+				style="font-family: monospace; font-size: 12px"
+			/>
+		</a-modal>
 	</div>
 </template>
 
 <style scoped>
-/* 全局容器 */
+/* 保持原有 CSS 不变，重点是 .icon-btn 的样式复用 */
 .schema-editor-container {
 	display: flex;
 	height: 100%;
@@ -257,7 +461,6 @@ const removeNode = () => {
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* 通用头部样式 */
 .panel-header {
 	height: 48px;
 	padding: 0 16px;
@@ -268,21 +471,33 @@ const removeNode = () => {
 	background: #fff;
 	flex-shrink: 0;
 }
+
 .header-title {
 	font-weight: 600;
 	font-size: 14px;
 	color: #1f1f1f;
 }
+
 .header-actions {
 	display: flex;
-	gap: 10px;
+	gap: 4px;
+	align-items: center;
 }
+
+.divider-v {
+	width: 1px;
+	height: 16px;
+	background: #e8e8e8;
+	margin: 0 4px;
+}
+
 .header-subtitle {
 	color: #999;
 	font-weight: normal;
 	font-size: 13px;
 	margin-left: 4px;
 }
+
 .header-id {
 	font-family: monospace;
 	color: #bfbfbf;
@@ -292,7 +507,6 @@ const removeNode = () => {
 	border-radius: 4px;
 }
 
-/* 自定义图标按钮 */
 .icon-btn {
 	border: none;
 	background: transparent;
@@ -304,20 +518,22 @@ const removeNode = () => {
 	align-items: center;
 	transition: background 0.2s;
 }
+
 .icon-btn:hover:not(:disabled) {
 	background: #f0f0f0;
 	color: #1890ff;
 }
+
 .icon-btn.danger:hover:not(:disabled) {
 	background: #fff1f0;
 	color: #ff4d4f;
 }
+
 .icon-btn:disabled {
 	color: #d9d9d9;
 	cursor: not-allowed;
 }
 
-/* 左侧面板 */
 .left-panel {
 	width: 260px;
 	border-right: 1px solid #f0f0f0;
@@ -332,7 +548,6 @@ const removeNode = () => {
 	padding: 10px 0;
 }
 
-/* 树节点美化 */
 .tree-node-content {
 	display: flex;
 	align-items: center;
@@ -353,20 +568,34 @@ const removeNode = () => {
 	text-transform: uppercase;
 	color: white;
 }
+
 .type-tag.div {
 	background-color: #5c8ae6;
 }
+
 .type-tag.text {
 	background-color: #52c41a;
 }
+
 .type-tag.button {
 	background-color: #fa8c16;
 }
+
 .type-tag.img {
 	background-color: #eb2f96;
 }
+
 .type-tag.span {
 	background-color: #13c2c2;
+}
+
+.type-tag.svg,
+.type-tag.path,
+.type-tag.circle,
+.type-tag.rect,
+.type-tag.line,
+.type-tag.g {
+	background-color: #722ed1;
 }
 
 .node-id {
@@ -374,19 +603,36 @@ const removeNode = () => {
 	font-size: 12px;
 	transform: scale(0.9);
 }
-/* 右侧面板 */
+
+.loop-badge {
+	font-size: 9px;
+	color: #faad14;
+	border: 1px solid #faad14;
+	border-radius: 2px;
+	padding: 0 3px;
+	margin-left: 6px;
+	font-weight: bold;
+}
+
 .right-panel {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
 	background: #fff;
 	min-width: 0;
-	overflow-y: scroll;
+	overflow-y: hidden;
+}
+
+.editor-content {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
 }
 
 .scrollable-form {
 	flex: 1;
-	overflow-y: auto;
+	height: 100%;
+	overflow-y: scroll;
 	padding: 20px 24px;
 	min-height: 0;
 }
@@ -412,6 +658,7 @@ const removeNode = () => {
 	margin-top: 24px;
 	border-top: 1px solid #f0f0f0;
 }
+
 .panel-desc {
 	font-size: 12px;
 	color: #bfbfbf;
@@ -426,5 +673,37 @@ const removeNode = () => {
 	justify-content: center;
 	color: #bfbfbf;
 	font-size: 13px;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.1);
+	border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.2);
+}
+:deep(.ant-form-item) {
+	margin-bottom: 16px;
+}
+
+:deep(.ant-form-item-label > label) {
+	font-size: 13px;
+	color: #666;
+}
+
+:deep(.ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected) {
+	background-color: #e6f7ff !important;
+	color: #1890ff;
+	font-weight: 500;
 }
 </style>
