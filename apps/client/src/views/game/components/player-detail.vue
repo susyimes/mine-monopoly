@@ -38,7 +38,7 @@ const chanceCardVisible = computed(() => {
 						<FontAwesomeIcon v-else :style="{ color: player.user.color }" icon="gamepad" />
 					</div>
 					<div class="text" :style="{ color: player.user.color }">
-						<UiRenderer :schema="player.infoDisplay" :context="player" />
+						<UiRenderer :schema="player.infoDisplay" :context="{ player }" />
 					</div>
 				</div>
 				<div class="properyies-container">

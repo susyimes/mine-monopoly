@@ -176,11 +176,6 @@ export class Player implements IPlayer {
 			return payload;
 		});
 
-		this.commandBus.setHandler("player.dice.roll", (payload) => {
-			const { dices } = payload;
-			return { diceResult: dices.map((d) => d.roll()) };
-		});
-
 		this.commandBus.setHandler("player.dice.add", (payload) => {
 			const { newDice } = payload;
 			this.dices.push(newDice);

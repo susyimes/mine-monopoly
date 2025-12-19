@@ -329,6 +329,31 @@ export class GameProcess implements IGameProcess {
 				return payload;
 			});
 
+			player.commandBus.setHandler("player.dice.roll", async (payload) => {
+				const { dices } = payload;
+				const diceResult = dices.map((d) => d.roll());
+
+				//向客户端发送骰子结果
+				const msgToRollDice: ServerSocketMessage = {
+					type: SocketMsgType.RollDiceResult,
+					source: SocketMsgSource.Server,
+					data: {
+						rollDiceResult: diceResult,
+						rollDicePlayerId: player.id,
+					},
+					msg: {
+						type: "info",
+						content: `${player.name} 摇到的点数是: ${diceResult.map((d) => d.result).join("-")}`,
+					},
+				};
+				this.gameBroadcast(msgToRollDice);
+
+				//等待动画
+				await new Promise((resolve) => setTimeout(resolve, 3000));
+
+				return { diceResult };
+			});
+
 			const initRoleFn = player.getInitRoleFunction();
 			initRoleFn(player, this);
 		});
