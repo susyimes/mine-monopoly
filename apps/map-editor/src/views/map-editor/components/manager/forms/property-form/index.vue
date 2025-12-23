@@ -2,7 +2,7 @@
 import { reactive, ref, computed, watch, toRaw } from "vue";
 import type { FormInstance, Rule } from "ant-design-vue/es/form";
 import { message } from "ant-design-vue";
-import { PropertyInfo, MapItem } from "@fatpaper-monopoly/types"; // 假设路径正确
+import { PropertyInfo, MapItem } from "@fatpaper-monopoly/types";
 import { useEditorStore, useMapDataStore } from "@src/stores";
 import EffectEditor from "./effect-editor.vue";
 import BuildingModelSeletor from "../../components/building-model-seletor.vue";
@@ -36,9 +36,72 @@ const rules: Record<string, Rule[]> = {
 	name: [{ required: true, message: "请输入地皮名称", trigger: "blur" }],
 	sellCost: [{ required: true, message: "请输入空地价格", trigger: "change" }],
 	buildCost: [{ required: true, message: "请输入建楼价格", trigger: "change" }],
-	// 动态校验 costList
 	costList: [{ type: "array", required: true, message: "请配置过路费", trigger: "change" }],
 };
+
+/** CustomData */
+
+interface CustomDataRow {
+	key: string;
+	type: "string" | "number" | "boolean";
+	value: string | number | boolean;
+}
+
+const customDataList = ref<CustomDataRow[]>([]);
+
+// 初始化：将 Object 转为 List
+function initCustomDataList() {
+	const data = formData.customData || {};
+	customDataList.value = Object.entries(data).map(([key, val]) => {
+		let type: CustomDataRow["type"] = "string";
+		if (typeof val === "number") type = "number";
+		else if (typeof val === "boolean") type = "boolean";
+
+		return { key, value: val, type };
+	});
+}
+
+function onTypeChange(row: CustomDataRow, newType: "string" | "number" | "boolean") {
+	const oldVal = row.value;
+	row.type = newType;
+
+	if (newType === "string") {
+		row.value = String(oldVal);
+	} else if (newType === "number") {
+		const num = Number(oldVal);
+		row.value = isNaN(num) ? 0 : num;
+	} else if (newType === "boolean") {
+		row.value = Boolean(oldVal) && String(oldVal) !== "false" && String(oldVal) !== "0";
+	}
+}
+
+watch(
+	customDataList,
+	(list) => {
+		const newData: Record<string, any> = {};
+		list.forEach((item) => {
+			if (item.key) {
+				if (item.type === "number") {
+					newData[item.key] = Number(item.value);
+				} else if (item.type === "boolean") {
+					newData[item.key] = Boolean(item.value);
+				} else {
+					newData[item.key] = String(item.value);
+				}
+			}
+		});
+		formData.customData = newData;
+	},
+	{ deep: true }
+);
+
+function addCustomDataRow() {
+	customDataList.value.push({ key: "", type: "string", value: "" });
+}
+
+function removeCustomDataRow(index: number) {
+	customDataList.value.splice(index, 1);
+}
 
 watch(
 	() => currentMapItemId.value,
@@ -63,6 +126,9 @@ function initForm(itemId: string) {
 		Object.assign(formData, createDefaultData());
 		isCustomProperty.value = false;
 	}
+
+	// 这里的调用依赖于上面的定义
+	initCustomDataList();
 }
 
 function handleCustomModeChange(checked: boolean) {
@@ -149,7 +215,7 @@ async function copyMapItemId() {
 			</a-space>
 		</div>
 
-		<a-form ref="formRef" :model="formData" :rules="rules" layout="vertical" class="scrollable-form" size="small">
+		<a-form ref="formRef" :model="formData" :rules="rules" layout="vertical" class="scrollable-form">
 			<a-row :gutter="16">
 				<a-col :span="24">
 					<a-form-item label="地皮ID">
@@ -265,6 +331,54 @@ async function copyMapItemId() {
 					</a-space>
 				</div>
 			</a-form-item>
+
+			<a-divider style="margin: 12px 0" />
+
+			<div class="custom-data-section">
+				<div class="section-header">
+					<span>自定义数据 (Custom Data)</span>
+					<a-button type="link" @click="addCustomDataRow">添加参数</a-button>
+				</div>
+
+				<div v-if="customDataList.length === 0" class="empty-tip">暂无自定义参数</div>
+
+				<div v-else class="custom-data-list">
+					<div v-for="(row, index) in customDataList" :key="index" class="custom-data-row">
+						<a-input v-model:value="row.key" placeholder="Key" style="width: 30%; min-width: 80px" />
+
+						<span class="colon">:</span>
+
+						<div class="value-input-wrapper">
+							<a-input v-if="row.type === 'string'" v-model:value="row.value" placeholder="Value" />
+							<a-input-number
+								v-else-if="row.type === 'number'"
+								v-model:value="row.value"
+								style="width: 100%"
+								placeholder="0"
+							/>
+							<a-switch
+								v-else-if="row.type === 'boolean'"
+								v-model:checked="row.value"
+								checked-children="True"
+								un-checked-children="False"
+							/>
+						</div>
+
+						<a-select
+							:value="row.type"
+							@update:value="(val: any) => onTypeChange(row, val)"
+							style="width: 85px; flex-shrink: 0"
+							:dropdownMatchSelectWidth="false"
+						>
+							<a-select-option value="string">Str</a-select-option>
+							<a-select-option value="number">Num</a-select-option>
+							<a-select-option value="boolean">Bool</a-select-option>
+						</a-select>
+
+						<a-button type="text" danger class="delete-btn" @click="removeCustomDataRow(index)"> × </a-button>
+					</div>
+				</div>
+			</div>
 		</a-form>
 
 		<div class="footer-actions">
@@ -382,5 +496,66 @@ async function copyMapItemId() {
 	border-top: 1px solid #f0f0f0;
 	background: #fff;
 	flex-shrink: 0;
+}
+
+// Custom Data
+.section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: #333;
+}
+
+.empty-tip {
+	text-align: center;
+	color: #999;
+	font-size: 12px;
+	padding: 10px 0;
+	border: 1px dashed #eee;
+	border-radius: 4px;
+}
+
+.custom-data-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-bottom: 4px;
+}
+
+.custom-data-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: #fafafa;
+	padding: 6px;
+	border-radius: 4px;
+	border: 1px solid #f0f0f0;
+
+	// 关键：防止Flex挤压
+	flex-shrink: 0;
+
+	.colon {
+		font-weight: bold;
+		color: #999;
+	}
+
+	.value-input-wrapper {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		min-width: 0;
+
+		:deep(.ant-input-number) {
+			width: 100%;
+		}
+	}
+
+	.delete-btn {
+		padding: 0 4px;
+		height: 24px;
+		line-height: 24px;
+	}
 }
 </style>
