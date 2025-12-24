@@ -165,18 +165,19 @@ export class GameRenderer {
 		controls.update();
 		this.controls = controls;
 
-		window.addEventListener(
-			"resize",
-			debounce(() => {
-				this.camera.aspect = container.clientWidth / container.clientHeight; //相机视角长宽比
-				this.camera.updateProjectionMatrix();
-				this.renderer.setSize(container.clientWidth, container.clientHeight);
-				this.renderPass.setSize(container.clientWidth, container.clientHeight);
-				this.composer.setSize(container.clientWidth, container.clientHeight);
-				this.popElementRenderer.setSize(container.clientWidth, container.clientHeight);
-				this.diceManager && this.diceManager.updateAspect(container.clientWidth / container.clientHeight);
-			}, 500)
-		);
+		const handleResize = () => {
+			this.camera.aspect = container.clientWidth / container.clientHeight; //相机视角长宽比
+			this.camera.updateProjectionMatrix();
+			this.renderer.setSize(container.clientWidth, container.clientHeight);
+			this.renderPass.setSize(container.clientWidth, container.clientHeight);
+			this.composer.setSize(container.clientWidth, container.clientHeight);
+			this.popElementRenderer.setSize(container.clientWidth, container.clientHeight);
+			this.diceManager && this.diceManager.updateAspect(container.clientWidth / container.clientHeight);
+		};
+
+		window.addEventListener("resize", debounce(handleResize.bind(this), 500));
+
+		handleResize();
 	}
 
 	public async init() {
@@ -218,18 +219,30 @@ export class GameRenderer {
 
 		// 创建轨道控制器
 
+		const updatePointer = (clientX: number, clientY: number) => {
+			// 1. 获取 Canvas 在视口中的精确位置和尺寸
+			const rect = this.canvas.getBoundingClientRect();
+
+			// 2. 计算相对于 Canvas 左上角的坐标 (0,0 在 Canvas 左上角)
+			const xInCanvas = clientX - rect.left;
+			const yInCanvas = clientY - rect.top;
+
+			// 3. 归一化为设备坐标 (NDC) -> x: [-1, 1], y: [1, -1]
+			pointer.x = (xInCanvas / rect.width) * 2 - 1;
+			pointer.y = -(yInCanvas / rect.height) * 2 + 1;
+		};
+
 		if (isMobileDevice()) {
 			const onPointerMove = (event: TouchEvent) => {
+				// 阻止默认滚动行为（可选，视需求而定）
+				// event.preventDefault();
 				const touch = event.touches[0];
-				pointer.x = (touch.clientX / this.canvas.clientWidth) * 2 - 1;
-				pointer.y = -(touch.clientY / this.canvas.clientHeight) * 2 + 1;
+				updatePointer(touch.clientX, touch.clientY);
 			};
-			window.addEventListener("touchmove", onPointerMove);
+			window.addEventListener("touchmove", onPointerMove, { passive: false });
 		} else {
 			const onPointerMove = (event: MouseEvent) => {
-				// 将鼠标位置归一化为设备坐标。x 和 y 方向的取值范围是 (-1 to +1)
-				pointer.x = (event.clientX / this.canvas.clientWidth) * 2 - 1;
-				pointer.y = -(event.clientY / this.canvas.clientHeight) * 2 + 1;
+				updatePointer(event.clientX, event.clientY);
 			};
 			window.addEventListener("pointermove", onPointerMove);
 		}
