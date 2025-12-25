@@ -1,30 +1,32 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { evalExpression, parseVFor } from "./utils";
-import { UISchema } from "@fatpaper-monopoly/types";
+import { evalExpression, parseVFor } from "./utils"; // 调整引入路径
+import type { UISchema } from "@fatpaper-monopoly/types"; // 假设的类型路径
+
+defineOptions({
+	name: "UiRenderer",
+});
 
 const props = defineProps<{
 	schema: UISchema;
 	context: Record<string, any>;
 }>();
 
-// --- 核心修复：判断是否为 SVG 文本节点 ---
-// 如果 type 是 'text' 且 props 里包含了 SVG 特有的坐标属性 x 或 y，
-// 则认为是 SVG 文本，不应该渲染为 span。
+// 如果是 text 类型且包含 x/y 坐标，必须渲染为 <text> 而非 <span>
 const isSvgText = computed(() => {
 	if (props.schema.type !== "text") return false;
 	const p = props.schema.props || {};
-	// 检查是否存在 x 或 y 属性 (SVG <text> 必有其一用于定位)
 	return p.x !== undefined || p.y !== undefined;
 });
 
-// 1. 处理 v-show
+// 1. 处理 v-show (显隐控制)
 const shouldShow = computed(() => {
 	if (!props.schema.vShow) return true;
+	// evalExpression 内部处理了 boolean 转换，但为了保险再转一次
 	return !!evalExpression(props.context, props.schema.vShow);
 });
 
-// 2. 处理文本绑定
+// 2. 处理文本内容 (优先使用 textBinding)
 const textContent = computed(() => {
 	if (props.schema.textBinding) {
 		const val = evalExpression(props.context, props.schema.textBinding);
@@ -33,22 +35,22 @@ const textContent = computed(() => {
 	return props.schema.content || "";
 });
 
-// 3. 处理样式绑定
+// 3. 处理样式绑定 (静态 style + 动态 styleBinding)
 const computedStyle = computed(() => {
-	const styles: Record<string, string> = { ...props.schema.style };
+	const styles: Record<string, string | number> = { ...props.schema.style };
 
 	if (props.schema.styleBinding) {
 		Object.entries(props.schema.styleBinding).forEach(([cssProp, expr]) => {
 			const val = evalExpression(props.context, expr);
 			if (val !== undefined && val !== null) {
-				styles[cssProp] = String(val);
+				styles[cssProp] = val;
 			}
 		});
 	}
 	return styles;
 });
 
-// 4. 处理 Props 绑定
+// 4. 处理 Props 绑定 (静态 props + 动态 propsBinding)
 const computedProps = computed(() => {
 	const finalProps: Record<string, any> = { ...props.schema.props };
 
@@ -63,7 +65,7 @@ const computedProps = computed(() => {
 	return finalProps;
 });
 
-// 5. v-for 列表获取
+// 5. v-for: 获取列表数据
 const getList = (vForExpr: string) => {
 	const { listExpr } = parseVFor(vForExpr);
 	if (!listExpr) return [];
@@ -71,19 +73,20 @@ const getList = (vForExpr: string) => {
 	return Array.isArray(list) ? list : [];
 };
 
+// 6. v-for: 生成子项上下文
 const getItemContext = (vForExpr: string, itemValue: any, index: number) => {
-	const { itemKey } = parseVFor(vForExpr);
+	const { itemKey, indexKey } = parseVFor(vForExpr);
 	return {
 		...props.context,
 		[itemKey]: itemValue,
-		index,
+		[indexKey]: index,
 	};
 };
 </script>
 
 <template>
 	<template v-if="schema.type === 'text' && !isSvgText">
-		<span v-if="shouldShow" :style="computedStyle">
+		<span v-if="shouldShow" :style="computedStyle" class="ui-text-node">
 			{{ textContent }}
 		</span>
 	</template>
@@ -91,17 +94,25 @@ const getItemContext = (vForExpr: string, itemValue: any, index: number) => {
 	<component v-else :is="schema.type" v-show="shouldShow" v-bind="computedProps" :style="computedStyle">
 		{{ textContent }}
 
-		<template v-for="child in schema.children" :key="child.id">
-			<template v-if="child.vFor">
-				<UiRenderer
-					v-for="(item, index) in getList(child.vFor)"
-					:key="child.id + '-' + index"
-					:schema="child"
-					:context="getItemContext(child.vFor, item, index)"
-				/>
-			</template>
+		<template v-if="schema.children && schema.children.length">
+			<template v-for="child in schema.children" :key="child.id">
+				<template v-if="child.vFor">
+					<UiRenderer
+						v-for="(item, index) in getList(child.vFor)"
+						:key="`${child.id}-${index}`"
+						:schema="child"
+						:context="getItemContext(child.vFor, item, index)"
+					/>
+				</template>
 
-			<UiRenderer v-else :schema="child" :context="context" />
+				<UiRenderer v-else :schema="child" :context="context" />
+			</template>
 		</template>
 	</component>
 </template>
+
+<style scoped>
+.ui-text-node {
+	display: inline-block;
+}
+</style>

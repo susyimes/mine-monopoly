@@ -23,6 +23,7 @@
 		"filtrex": "^3.1.0",
 		"gsap": "3.11.4",
 		"jsencrypt": "3.5.4",
+		"jsep": "^1.4.0",
 		"lodash": "4.17.21",
 		"mitt": "3.0.1",
 		"monaco-editor": "0.50.0",
