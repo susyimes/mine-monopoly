@@ -13,8 +13,6 @@ const coverImageUrl = ref("");
 const coverImagePreview = ref("");
 
 onUpdated(async () => {
-  // 注意：onUpdated 会在组件任何更新时触发。
-  // 为了防止每次输入字符都重置封面，加个判断：如果当前没选新图，才去读 store 里的原图
   if (!coverImageUrl.value) {
     coverImagePreview.value = await getCoverImagePreviewUrl();
   }
@@ -55,13 +53,11 @@ async function handleAddCoverImage() {
     properties: ["openFile"],
   });
   
-  // --- 修改点：只有选择了文件才更新预览，取消选择则什么都不做 ---
   if (res.filePaths.length > 0) {
     coverImageUrl.value = res.filePaths[0];
     const content = await window.electronAPI.getImageBase64(coverImageUrl.value);
     coverImagePreview.value = `data:image/png;base64,${content}`;
   } 
-  // else 分支已移除
 }
 
 async function checkVersion(_rule: Rule, value: string) {
@@ -76,7 +72,6 @@ async function checkVersion(_rule: Rule, value: string) {
 
 function handleClose() {
   coverImageUrl.value = "";
-  // 关闭时也建议重置预览图引用，避免下次打开闪烁
   coverImagePreview.value = ""; 
 }
 </script>

@@ -27,6 +27,7 @@ const createDefaultData = (): PropertyInfo => ({
 	buildingModelIdList: undefined,
 	custom: undefined,
 	customData: {},
+	customUI: undefined,
 });
 
 const formData = reactive<PropertyInfo>(createDefaultData());
@@ -198,6 +199,8 @@ async function copyMapItemId() {
 		message.error("复制失败，请手动选择复制");
 	}
 }
+
+const uiTemplate = computed(() => useMapDataStore().uiTemplates);
 </script>
 
 <template>
@@ -333,6 +336,16 @@ async function copyMapItemId() {
 			</a-form-item>
 
 			<a-divider style="margin: 12px 0" />
+
+			<a-form-item label="自定义展示UI模板">
+				<a-select v-model:value="formData.customUI" placeholder="请选择组件" show-search allow-clear option-filter-prop="label">
+					<a-select-option v-for="t in uiTemplate" :key="t.id" :value="t.id" :label="t.name">
+						{{ t.name }}
+						<span style="color: #ccc; font-size: 12px; margin-left: 4px"> ({{ t.id.slice(0, 6) }}) </span>
+					</a-select-option>
+				</a-select>
+				<div class="help-text">会将地皮实例(property)传入作为数据</div>
+			</a-form-item>
 
 			<div class="custom-data-section">
 				<div class="section-header">
@@ -557,5 +570,11 @@ async function copyMapItemId() {
 		height: 24px;
 		line-height: 24px;
 	}
+}
+
+.help-text {
+	font-size: 12px;
+	color: #999;
+	margin-top: 4px;
 }
 </style>

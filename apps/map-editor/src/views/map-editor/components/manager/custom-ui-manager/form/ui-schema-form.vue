@@ -34,10 +34,12 @@ const treeData = computed(() => {
 		key: node.id,
 		type: node.type,
 		id: node.id,
+		// [优化] 传递 content 用于树节点展示
+		content: node.content,
 		dataRef: node, // 保存引用
 		children: node.children ? node.children.map(transform) : [],
 		isLeaf: !node.children || node.children.length === 0,
-		vFor: node.vFor, // 用于在模板里判断是否显示 LOOP 标记
+		vFor: node.vFor,
 	});
 	return [transform(props.modelValue)];
 });
@@ -62,12 +64,11 @@ const selectedNode = computed(() => {
 // --- Methods ---
 const generateId = () => `node-${Math.random().toString(36).substring(2, 9)}`;
 
-// [核心工具] 递归复制节点并生成新 ID (防止 ID 冲突)
-// 将此函数提取出来供 模板插入 和 JSON导入 使用
+// [核心工具] 递归复制节点并生成新 ID
 const cloneAndGenerateIds = (node: any): UISchema => {
 	const newNode: UISchema = {
 		...node,
-		id: generateId(), // 强制生成新 ID
+		id: generateId(),
 		type: node.type || "div",
 		children: [],
 	};
@@ -78,11 +79,10 @@ const cloneAndGenerateIds = (node: any): UISchema => {
 	return newNode;
 };
 
-// [新增] 复制当前节点 JSON
+// 复制当前节点 JSON
 const copyNodeJson = async () => {
 	if (!selectedNode.value) return;
 	try {
-		// 格式化 JSON，2空格缩进
 		const jsonStr = JSON.stringify(selectedNode.value, null, 2);
 		await navigator.clipboard.writeText(jsonStr);
 		message.success(`节点 "${selectedNode.value.type}" 已复制到剪贴板`);
@@ -91,16 +91,15 @@ const copyNodeJson = async () => {
 	}
 };
 
-// [新增] 打开导入弹窗
+// 打开导入弹窗
 const openImportModal = () => {
 	if (!selectedNode.value) return;
 	jsonImportContent.value = "";
 	isJsonModalVisible.value = true;
 };
 
-// [新增] 执行导入 JSON
+// 执行导入 JSON
 const handleImportJson = () => {
-	// 1. 先进行空值检查，并赋值给局部变量 node
 	const node = selectedNode.value;
 	if (!node) return message.warning("请先选择一个节点");
 
@@ -110,14 +109,12 @@ const handleImportJson = () => {
 
 	try {
 		const parsed = JSON.parse(jsonImportContent.value);
-
 		if (typeof parsed !== "object" || !parsed.type) {
 			return message.error("无效的 UI Schema 格式 (缺少 type)");
 		}
 
 		const newNode = cloneAndGenerateIds(parsed);
 
-		// 2. 使用局部变量 node 进行操作，TS 就不会报错了
 		if (!node.children) node.children = [];
 		node.children.push(newNode);
 
@@ -231,14 +228,7 @@ const removeNode = () => {
 				<span class="header-title">组件树</span>
 				<div class="header-actions">
 					<a-dropdown :trigger="['click']">
-						<button class="icon-btn" title="插入模板" :disabled="!selectedNode">
-							<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
-								<rect x="3" y="3" width="7" height="7"></rect>
-								<rect x="14" y="3" width="7" height="7"></rect>
-								<rect x="14" y="14" width="7" height="7"></rect>
-								<rect x="3" y="14" width="7" height="7"></rect>
-							</svg>
-						</button>
+						<button class="icon-btn" title="插入模板" :disabled="!selectedNode">模板</button>
 						<template #overlay>
 							<a-menu>
 								<a-menu-item @click="insertTemplate('loop')">插入: 列表循环</a-menu-item>
@@ -249,46 +239,16 @@ const removeNode = () => {
 					</a-dropdown>
 
 					<button class="icon-btn" @click="openImportModal" :disabled="!selectedNode" title="导入 JSON 添加子节点">
-						<svg
-							viewBox="0 0 24 24"
-							width="16"
-							height="16"
-							stroke="currentColor"
-							stroke-width="2"
-							fill="none"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-							<polyline points="17 8 12 3 7 8"></polyline>
-							<line x1="12" y1="3" x2="12" y2="15"></line>
-						</svg>
+						导入
 					</button>
 
 					<button class="icon-btn" @click="copyNodeJson" :disabled="!selectedNode" title="复制当前节点 JSON">
-						<svg
-							viewBox="0 0 24 24"
-							width="16"
-							height="16"
-							stroke="currentColor"
-							stroke-width="2"
-							fill="none"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-						</svg>
+						导出
 					</button>
 
 					<div class="divider-v"></div>
 
-					<button class="icon-btn" @click="addNode" :disabled="!selectedNode" title="添加空白节点">
-						<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
-							<line x1="12" y1="5" x2="12" y2="19"></line>
-							<line x1="5" y1="12" x2="19" y2="12"></line>
-						</svg>
-					</button>
+					<button class="icon-btn" @click="addNode" :disabled="!selectedNode" title="添加空白节点">添加</button>
 
 					<button
 						class="icon-btn danger"
@@ -296,10 +256,7 @@ const removeNode = () => {
 						:disabled="!selectedKey || selectedKey === rootId"
 						title="删除节点"
 					>
-						<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
-							<polyline points="3 6 5 6 21 6"></polyline>
-							<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-						</svg>
+						删除
 					</button>
 				</div>
 			</div>
@@ -317,7 +274,12 @@ const removeNode = () => {
 					<template #title="{ dataRef }">
 						<div class="tree-node-content">
 							<span class="type-tag" :class="dataRef.type">{{ dataRef.type }}</span>
-							<span class="node-id">{{ dataRef.id }}</span>
+
+							<span v-if="dataRef.content" class="node-content-preview" :title="dataRef.content">
+								{{ dataRef.content.length > 15 ? dataRef.content.slice(0, 15) + "..." : dataRef.content }}
+							</span>
+							<span v-else class="node-id">{{ dataRef.id }}</span>
+
 							<span v-if="dataRef.vFor" class="loop-badge">LOOP</span>
 						</div>
 					</template>
@@ -363,7 +325,7 @@ const removeNode = () => {
 								</a-col>
 							</a-row>
 
-							<template v-if="['text', 'button'].includes(selectedNode.type)">
+							<template v-if="['text', 'button', 'span'].includes(selectedNode.type)">
 								<a-row :gutter="12">
 									<a-col :span="12">
 										<a-form-item label="静态文本">
@@ -449,7 +411,6 @@ const removeNode = () => {
 </template>
 
 <style scoped>
-/* 保持原有 CSS 不变，重点是 .icon-btn 的样式复用 */
 .schema-editor-container {
 	display: flex;
 	height: 100%;
@@ -535,11 +496,10 @@ const removeNode = () => {
 }
 
 .left-panel {
-	width: 260px;
+	width: 360px;
 	border-right: 1px solid #f0f0f0;
 	display: flex;
 	flex-direction: column;
-	background: #fafafa;
 }
 
 .tree-wrapper {
@@ -602,6 +562,13 @@ const removeNode = () => {
 	color: #ccc;
 	font-size: 12px;
 	transform: scale(0.9);
+}
+
+/* [新增样式] 树节点内容预览 */
+.node-content-preview {
+	color: #555;
+	font-weight: 500;
+	margin-right: 8px;
 }
 
 .loop-badge {

@@ -25,6 +25,7 @@ export class Property implements IProperty {
 	public buildingModelIdList: string[] | undefined;
 	public custom: PropertyCustom | undefined;
 	public owner: IPlayer | undefined = undefined;
+	public customUI: string | undefined;
 
 	public modifierManager: IModifierManager<PropertyCommandMap>;
 	public commandBus: ICommandBus<PropertyCommandMap>;
@@ -45,6 +46,7 @@ export class Property implements IProperty {
 		this.buildingModelIdList = property.buildingModelIdList;
 		this.custom = property.custom;
 		this.originalData = property;
+		this.customUI = property.customUI;
 
 		this.modifierManager = new ModifierManager();
 		this.commandBus = new CommandBus<PropertyCommandMap>(this.modifierManager);
@@ -138,6 +140,7 @@ export class Property implements IProperty {
 			buildingModelIdList: this.buildingModelIdList,
 			custom: this.custom ? { effectCode: "", description: this.custom.description } : undefined,
 			customData: this.customData,
+			customUI: this.customUI,
 		};
 		return propertyInfo;
 	}

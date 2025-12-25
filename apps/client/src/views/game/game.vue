@@ -74,6 +74,12 @@ onBeforeUnmount(() => {
 	if (gameRenderer) gameRenderer.destroy();
 	gameRenderer = null;
 });
+
+function getUiTemplateById(id: string) {
+	return (
+		useMapData().getUITempolateById(id)?.template || { id: "404", type: "text", content: `找不到ID为: ${id} 的UI组件` }
+	);
+}
 </script>
 
 <template>
@@ -82,7 +88,7 @@ onBeforeUnmount(() => {
 		<div class="ui-container">
 			<UiRenderer
 				v-for="ui in mapDataStore.customUIs"
-				:schema="ui.uiSchema"
+				:schema="getUiTemplateById(ui.uiSchema)"
 				:context="useGameData().$state"
 				:style="{
 					gridArea: `${ui.layout.y + 1} / ${ui.layout.x + 1} / span ${ui.layout.height} / span ${ui.layout.width}`,

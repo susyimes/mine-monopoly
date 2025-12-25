@@ -66,6 +66,7 @@ export async function loadMapDataFromPath(path: string) {
 	const mapDataStore = useMapDataStore();
 	const resourceStore = useResourceStore();
 	const data = await parseGameMapFromProtoFile(path);
+	console.log("🚀 ~ loadMapDataFromPath ~ data:", data);
 	if (data) {
 		mapDataStore.$patch(data.mapData);
 		editorStore.setCurrentFilePath(path);
@@ -125,6 +126,7 @@ export function createDefaultMapData(): GameMap {
 		mapEvents: [],
 		phases: getInitPhase(),
 		buildingModelIdList: ["", "", ""],
+		uiTemplates: [],
 		customUIs: [],
 		gameSettingForm: [
 			{ id: "initMoney", key: "initMoney", type: "number-input", label: "初始金钱", defaultValue: 10000 },

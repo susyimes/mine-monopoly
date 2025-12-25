@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ChanceCardInfo, FormSchema, GameMap, PropertyInfo } from "@fatpaper-monopoly/types";
+import { ChanceCardInfo, FormSchema, GameMap, PropertyInfo, UITemplate } from "@fatpaper-monopoly/types";
 import { CameraMode, OperationMode } from "@src/enums";
 import {
 	MapItem,
@@ -188,25 +188,52 @@ export const useMapDataStore = defineStore("MapData", {
 			this.roles.splice(deleteIndex, 1);
 		},
 
-		//mapIndex
+		//MapIndex
 		updateMapIndex(indexs: string[]) {
 			this.mapIndex = indexs;
 			eventBus.emit("map-index-update", indexs);
 		},
 
-		//customUI
-		saveCustomUI(customUI: CustomUI) {
-			const old = this.customUIs.find((c) => c.id === customUI.id);
-			if (old) {
-				Object.assign(old, customUI);
+		//UITemplate
+
+		/** 保存或更新组件模板 */
+		saveUITemplate(payload: UITemplate) {
+			const idx = this.uiTemplates.findIndex((t) => t.id === payload.id);
+			if (idx > -1) {
+				// 更新：保持引用，避免丢失，或者直接替换
+				this.uiTemplates.splice(idx, 1, payload);
 			} else {
-				this.customUIs.push(customUI);
+				// 新增
+				this.uiTemplates.push(payload);
 			}
 		},
+
+		/** 删除组件模板 */
+		removeUITemplate(id: string) {
+			const idx = this.uiTemplates.findIndex((t) => t.id === id);
+			if (idx > -1) {
+				this.uiTemplates.splice(idx, 1);
+			}
+		},
+
+		//CustomUI
+
+		/** 保存或更新地图实例 */
+		saveCustomUI(payload: CustomUI) {
+			const idx = this.customUIs.findIndex((ui) => ui.id === payload.id);
+			if (idx > -1) {
+				this.customUIs.splice(idx, 1, payload);
+			} else {
+				this.customUIs.push(payload);
+			}
+		},
+
+		/** 删除地图实例 */
 		removeCustomUI(id: string) {
-			const deleteIndex = this.customUIs.findIndex((c) => c.id === id);
-			if (deleteIndex < 0) throw Error("找不到目标UI");
-			this.customUIs.splice(deleteIndex, 1);
+			const idx = this.customUIs.findIndex((ui) => ui.id === id);
+			if (idx > -1) {
+				this.customUIs.splice(idx, 1);
+			}
 		},
 
 		//gameSettingForm

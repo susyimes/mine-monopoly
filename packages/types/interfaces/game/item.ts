@@ -92,5 +92,5 @@ export interface CustomUI {
 		width: number;
 		height: number;
 	};
-	uiSchema: UISchema;
+	uiSchema: string;
 }

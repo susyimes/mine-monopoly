@@ -41,6 +41,7 @@ export interface PropertyInfo {
 	owner?: UserInRoomInfo;
 	custom?: PropertyCustom;
 	customData: Record<string, any>;
+	customUI: string | undefined;
 }
 
 export interface PropertyCustom {

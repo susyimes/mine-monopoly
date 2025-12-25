@@ -109,6 +109,11 @@ interface MessageCardOption {
 	content: string | UISchema;
 	duration: number;
 }
+interface UITemplate {
+	id: string;
+	name: string;
+	template: UISchema;
+}
 interface UISchema {
 	id: string;
 	type: "div" | "span" | "img" | "button" | "text" | "svg" | "path" | "circle" | "rect" | "line" | "g";
@@ -160,6 +165,7 @@ interface PropertyInfo {
 	owner?: UserInRoomInfo;
 	custom?: PropertyCustom;
 	customData: Record<string, any>;
+	customUI: string | undefined;
 }
 interface PropertyCustom {
 	effectCode: string;
@@ -430,6 +436,7 @@ interface GameMap {
 		gameRoundEnd: GamePhaseInfo[];
 	};
 	buildingModelIdList: string[];
+	uiTemplates: UITemplate[];
 	customUIs: CustomUI[];
 	extraLibs: string;
 }
@@ -1002,5 +1009,5 @@ interface CustomUI {
 		width: number;
 		height: number;
 	};
-	uiSchema: UISchema;
+	uiSchema: string;
 }

@@ -1,9 +1,8 @@
-import { ChanceCardInfo, GamePhaseInfo, GameSetting } from "./game-process";
+import { ChanceCardInfo, GamePhaseInfo, GameSetting, UISchema, UITemplate } from "./game-process";
 import { MapItem, MapItemType, Street, Role, MapEvent, GameMapInfo, CustomUI } from "./item";
 import { FormSchema } from "./util";
 
-export interface GameSettingForm{
-}
+export interface GameSettingForm {}
 
 export interface GameMap {
 	id: string;
@@ -24,6 +23,7 @@ export interface GameMap {
 		gameRoundEnd: GamePhaseInfo[];
 	};
 	buildingModelIdList: string[];
+	uiTemplates: UITemplate[];
 	customUIs: CustomUI[];
 	extraLibs: string;
 }

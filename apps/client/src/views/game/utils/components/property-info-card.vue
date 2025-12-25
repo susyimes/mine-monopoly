@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { PropertyInfo } from "@fatpaper-monopoly/types";
+import { useMapData } from "@src/store/game";
+import UiRenderer from "@src/components/utils/ui-renderer/ui-renderer.vue";
 
 const props = defineProps<{ property: PropertyInfo | null }>();
 
@@ -17,7 +19,7 @@ const _playerNameColor = computed(() => {
 	if (_property.value && _property.value.owner) {
 		return _property.value.owner.color;
 	} else {
-		return "var(--color-primary)";
+		return "#222222";
 	}
 });
 
@@ -25,58 +27,66 @@ function updateProperty(newProperty: PropertyInfo | null) {
 	_property.value = newProperty;
 }
 
+function getUiTemplateById(id: string) {
+	const schema = useMapData().getUITempolateById(id)?.template || {
+		id: "404",
+		type: "text",
+		content: `找不到ID为: ${id} 的UI组件`,
+	};
+	return schema;
+}
+
 defineExpose({ updateProperty });
 </script>
 
 <template>
-	<div
-		class="property-info"
-		:style="{
-			border: `0.2rem solid ${_playerNameColor}`,
-		}"
-		v-if="_property"
-	>
-		<div class="name">
-			<span class="data">{{ _property.name }}</span>
-		</div>
-		<div class="buildingLevel">
-			<span class="label">当前建筑等级</span><span class="data level">LV {{ _property.level }}</span>
-		</div>
-
-		<template v-if="_property.custom">
-			<div class="data">{{ _property.custom.description }}</div>
+	<div class="property-info felt-card" v-if="_property">
+		<template v-if="_property.customUI">
+			<UiRenderer :schema="getUiTemplateById(_property.customUI)" :context="{ property: _property }" />
 		</template>
 
 		<template v-else>
-			<div class="buildCost">
-				<span class="label">升级费用</span><span class="data">{{ _property.buildCost }}</span>
+			<div class="name">
+				<span class="data">{{ _property.name }}</span>
 			</div>
-			<div class="sellCost">
-				<span class="label">空地价格</span><span class="data">{{ _property.sellCost }}</span>
+			<div class="buildingLevel">
+				<span class="label">当前建筑等级</span><span class="data level">LV {{ _property.level }}</span>
 			</div>
-			<div class="cost_item" v-for="(cost, index) in _property.costList">
-				<span class="label">LV{{ index }} 过路费</span><span class="data">{{ cost }}</span>
-			</div>
-			<div class="owner">
-				<span class="label">拥有人</span
-				><span class="data" :style="{ color: _playerNameColor }">{{
-					_property.owner ? _property.owner.username : "无"
-				}}</span>
-			</div>
+
+			<template v-if="_property.custom">
+				<div class="data">{{ _property.custom.description }}</div>
+			</template>
+
+			<template v-else>
+				<div class="buildCost">
+					<span class="label">升级费用</span><span class="data">{{ _property.buildCost }}</span>
+				</div>
+				<div class="sellCost">
+					<span class="label">空地价格</span><span class="data">{{ _property.sellCost }}</span>
+				</div>
+				<div class="cost_item" v-for="(cost, index) in _property.costList">
+					<span class="label">LV{{ index }} 过路费</span><span class="data">{{ cost }}</span>
+				</div>
+				<div class="owner">
+					<span class="label">拥有人</span
+					><span class="data" :style="{ color: _playerNameColor }">{{
+						_property.owner ? _property.owner.username : "无"
+					}}</span>
+				</div>
+			</template>
 		</template>
 	</div>
 </template>
 
 <style lang="scss" scoped>
+@import "@src/assets/variables.scss";
+
 .property-info {
 	min-width: 15rem;
 	display: flex;
 	flex-direction: column;
 	justify-content: space-around;
 	align-items: center;
-	padding: 0.4rem 0.3rem;
-	background-color: rgba(255, 255, 255, 0.75);
-	border-radius: 0.8rem;
 
 	& > .name > .data {
 		text-align: center;

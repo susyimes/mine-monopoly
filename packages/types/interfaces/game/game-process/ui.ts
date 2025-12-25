@@ -67,6 +67,12 @@ export interface MessageCardOption {
 	duration: number;
 }
 
+export interface UITemplate {
+	id: string;
+	name: string;
+	template: UISchema;
+}
+
 export interface UISchema {
 	id: string;
 	// 1. 新增 SVG 相关标签

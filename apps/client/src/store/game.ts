@@ -54,7 +54,9 @@ export const useMapData = defineStore("map-data", {
 		inUse: false,
 		mapEvents: [],
 		buildingModelIdList: ["", "", ""],
+		uiTemplates: [],
 		customUIs: [],
+		extraLibs: "",
 	}),
 	actions: {
 		getMapEventByMapItemId(mapItemId: string) {
@@ -92,6 +94,11 @@ export const useMapData = defineStore("map-data", {
 		// Role
 		getRoleById(id: string) {
 			return this.roles.find((r) => r.id === id);
+		},
+
+		// UITempolate
+		getUITempolateById(id: string) {
+			return this.uiTemplates.find((u) => u.id === id);
 		},
 	},
 });
