@@ -331,7 +331,7 @@ export class DiceManager {
 			ctx.fillStyle = "#111316"; // 普通文字黑色
 		}
 
-		ctx.font = 'bold 260px ContentFont';
+		ctx.font = "bold 260px ContentFont";
 		ctx.textAlign = "center";
 		ctx.textBaseline = "middle";
 		ctx.fillText(String(value), 0, isProphecy ? 40 : 0); // 预言状态稍微下移给标签腾位置
@@ -568,15 +568,15 @@ export class DiceManager {
 		const ambientLight = new THREE.AmbientLight(0xffffff, 3);
 		this.scene.add(ambientLight);
 
-		const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
-		dirLight.position.set(0, 20, 0);
-		dirLight.castShadow = true;
-		dirLight.shadow.mapSize.set(2048, 2048);
-		dirLight.shadow.camera.left = -30;
-		dirLight.shadow.camera.right = 30;
-		dirLight.shadow.camera.top = 30;
-		dirLight.shadow.camera.bottom = -30;
-		this.scene.add(dirLight);
+		// const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+		// dirLight.position.set(0, 20, 0);
+		// dirLight.castShadow = true;
+		// dirLight.shadow.mapSize.set(2048, 2048);
+		// dirLight.shadow.camera.left = -30;
+		// dirLight.shadow.camera.right = 30;
+		// dirLight.shadow.camera.top = 30;
+		// dirLight.shadow.camera.bottom = -30;
+		// this.scene.add(dirLight);
 
 		const floorBody = new CANNON.Body({ mass: 0, shape: new CANNON.Plane() });
 		floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);

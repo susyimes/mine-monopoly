@@ -64,9 +64,6 @@ export class MapRenderer {
 		this.scene.background = new THREE.Color(0xbbbbbb);
 		this.requestAnimationFrameId = -1;
 
-		// 灯光
-		this.scene.add(new THREE.AmbientLight(0xffffff, 4.5));
-
 		// 链接辅助线
 		this.linkHelperLine = createDynamicLine(new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0));
 		this.scene.add(this.linkHelperLine.line);
@@ -126,6 +123,9 @@ export class MapRenderer {
 
 		this.switchCameraMode(useEditorStore().currentCameraMode);
 
+		// 灯光
+		this.initLight();
+
 		window.addEventListener("resize", () => {
 			const w = canvasEl.clientWidth;
 			const h = canvasEl.clientHeight;
@@ -145,6 +145,58 @@ export class MapRenderer {
 			this.composer.render();
 		};
 		loop();
+	}
+
+	// 在你的类中
+	private initLight() {
+		function getGroupCenter(group: THREE.Group) {
+			if (group.children.length === 0) return new THREE.Vector3(0, 0, 0);
+			const box = new THREE.Box3().setFromObject(group);
+			const center = new THREE.Vector3();
+			box.getCenter(center);
+			return center;
+		}
+		const centerPos = getGroupCenter(this.mapItemGroup);
+
+		// 1. 环境光 (AmbientLight) - 全局提亮，消除死角
+		// 颜色：纯白 | 强度：0.9 (很高，保证画面明亮)
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+		this.scene.add(ambientLight);
+
+		// 2. 半球光 (HemisphereLight) - 增加卡通层次感
+		// 天空：纯白 | 地面：淡灰色 (模拟漫反射，不要太暖以免发黄)
+		// 强度：1.0
+		const skyColor = 0xffffff;
+		const groundColor = 0xeeeeee; // 极淡的灰，保持干净
+		const hemisphereLight = new THREE.HemisphereLight(skyColor, groundColor, 1.0);
+		hemisphereLight.position.set(0, 50, 0);
+		this.scene.add(hemisphereLight);
+
+		// 3. 平行光 (DirectionalLight) - 主光源 (产生阴影)
+		// 颜色：纯白 (去黄) | 强度：2.5 (大幅提升亮度)
+		const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+
+		// 位置：拉高一点，让影子短一点，显得更清爽
+		dirLight.position.set(-50, 100, -50);
+		dirLight.target.position.copy(centerPos);
+		this.scene.add(dirLight);
+		this.scene.add(dirLight.target);
+
+		// 4. 阴影配置 (保持柔和)
+		dirLight.castShadow = true;
+		dirLight.shadow.mapSize.width = 2048;
+		dirLight.shadow.mapSize.height = 2048;
+		dirLight.shadow.normalBias = 0.05; // 修复条纹
+		dirLight.shadow.bias = -0.0005; // 微调贴合度
+
+		// 扩大阴影相机范围，防止地图边缘阴影被切断
+		const d = 100;
+		dirLight.shadow.camera.left = -d;
+		dirLight.shadow.camera.right = d;
+		dirLight.shadow.camera.top = d;
+		dirLight.shadow.camera.bottom = -d;
+		dirLight.shadow.camera.near = 0.1;
+		dirLight.shadow.camera.far = 500;
 	}
 
 	private initEventListeners() {
@@ -491,7 +543,7 @@ export class MapRenderer {
 			this.itemTypesCache.set(mapItem.type.id, itemTypeCache);
 		}
 		const mapItemModel = new THREE.Object3D().copy(itemTypeCache.model);
-		mapItemModel.scale.set(0.5, 0.5, 0.5);
+		// mapItemModel.scale.set(0.5, 0.5, 0.5);
 		mapItemModel.userData["position"] = { x: mapItem.x, y: mapItem.y };
 		mapItemModel.userData["rotation"] = mapItem.rotation;
 		mapItemModel.userData["id"] = mapItem.id;
@@ -580,7 +632,6 @@ export class MapRenderer {
 			const gltf = await getModelById(itemType.modelId);
 			if (!gltf) return;
 			const newPreModel = gltf.scene;
-			newPreModel.scale.set(0.5, 0.5, 0.5);
 			applyOpacityToObject(newPreModel, 0.5);
 			this.previewBoxInCreate = newPreModel;
 			this.scene.add(this.previewBoxInCreate);

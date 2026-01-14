@@ -100,6 +100,10 @@ export class GameRenderer {
 		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 		this.renderer.setClearAlpha(0);
 		this.renderer.setPixelRatio(window.devicePixelRatio * 2);
+		this.renderer.toneMapping = THREE.LinearToneMapping;
+		this.renderer.toneMappingExposure = 1.1;
+		this.renderer.shadowMap.enabled = true;
+		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 		this.scene = new THREE.Scene();
 		this.camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000);
@@ -309,7 +313,9 @@ export class GameRenderer {
 	private async initMapModels() {
 		const modelResourcesList = Array.from(useResourceStore().recourceMap.values()).filter((r) => r.type === "model");
 		for await (const modelResource of modelResourcesList) {
-			this.mapModules.set(modelResource.id, await getModelById(modelResource.id));
+			const model = await getModelById(modelResource.id);
+			enableShadows(model);
+			this.mapModules.set(modelResource.id, model);
 		}
 	}
 
@@ -321,7 +327,7 @@ export class GameRenderer {
 			const model = this.mapModules.get(mapItem.type.modelId);
 			if (!model) throw Error("加载MapItem时找不到模型");
 			const mapItemModel = new THREE.Group().copy(model);
-			mapItemModel.scale.set(0.5, 0.5, 0.5);
+			// mapItemModel.scale.set(0.5, 0.5, 0.5);
 			mapItemModel.userData["position"] = { x: mapItem.x, y: mapItem.y };
 			mapItemModel.userData["rotation"] = mapItem.rotation;
 			mapItemModel.userData["id"] = mapItem.id;
@@ -374,7 +380,7 @@ export class GameRenderer {
 				10,
 				82
 			);
-			textSprite.getSprite().scale.set(2.5, 2.5, 2.5);
+			// textSprite.getSprite().scale.set(2.5, 2.5, 2.5);
 			this.housesItems.set(property.id, {
 				group: new THREE.Group(),
 				textSprite: textSprite,
@@ -394,40 +400,37 @@ export class GameRenderer {
 	private initChanceCard() {}
 
 	private initLight() {
-		//创建灯光
-		const ambientLight = new THREE.AmbientLight(0xffffff, 2); // soft white light
+		const centerPos = this.getGroupCenter(this.mapContainer);
+		const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
 		this.scene.add(ambientLight);
-		// const ambienLight2 = new THREE.AmbientLight(0xffffff, 0.7); // soft white light
-		// this.scene.add(ambienLight2);
-
-		const hemisphereLight = new THREE.HemisphereLight(0xf3f3f3, 0xfff1e2, 2);
-		hemisphereLight.color.setHSL(0.6, 1, 0.6);
-		hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
-		hemisphereLight.position.copy(this.getGroupCenter(this.mapContainer));
-		hemisphereLight.position.setY(20);
+		const skyColor = 0xffffff;
+		const groundColor = 0xeef1f5;
+		const hemisphereLight = new THREE.HemisphereLight(skyColor, groundColor, 0.9);
+		hemisphereLight.position.set(0, 50, 0);
 		this.scene.add(hemisphereLight);
 
-		const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-		dirLight.color.setHSL(0.1, 1, 0.95);
-		dirLight.position.set(-1, 20, -1);
-		dirLight.position.multiplyScalar(30);
-		dirLight.target.position.set(21, 0, 21);
+		const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+		dirLight.position.set(-40, 100, -40);
+		dirLight.target.position.copy(centerPos);
+
 		this.scene.add(dirLight);
+		this.scene.add(dirLight.target);
 
 		dirLight.castShadow = true;
 
-		dirLight.shadow.mapSize.width = 2048;
-		dirLight.shadow.mapSize.height = 2048;
+		dirLight.shadow.mapSize.width = 1028;
+		dirLight.shadow.mapSize.height = 1028;
 
-		const d = 50;
+		dirLight.shadow.bias = -0.0005;
+		dirLight.shadow.normalBias = 0.02;
 
+		const d = 100;
 		dirLight.shadow.camera.left = -d;
 		dirLight.shadow.camera.right = d;
 		dirLight.shadow.camera.top = d;
 		dirLight.shadow.camera.bottom = -d;
-
-		dirLight.shadow.camera.far = 3500;
-		dirLight.shadow.bias = -0.0001;
+		dirLight.shadow.camera.near = 0.1;
+		dirLight.shadow.camera.far = 500;
 	}
 
 	private initOutlinePass() {}
@@ -697,24 +700,13 @@ export class GameRenderer {
 		propertyBuildModel.traverse((object) => {
 			if (object.userData.name) {
 				const meshName = object.userData.name as string;
-				if (meshName.includes("color-block")) {
+				if (meshName.includes("color")) {
 					object.traverse((o) => {
 						//@ts-ignore
 						if (o.isMesh) {
-							// const basicMaterial = (<Mesh>o).material as Material;
 							const basicMaterial = new THREE.MeshStandardMaterial();
 							if (newProperty.owner) {
 								basicMaterial.color = new THREE.Color(Number(newProperty.owner.color.replace("#", "0x")));
-								// const {r, g, b} = hexToRgbNormalized(newProperty.owner.color);
-								// basicMaterial.onBeforeCompile = function (shader) {
-								//     shader.fragmentShader = shader.fragmentShader.replace(
-								//         '#include <dithering_fragment>',
-								//         `
-								//         #include <dithering_fragment>
-								//         gl_FragColor = vec4(${r} * gl_FragColor.r, ${g} * gl_FragColor.g, ${b} * gl_FragColor.b, gl_FragColor.a);
-								//         `
-								//     )
-								// }
 							} else {
 								basicMaterial.color.set("#cccccc");
 							}
@@ -742,9 +734,9 @@ export class GameRenderer {
 		propertyBuildModel.scale.set(0, 0, 0);
 		this.mapContainer.add(propertyBuildModel);
 		gsap.to(propertyBuildModel.scale, {
-			x: 0.45,
-			y: 0.45,
-			z: 0.45,
+			x: 1,
+			y: 1,
+			z: 1,
 			duration: 0.4,
 			onComplete: () => {
 				const houseItem = this.housesItems.get(newProperty.id);
@@ -767,7 +759,8 @@ export class GameRenderer {
 					const box = new THREE.Box3().setFromObject(propertyBuildModel);
 					// 计算边界框的高度
 					const size = box.getSize(new THREE.Vector3());
-					textSpriteModel.position.y = Math.max(size.y * 2 + 0.5, 1.5);
+					console.log("🚀 ~ GameRenderer ~ updateBuilding ~ size:", size)
+					textSpriteModel.position.y = 1;
 					propertyBuildModel.add(textSpriteModel);
 					houseItem.group = propertyBuildModel;
 				}
@@ -880,9 +873,9 @@ export class GameRenderer {
 							currentAnimation.to(
 								nextMapItem.scale,
 								{
-									x: 0.45,
-									y: 0.45,
-									z: 0.45,
+									x: 0.95,
+									y: 0.95,
+									z: 0.95,
 									duration: duration * 0.2,
 									ease: "power2.in",
 								},
@@ -902,9 +895,9 @@ export class GameRenderer {
 							currentAnimation.to(
 								nextMapItem.scale,
 								{
-									x: 0.55,
-									y: 0.55,
-									z: 0.55,
+									x: 1.05,
+									y: 1.05,
+									z: 1.05,
 									duration: duration * 0.5,
 									ease: "power2.out",
 								},
@@ -924,9 +917,9 @@ export class GameRenderer {
 							currentAnimation.to(
 								nextMapItem.scale,
 								{
-									x: 0.5,
-									y: 0.5,
-									z: 0.5,
+									x: 1,
+									y: 1,
+									z: 1,
 									duration: duration * 0.2,
 									ease: "sine.out",
 								},
@@ -1171,4 +1164,13 @@ function createCSS2DObjectFromVue(rootComponent: Component, rootProps?: Record<s
 
 	// 返回CSS2DObject
 	return { css2DObject, appInstance, containerEl, unmount };
+}
+
+function enableShadows(object: THREE.Object3D) {
+	object.traverse((child) => {
+		if ((child as THREE.Mesh).isMesh) {
+			child.castShadow = true;
+			child.receiveShadow = true;
+		}
+	});
 }
