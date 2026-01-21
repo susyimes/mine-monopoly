@@ -132,16 +132,13 @@ library.add(
 	faGhost,
 	faUpload,
 	faCheck,
-	faHourglassHalf
+	faHourglassHalf,
 );
 const pinia = createPinia();
 
-createApp(App)
-	.use(pinia)
-	.use(router)
-	.component("font-awesome-icon", FontAwesomeIcon)
-	// .directive("chanceCardSource", chanceCardSource)
-	.mount("#app");
+const app = createApp(App);
+
+app.use(pinia).use(router).component("font-awesome-icon", FontAwesomeIcon).mount("#app");
 
 initDeviceStatusListener();
 initSettingStore();
@@ -149,6 +146,7 @@ initSettingStore();
 import { gsap } from "gsap";
 import MotionPathPlugin from "gsap/MotionPathPlugin";
 import { isPC } from "./utils/platform";
+import { FPMessage } from "@fatpaper-monopoly/ui";
 
 gsap.registerPlugin(MotionPathPlugin);
 
@@ -194,3 +192,33 @@ function initDeviceStatusListener() {
 		deviceStatus.isFocus = document.visibilityState === "visible";
 	});
 }
+
+// --- 捕获 Vue 组件内部错误 ---
+app.config.errorHandler = (err, instance, info) => {
+	console.error("[Vue Error]:", err); // 保留控制台打印方便调试
+
+	const errMessage = err instanceof Error ? err.message : String(err);
+
+	FPMessage({ type: "error", message: `系统错误: ${errMessage}` });
+};
+
+// --- 捕获未处理的 Promise 拒绝 (Async/Await, Axios 等) ---
+window.addEventListener("unhandledrejection", (event) => {
+	console.error("[Unhandled Promise]:", event.reason);
+
+	// 提取错误信息
+	const reason = event.reason;
+	const errMessage = reason instanceof Error ? reason.message : String(reason);
+	if (errMessage.includes("cancel") || errMessage.includes("abort")) return;
+
+	FPMessage({ type: "error", message: `异步错误: ${errMessage}` });
+	event.preventDefault();
+});
+
+// --- 捕获常规 JS 运行时错误 ---
+window.addEventListener("error", (event) => {
+	console.error("[Global JS Error]:", event.error);
+
+	FPMessage({ type: "error", message: `程序异常: ${event.message}` });
+	event.preventDefault();
+});

@@ -73,7 +73,7 @@ library.add(
 	faLayerGroup,
 	faDatabase,
 	faSlidersH,
-	faCode
+	faCode,
 );
 
 eventBus.on("renderer-ready", () => {
@@ -94,6 +94,7 @@ import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
+import { message } from "ant-design-vue";
 
 // @ts-ignore
 self.MonacoEnvironment = {
@@ -129,4 +130,34 @@ monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
 monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
 	noSemanticValidation: false,
 	noSyntaxValidation: false,
+});
+
+// --- 捕获 Vue 组件内部错误 ---
+app.config.errorHandler = (err, instance, info) => {
+	console.error("[Vue Error]:", err); // 保留控制台打印方便调试
+
+	const errMessage = err instanceof Error ? err.message : String(err);
+
+	message.error(`系统错误: ${errMessage}`);
+};
+
+// --- 捕获未处理的 Promise 拒绝 (Async/Await, Axios 等) ---
+window.addEventListener("unhandledrejection", (event) => {
+	console.error("[Unhandled Promise]:", event.reason);
+
+	// 提取错误信息
+	const reason = event.reason;
+	const errMessage = reason instanceof Error ? reason.message : String(reason);
+	if (errMessage.includes("cancel") || errMessage.includes("abort")) return;
+
+	message.error(`异步错误: ${errMessage}`);
+	event.preventDefault();
+});
+
+// --- 捕获常规 JS 运行时错误 ---
+window.addEventListener("error", (event) => {
+	console.error("[Global JS Error]:", event.error);
+
+	message.error(`程序异常: ${event.message}`);
+	event.preventDefault();
 });
