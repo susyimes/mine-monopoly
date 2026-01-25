@@ -6,26 +6,23 @@ import { Line2 } from "three/examples/jsm/lines/Line2";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 
+const loader = new GLTFLoader();
+loader.setDRACOLoader(getDracoLoader());
+
 export async function getModelById(id: string): Promise<GLTF> {
-	const loader = new GLTFLoader();
 	const modelInfo = useResourceStore().findModelById(id);
 	if (!modelInfo) throw Error(`找不到id为 ${id} 的模型资源`);
-	loader.setDRACOLoader(getDracoLoader());
-	const bufferData = await window.electronAPI.readFile(modelInfo.url);
-	if (!bufferData) throw new Error("获取模型文件失败");
-	const arrayBuffer = bufferData.buffer.slice(
-		bufferData.byteOffset,
-		bufferData.byteOffset + bufferData.byteLength
-	) as ArrayBuffer;
-	const gltf = await loader.parseAsync(arrayBuffer, "");
-	return gltf;
+	return await getModelByUrl(modelInfo.url);
 }
 
-export async function getImageById(id: string): Promise<Buffer> {
-	const imageInfo = useResourceStore().findImageById(id);
-	if (!imageInfo) throw Error(`找不到id为 ${id} 的图片资源`);
-	const bufferData = await window.electronAPI.readFile(imageInfo.url);
-	return bufferData;
+export async function getModelByUrl(url: string): Promise<GLTF> {
+	const fileUrl = url;
+	try {
+		const gltf = await loader.loadAsync(fileUrl);
+		return gltf;
+	} catch (error) {
+		throw new Error(`通过Url加载模型失败: ${url}`);
+	}
 }
 
 export function applyOpacityToObject(object: THREE.Object3D, opacity: number): void {
@@ -68,7 +65,7 @@ export interface DynamicLine {
 export function createDynamicLine(
 	startPoint: THREE.Vector3,
 	endPoint: THREE.Vector3,
-	options: DynamicLineOptions = {}
+	options: DynamicLineOptions = {},
 ): DynamicLine {
 	const { color = 0xff0000, lineWidth = 1, dashed = false, dashSize = 0.5, gapSize = 0.2 } = options;
 
@@ -84,11 +81,11 @@ export function createDynamicLine(
 				linewidth: lineWidth,
 				dashSize,
 				gapSize,
-		  })
+			})
 		: new THREE.LineBasicMaterial({
 				color: new THREE.Color(color),
 				linewidth: lineWidth,
-		  });
+			});
 
 	// 创建线对象
 	const line = new THREE.Line(geometry, material);

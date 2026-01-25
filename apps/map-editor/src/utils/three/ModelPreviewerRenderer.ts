@@ -2,6 +2,7 @@ import { AmbientLight, Box3, Color, PerspectiveCamera, Scene, Vector3, WebGLRend
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { ThreeSceneBase } from "@fatpaper-monopoly/utils";
 import { getDracoLoader } from "./draco";
+import { getModelByUrl } from ".";
 
 export class ModelPreviewerRenderer extends ThreeSceneBase {
 	constructor(contianer: HTMLDivElement) {
@@ -18,14 +19,7 @@ export class ModelPreviewerRenderer extends ThreeSceneBase {
 			this.render();
 			return;
 		}
-		const loader = new GLTFLoader();
-		loader.setDRACOLoader(getDracoLoader());
-		const data = await window.electronAPI.readFile(modelFileUrl);
-		if (!data) {
-			throw new Error("Failed to load model data.");
-		}
-		const arrayBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
-		const gltf = await loader.parseAsync(arrayBuffer, "");
+		const gltf = await getModelByUrl(modelFileUrl);
 		const model = gltf.scene;
 		this.scene.add(model);
 		const box = new Box3().setFromObject(model);

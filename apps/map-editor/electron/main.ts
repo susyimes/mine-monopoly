@@ -1,12 +1,25 @@
 import { app, ipcMain, BrowserWindow, dialog, OpenDialogOptions, SaveDialogOptions, protocol, net } from "electron";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFile, writeFile, copyFile, mkdir } from "fs/promises";
 import path from "node:path";
 import fs from "node:fs";
 import url from "node:url";
 import { autoUpdater } from "electron-updater";
 import log from "electron-log";
+
+protocol.registerSchemesAsPrivileged([
+	{
+		scheme: "fp-file",
+		privileges: {
+			secure: true,
+			supportFetchAPI: true,
+			standard: true,
+			bypassCSP: true,
+			stream: true,
+		},
+	},
+]);
 
 // 处理单例启动
 const gotTheLock = app.requestSingleInstanceLock();
@@ -40,6 +53,8 @@ export const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 export const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
 
+const isProduction = app.isPackaged;
+
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, "public") : RENDERER_DIST;
 
 let win: BrowserWindow | null;
@@ -71,12 +86,25 @@ function createWindow() {
 			nodeIntegration: true,
 			nodeIntegrationInWorker: false,
 			preload: path.join(__dirname, "preload.mjs"),
-			devTools: true,
-			webSecurity: false,
+			devTools: isProduction ? false : true,
+			webSecurity: true,
 			zoomFactor: 1.0,
 		},
 		frame: false,
 	});
+
+	win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+		callback({
+			responseHeaders: {
+				...details.responseHeaders,
+				"Content-Security-Policy": [
+					"default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: fp-file: ws: http: https:",
+				],
+			},
+		});
+	});
+
+	if (!isProduction) win.webContents.openDevTools();
 
 	win.webContents.on("did-finish-load", () => {
 		win?.webContents.send("main-process-message", new Date().toLocaleString());
@@ -113,8 +141,6 @@ function createWindow() {
 		win && win.webContents.send("update-status", { status: "error", error: err.message });
 	});
 
-	win.webContents.openDevTools();
-
 	ipcMain.on("renderer-ready", (event) => {
 		console.log("Vue is ready.");
 		if (fileToOpen) {
@@ -140,10 +166,38 @@ app.on("activate", () => {
 });
 
 app.whenReady().then(() => {
-	protocol.handle("local", (request) => {
-		const filePath = request.url.slice("local://".length);
-		console.log("🚀 ~ filePath:", filePath);
-		return net.fetch(url.pathToFileURL(path.join(__dirname, filePath)).toString());
+	protocol.handle("fp-file", (request) => {
+		// 1. 截取协议头
+		let urlPath = request.url.slice("fp-file://".length);
+
+		// 2. 处理 Windows 盘符丢失冒号的问题
+		if (process.platform === "win32") {
+			urlPath = decodeURIComponent(urlPath);
+
+			// 场景 A: "c/DEV/..." -> 补全为 "c:/DEV/..."
+			if (/^[a-zA-Z]\//.test(urlPath)) {
+				// 在第1个字符后插入冒号
+				urlPath = urlPath.slice(0, 1) + ":" + urlPath.slice(1);
+			}
+
+			// 场景 B: "/c:/DEV/..." (有时候浏览器会保留斜杠) -> 去掉开头的 "/"
+			else if (urlPath.startsWith("/") && /^[a-zA-Z]:/.test(urlPath.slice(1))) {
+				urlPath = urlPath.slice(1);
+			}
+
+			// 场景 C: 已经是 "c:/DEV/..." (正常) -> 不做处理
+		} else {
+			urlPath = decodeURIComponent(urlPath);
+		}
+
+		// 3. 最终清洗：确保是标准路径分隔符
+		const finalPath = path.normalize(urlPath);
+		try {
+			return net.fetch(pathToFileURL(finalPath).toString());
+		} catch (error) {
+			console.error("❌ [fp-file] 加载失败:", finalPath, error);
+			return new Response("Invalid Path", { status: 400 });
+		}
 	});
 });
 

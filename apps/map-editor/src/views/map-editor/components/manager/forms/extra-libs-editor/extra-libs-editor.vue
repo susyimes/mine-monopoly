@@ -5,16 +5,20 @@ import { useMapDataStore } from "@src/stores";
 import libContent from "./editor-lib.d.ts?raw";
 import CodeEditor from "@src/components/code-editor/index.vue";
 
-const visible = defineModel<boolean>({ default: false });
+const visible = defineModel({ default: false });
 
 const store = useMapDataStore();
 const localEffectCode = ref("");
 
-watch(visible, (val) => {
-	if (val) {
-		localEffectCode.value = store.extraLibs || "";
-	}
-});
+watch(
+	() => visible.value,
+	async (isOpen) => {
+		if (isOpen) {
+			localEffectCode.value = store.extraLibs + "" || "";
+		}
+	},
+	{ immediate: true },
+);
 
 function handleSave() {
 	store.extraLibs = localEffectCode.value;

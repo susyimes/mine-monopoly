@@ -30,6 +30,13 @@ export async function parseGameMapFromProtoFile(filePath: string) {
 }
 
 export async function saveGameMapToBinFile(mapId: string, filePath: string, mapData: GameMap): Promise<void> {
+	const fetchBuffer = async (url: string): Promise<Uint8Array> => {
+		const response = await fetch(url);
+		if (!response.ok) throw new Error(`资源加载失败: ${url}`);
+		const arrayBuffer = await response.arrayBuffer();
+		return new Uint8Array(arrayBuffer);
+	};
+
 	const resourceStore = useResourceStore();
 	const modelsList: ProtoFileType[] = [];
 	//加载模型:
@@ -38,7 +45,7 @@ export async function saveGameMapToBinFile(mapId: string, filePath: string, mapD
 			id: model.id,
 			name: model.name,
 			filetype: model.fileType,
-			buffer: new Uint8Array(await window.electronAPI.readFile(model.url)),
+			buffer: await fetchBuffer(model.url),
 		};
 		modelsList.push(tempModel);
 	}
@@ -50,7 +57,7 @@ export async function saveGameMapToBinFile(mapId: string, filePath: string, mapD
 			id: image.id,
 			name: image.name,
 			filetype: image.fileType,
-			buffer: new Uint8Array(await window.electronAPI.readFile(image.url)),
+			buffer: await fetchBuffer(image.url),
 		};
 		imagesList.push(tempImage);
 	}
@@ -66,7 +73,6 @@ export async function loadMapDataFromPath(path: string) {
 	const mapDataStore = useMapDataStore();
 	const resourceStore = useResourceStore();
 	const data = await parseGameMapFromProtoFile(path);
-	console.log("🚀 ~ loadMapDataFromPath ~ data:", data);
 	if (data) {
 		mapDataStore.$patch(data.mapData);
 		editorStore.setCurrentFilePath(path);
@@ -75,12 +81,13 @@ export async function loadMapDataFromPath(path: string) {
 
 		const modelsList: typeof resourceStore.models = [];
 		for (const model of data.models) {
-			const newPath = await readBufferToFile(model.buffer, `temp/${model.id}.${model.filetype}`);
+			const absolutePath = await readBufferToFile(model.buffer, `temp/${model.id}.${model.filetype}`);
+			const filePath = convertToFpUrl(absolutePath);
 			const tempModel = {
 				id: model.id,
 				name: model.name,
 				fileType: model.filetype,
-				url: newPath,
+				url: filePath,
 			};
 			modelsList.push(tempModel);
 		}
@@ -88,12 +95,13 @@ export async function loadMapDataFromPath(path: string) {
 
 		const imagesList: typeof resourceStore.images = [];
 		for (const image of data.images) {
-			const newPath = await readBufferToFile(image.buffer, `temp/${image.id}.${image.filetype}`);
+			const absolutePath = await readBufferToFile(image.buffer, `temp/${image.id}.${image.filetype}`);
+			const filePath = convertToFpUrl(absolutePath);
 			const tempImage = {
 				id: image.id,
 				name: image.name,
 				fileType: image.filetype,
-				url: newPath,
+				url: filePath,
 			};
 			imagesList.push(tempImage);
 		}
@@ -212,6 +220,7 @@ export async function readBufferToFile(buffer: Uint8Array, filePath: string) {
 
 export async function readFileToTempDir(filePath: string, type: "model" | "image", fileName?: string) {
 	const id = `${type}-${crypto.randomUUID()}`;
+	filePath = convertFpUrlToPath(filePath);
 	const { filePath: newFilePath, fileType } = await window.electronAPI.copyFile(filePath, "", fileName || id);
 	return { newFilePath, id, fileType };
 }
@@ -255,7 +264,7 @@ export async function addNewModel(filePath: string, name: string) {
 			id,
 			name: name,
 			fileType,
-			url: newFilePath,
+			url: convertToFpUrl(newFilePath),
 		});
 	} catch (e: any) {
 		message.error(e.message, 1);
@@ -269,7 +278,34 @@ export async function addNewImage(filePath: string, name: string) {
 		id,
 		name: name,
 		fileType,
-		url: newFilePath,
+		url: convertToFpUrl(newFilePath),
 	});
 	return id;
+}
+
+/**
+ * 将本地绝对路径转换为自定义协议 URL
+ * @param localPath Electron 返回的绝对路径 (e.g. "C:\Games\map.png")
+ */
+export function convertToFpUrl(localPath: string): string {
+	const normalizedPath = localPath.replace(/\\/g, "/");
+	return `fp-file://${normalizedPath}`;
+}
+
+/**
+ * 将自定义协议 URL转换为本地绝对路径
+ * @param localPath 自定义协议 URL (e.g. "fp-file://C:/Games/map.png")
+ */
+export function convertFpUrlToPath(urlOrPath: string): string {
+	if (!urlOrPath) return "";
+	if (!urlOrPath.startsWith("fp-file:")) {
+		return urlOrPath;
+	}
+	let rawPath = urlOrPath.replace(/^fp-file:\/{2,3}/, "");
+	if (navigator.userAgent.includes("Windows")) {
+		if (rawPath.startsWith("/") && /^[a-zA-Z]:/.test(rawPath.slice(1))) {
+			rawPath = rawPath.slice(1);
+		}
+	}
+	return decodeURIComponent(rawPath);
 }

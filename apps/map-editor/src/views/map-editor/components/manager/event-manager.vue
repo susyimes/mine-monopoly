@@ -5,13 +5,18 @@ import { computed, ref } from "vue";
 import MapEventForm from "./forms/map-event-form/index.vue";
 import mapEventCard from "./components/map-event-card.vue";
 
+// 保持原有的 defineModel 定义，确保父子通信兼容
 const model = defineModel({ default: false });
 
-const mapDataStroe = useMapDataStore();
+const mapDataStore = useMapDataStore();
 
-const mapEventCount = computed(() => mapDataStroe.mapEvents.length);
+const mapEventCount = computed(() => mapDataStore.mapEvents.length);
+
+// 优化：计算属性处理分页，性能更好
 const mapEventToShow = computed(() => {
-	return mapDataStroe.mapEvents.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value);
+	const start = (currentPage.value - 1) * pageSize.value;
+	const end = start + pageSize.value;
+	return mapDataStore.mapEvents.slice(start, end);
 });
 
 const currentPage = ref(1);
@@ -26,12 +31,16 @@ function handleAdd() {
 }
 
 function handleEdit(id: string) {
-	currentMapEvent.value = mapDataStroe.mapEvents.find((s) => s.id === id);
+	currentMapEvent.value = mapDataStore.mapEvents.find((s) => s.id === id);
 	createMapEventFormVisible.value = true;
 }
 
 function handleDelete(id: string) {
-	mapDataStroe.reomveMapEvent(id);
+	mapDataStore.reomveMapEvent(id);
+	// 优化：如果删完了当前页，自动向前翻页
+	if (mapEventToShow.value.length === 0 && currentPage.value > 1) {
+		currentPage.value--;
+	}
 }
 </script>
 
@@ -51,9 +60,10 @@ function handleDelete(id: string) {
 		<a-empty v-if="mapEventCount === 0" description="没有数据" />
 		<div class="preview-container">
 			<map-event-card
+				v-for="mapEvent in mapEventToShow"
+				:key="mapEvent.id"
 				@edit="handleEdit"
 				@delete="handleDelete"
-				v-for="mapEvent in mapEventToShow"
 				:map-event="mapEvent"
 			/>
 		</div>

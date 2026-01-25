@@ -12,6 +12,7 @@ import {
 } from "@fatpaper-monopoly/types/interfaces/game/item";
 import { eventBus } from "@src/utils/event-bus";
 import { createDefaultMapData } from "../utils/file/index";
+import { cloneDeep } from "lodash";
 
 export const useMapDataStore = defineStore("MapData", {
 	state: createDefaultMapData,
@@ -113,8 +114,6 @@ export const useMapDataStore = defineStore("MapData", {
 		editMapEvent(mapEvent: MapEvent) {
 			const index = this.mapEvents.findIndex((s) => s.id === mapEvent.id);
 			if (index < 0) throw Error("找不到目标地图事件");
-			const old = this.mapEvents[index];
-			if (old.iconId !== mapEvent.iconId) useResourceStore().removeImage(old.iconId);
 			Object.assign(this.mapEvents[index], mapEvent);
 		},
 		reomveMapEvent(id: string) {
@@ -285,7 +284,10 @@ export const useResourceStore = defineStore("Resources", {
 			this.models.splice(deleteIndex, 1);
 		},
 		removeImage(id: string) {
+			console.trace("🚀 ~ removeImage ~ id:", id);
+			console.log(cloneDeep(this.images));
 			const deleteIndex = this.images.findIndex((i) => i.id === id);
+			console.log("🚀 ~ removeImage ~ deleteIndex:", deleteIndex);
 			if (deleteIndex < 0) throw Error("找不到目标图片资源");
 			this.images.splice(deleteIndex, 1);
 		},

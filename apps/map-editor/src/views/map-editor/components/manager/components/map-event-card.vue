@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { MapEvent } from "@fatpaper-monopoly/types/interfaces/game/item";
 import { useResourceStore } from "@src/stores";
-import { message } from "ant-design-vue";
-import { onMounted, ref, watch } from "vue";
+import { computed } from "vue";
+import { convertToFpUrl } from "@src/utils/file";
 
 const props = defineProps<{ mapEvent: MapEvent }>();
 const emits = defineEmits<{
@@ -10,21 +10,15 @@ const emits = defineEmits<{
 	delete: [id: string];
 }>();
 
-watch(
-	() => props.mapEvent.iconId,
-	async (newIconId) => {
-		const imageResource = useResourceStore().findImageById(newIconId);
-		if (!imageResource) {
-			message.error(`获取 ${props.mapEvent.name} 的icon资源失败`, 1);
-			return;
-		}
-		const content = await window.electronAPI.getImageBase64(imageResource.url);
-		iconPreview.value = `data:image/png;base64,${content}`;
-	},
-	{ immediate: true }
-);
+const resourceStore = useResourceStore();
 
-const iconPreview = ref("");
+// 优化：直接使用 computed 计算 URL，store 变化时自动更新
+const iconPreview = computed(() => {
+	const imageResource = resourceStore.findImageById(props.mapEvent.iconId);
+	if (!imageResource) return "";
+	// 将 store 中存储的本地路径转换为 fp-file 协议 URL
+	return imageResource.url;
+});
 
 function handleEdit() {
 	emits("edit", props.mapEvent.id);
@@ -55,7 +49,7 @@ function handleDelete() {
 				<a-button size="small" type="link" danger>删除</a-button>
 			</a-popconfirm>
 		</template>
-		<img class="icon-preview" :src="iconPreview" alt="" />
+		<img v-if="iconPreview" class="icon-preview" :src="iconPreview" alt="" />
 	</a-card>
 </template>
 

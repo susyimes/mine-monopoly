@@ -6,7 +6,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
 import { ChanceCardInfo, TargetSelectType } from "@fatpaper-monopoly/types";
-import { addNewImage } from "@src/utils/file";
+import { addNewImage, convertToFpUrl } from "@src/utils/file";
 import { Rule } from "ant-design-vue/es/form";
 import ChanceCardPreview from "@src/views/map-editor/components/common/chance-card-preview.vue";
 
@@ -22,8 +22,6 @@ onMounted(async () => {
 		return;
 	}
 	iconUrl.value = imageResource.url;
-	const content = await window.electronAPI.getImageBase64(imageResource.url);
-	chanceCardIconPreview.value = `data:image/png;base64,${content}`;
 });
 
 const targetNameMap: Record<TargetSelectType, string> = {
@@ -65,10 +63,10 @@ watch(
 		if (!oldType) return;
 		chanceCardForm.effectCode = chanceCardForm.effectCode.replace(
 			`target: ${targetTypeMap[oldType]}`,
-			`target: ${targetTypeMap[newType]}`
+			`target: ${targetTypeMap[newType]}`,
 		);
 	},
-	{ immediate: true }
+	{ immediate: true },
 );
 
 let isIconChange = false;
@@ -76,7 +74,6 @@ let isIconChange = false;
 async function handleAddChanceCard() {
 	try {
 		const mapDataStore = useMapDataStore();
-
 		if (isIconChange) {
 			if (chanceCardForm.iconId) useResourceStore().removeImage(chanceCardForm.iconId);
 			const iconId = await addNewImage(iconUrl.value, chanceCardForm.name);
@@ -101,18 +98,14 @@ async function handleAddIcon() {
 		properties: ["openFile"],
 	});
 	if (res.filePaths.length > 0) {
-		iconUrl.value = res.filePaths[0];
-		const content = await window.electronAPI.getImageBase64(iconUrl.value);
-		chanceCardIconPreview.value = `data:image/png;base64,${content}`;
+		iconUrl.value = convertToFpUrl(res.filePaths[0]); // 直接拿路径
 		isIconChange = true;
-	} else {
-		iconUrl.value = "";
-		chanceCardIconPreview.value = "";
-		isIconChange = false;
 	}
 }
 
-const chanceCardIconPreview = ref("");
+const chanceCardIconPreview = computed(() => {
+	return iconUrl.value;
+});
 
 const iconRule = async (_rule: Rule, value: string) => {
 	if (!iconUrl.value) {
@@ -153,13 +146,10 @@ const iconRule = async (_rule: Rule, value: string) => {
 					<input type="color" v-model="chanceCardForm.color" />
 				</a-form-item>
 				<a-form-item label="icon图片" name="iconUrl" :rules="[{ required: true, validator: iconRule }]">
-					<template v-if="iconUrl">
-						<span class="icon-url">{{ iconUrl }}</span>
-					</template>
-					<a-button @click="handleAddIcon" type="primary">选择图片</a-button>
+					<a-button size="small" @click="handleAddIcon">选择图片</a-button>
 				</a-form-item>
 				<a-form-item>
-					<a-button type="primary" html-type="submit">确认修改</a-button>
+					<a-button style="width: 100%;" type="primary" html-type="submit">确认修改</a-button>
 				</a-form-item>
 			</a-form>
 		</div>
@@ -190,7 +180,6 @@ const iconRule = async (_rule: Rule, value: string) => {
 		width: 25vw;
 		display: flex;
 		flex-direction: column;
-		align-items: center;
 		overflow-y: scroll;
 		padding-right: 10px;
 

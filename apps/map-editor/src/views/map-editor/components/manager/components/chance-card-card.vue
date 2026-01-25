@@ -1,31 +1,22 @@
 <script setup lang="ts">
-import { ChanceCard } from "@fatpaper-monopoly/types/interfaces/game/item";
 import { useResourceStore } from "@src/stores";
-import { message } from "ant-design-vue";
+import { ChanceCardInfo } from "@fatpaper-monopoly/types";
+import { computed } from "vue";
 import ChanceCardPreview from "../../common/chance-card-preview.vue";
-import { onMounted, ref, watch } from "vue";
 
-const props = defineProps<{ chanceCard: ChanceCard }>();
+const props = defineProps<{ chanceCard: ChanceCardInfo }>();
 const emits = defineEmits<{
 	edit: [id: string];
 	delete: [id: string];
 }>();
 
-watch(
-	() => props.chanceCard.iconId,
-	async (newIconId) => {
-		const imageResource = useResourceStore().findImageById(newIconId);
-		if (!imageResource) {
-			message.error(`获取 ${props.chanceCard.name} 的icon资源失败`, 1);
-			return;
-		}
-		const content = await window.electronAPI.getImageBase64(imageResource.url);
-		iconPreview.value = `data:image/png;base64,${content}`;
-	},
-	{ immediate: true }
-);
+const resourceStore = useResourceStore();
 
-const iconPreview = ref("");
+// 优化：使用 computed 直接关联 Store，确保图片更新时卡片自动刷新
+const iconPreviewUrl = computed(() => {
+	const imageResource = resourceStore.findImageById(props.chanceCard.iconId);
+	return imageResource ? imageResource.url : "";
+});
 
 function handleEdit() {
 	emits("edit", props.chanceCard.id);
@@ -40,33 +31,32 @@ function handleDelete() {
 	<a-card
 		:bodyStyle="{
 			display: 'flex',
-			'justify-content': 'center',
-			'align-items': 'center',
+			justifyContent: 'center',
+			alignItems: 'center',
 			flex: 1,
 			width: '100%',
-			'background-color': '#efefef',
+			backgroundColor: '#efefef',
+			padding: '10px',
 		}"
-		class="map-event-card"
+		class="chance-card-card"
 		size="small"
 		:title="props.chanceCard.name"
 	>
 		<template #extra>
-			<a-button @click="handleEdit" size="small" type="link" primary>编辑</a-button>
+			<a-button @click="handleEdit" size="small" type="link">编辑</a-button>
 			<a-popconfirm title="你确定删除这张机会卡吗" ok-text="确定" cancel-text="取消" @confirm="handleDelete">
 				<a-button size="small" type="link" danger>删除</a-button>
 			</a-popconfirm>
 		</template>
-		<chance-card-preview :chance-card="chanceCard" :disable="false" :icon-preview="''" />
+
+		<chance-card-preview :chance-card="chanceCard" :disable="false" :icon-preview="iconPreviewUrl" />
 	</a-card>
 </template>
 
 <style lang="scss" scoped>
-.map-event-card {
+.chance-card-card {
 	display: flex;
 	flex-direction: column;
-	.icon-preview {
-		width: 50%;
-		object-fit: contain;
-	}
+	height: 100%;
 }
 </style>

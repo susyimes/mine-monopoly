@@ -3,29 +3,51 @@ import { MapEvent } from "@fatpaper-monopoly/types/interfaces/game/item";
 import CodeEditor from "@src/components/code-editor/index.vue";
 import libContent from "./editor-lib.d.ts?raw";
 import templateText from "./template-text?raw";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
 import { MapEventType } from "@fatpaper-monopoly/types";
-import { addNewImage } from "@src/utils/file";
+import { addNewImage, convertToFpUrl } from "@src/utils/file";
 import { Rule } from "ant-design-vue/es/form";
-import { clone } from "lodash";
+import { cloneDeep } from "lodash";
 
 const props = defineProps<{ mapEvent: MapEvent | undefined }>();
 const emits = defineEmits(["close"]);
-const extraLibs = computed(() => useMapDataStore().extraLibs);
+const resourceStore = useResourceStore();
 
-onMounted(async () => {
-	if (!props.mapEvent) return;
-	const imageResource = useResourceStore().findImageById(props.mapEvent.iconId);
-	if (!imageResource) {
-		message.error(`获取 ${props.mapEvent.name} 的icon资源失败`, 1);
-		return;
-	}
-	iconUrl.value = imageResource.url;
-	const content = await window.electronAPI.getImageBase64(imageResource.url);
-	mapEventIconPreview.value = `data:image/png;base64,${content}`;
+// 存储当前选中的图片路径（可能是 store 里的，也可能是新选的）
+const iconUrl = ref("");
+
+// 优化：实时计算预览 URL
+const mapEventIconPreview = computed(() => {
+	return iconUrl.value;
 });
+
+const mapEventForm = reactive<MapEvent>(getInitForm());
+let isIconChange = false;
+
+// 初始化表单
+watch(
+	() => props.mapEvent,
+	(newEvent) => {
+		if (newEvent) {
+			Object.assign(mapEventForm, cloneDeep(newEvent));
+			// 查找现有资源
+			const imageResource = resourceStore.findImageById(newEvent.iconId);
+			if (imageResource) {
+				iconUrl.value = imageResource.url;
+			} else {
+				iconUrl.value = "";
+			}
+			isIconChange = false;
+		} else {
+			Object.assign(mapEventForm, getInitForm());
+			iconUrl.value = "";
+			isIconChange = false;
+		}
+	},
+	{ immediate: true },
+);
 
 function getInitForm() {
 	const initForm = {
@@ -40,23 +62,11 @@ function getInitForm() {
 	return initForm;
 }
 
-const MapEventTypeLabel: Record<MapEventType, string> = {
-	[MapEventType.ArrivedEvent]: "到达触发",
-	[MapEventType.PassedEvent]: "经过触发",
-	[MapEventType.NormalEvents]: "普通事件",
-};
-
-const iconUrl = ref("");
-
-const mapEventForm = reactive<MapEvent>(props.mapEvent || getInitForm());
-
-let isIconChange = false;
-
 async function handleAddMapEvent() {
 	try {
 		const mapDataStore = useMapDataStore();
 		if (isIconChange) {
-			if (mapEventForm.iconId) useResourceStore().removeImage(mapEventForm.iconId);
+			if (mapEventForm.iconId) resourceStore.removeImage(mapEventForm.iconId);
 			const iconId = await addNewImage(iconUrl.value, mapEventForm.name);
 			mapEventForm.iconId = iconId;
 		}
@@ -79,18 +89,10 @@ async function handleAddIcon() {
 		properties: ["openFile"],
 	});
 	if (res.filePaths.length > 0) {
-		iconUrl.value = res.filePaths[0];
-		const content = await window.electronAPI.getImageBase64(iconUrl.value);
-		mapEventIconPreview.value = `data:image/png;base64,${content}`;
+		iconUrl.value = convertToFpUrl(res.filePaths[0]); // 直接拿路径
 		isIconChange = true;
-	} else {
-		iconUrl.value = "";
-		mapEventIconPreview.value = "";
-		isIconChange = false;
 	}
 }
-
-const mapEventIconPreview = ref("");
 
 const iconRule = async (_rule: Rule, value: string) => {
 	if (!iconUrl.value) {
@@ -116,25 +118,17 @@ const iconRule = async (_rule: Rule, value: string) => {
 			<a-form-item label="事件名称" name="name" :rules="[{ required: true, message: '请输入事件名称' }]">
 				<a-input v-model:value="mapEventForm.name" />
 			</a-form-item>
-			<a-form-item label="触发类型" name="type" :rules="[{ required: true, message: '请输入事件名称' }]">
-				<a-select ref="select" v-model:value="mapEventForm.type" style="width: 120px">
-					<a-select-option v-for="eventType in MapEventType" :value="eventType">{{
-						MapEventTypeLabel[eventType]
-					}}</a-select-option>
-				</a-select>
-			</a-form-item>
 			<a-form-item label="事件描述" name="description" :rules="[{ required: true, message: '请输入事件描述' }]">
 				<a-input v-model:value="mapEventForm.description" />
 			</a-form-item>
 			<a-form-item label="icon图片" name="iconUrl" :rules="[{ required: true, validator: iconRule }]">
 				<template v-if="iconUrl">
-					<span class="icon-url">{{ iconUrl }}</span>
 					<img class="icon-preview" :src="mapEventIconPreview" />
 				</template>
-				<a-button @click="handleAddIcon" type="primary">选择图片</a-button>
+				<a-button @click="handleAddIcon" size="small">选择图片</a-button>
 			</a-form-item>
 			<a-form-item>
-				<a-button type="primary" html-type="submit">确认修改</a-button>
+				<a-button style="width: 100%" type="primary" html-type="submit">提交</a-button>
 			</a-form-item>
 		</a-form>
 		<div class="editor-container">
@@ -145,11 +139,7 @@ const iconRule = async (_rule: Rule, value: string) => {
 					show-icon
 				/>
 			</span>
-			<code-editor
-				v-model="mapEventForm.effectCode"
-				:template-text="templateText"
-				:extra-libs="[libContent, extraLibs]"
-			/>
+			<code-editor v-model="mapEventForm.effectCode" :template-text="templateText" :extra-libs="[libContent]" />
 		</div>
 	</div>
 </template>
@@ -161,6 +151,10 @@ const iconRule = async (_rule: Rule, value: string) => {
 
 	.map-event-form {
 		width: 25vw;
+		display: flex;
+		flex-direction: column;
+		overflow-y: scroll;
+		padding-right: 10px;
 	}
 
 	.editor-container {

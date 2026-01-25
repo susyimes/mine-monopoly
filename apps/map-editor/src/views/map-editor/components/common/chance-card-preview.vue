@@ -17,8 +17,7 @@ watch(
 				message.error(`获取 ${props.chanceCard.name} 的icon资源失败`, 1);
 				return;
 			}
-			const content = await window.electronAPI.getImageBase64(imageResource.url);
-			_iconPreview.value = `data:image/png;base64,${content}`;
+			_iconPreview.value = `${imageResource.url}`;
 		} else {
 			_iconPreview.value = "";
 		}

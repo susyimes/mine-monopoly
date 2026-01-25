@@ -1,26 +1,40 @@
 <script setup lang="ts">
 import { useMapDataStore } from "@src/stores";
 import { renderObjectTree } from "@src/utils/object-viewer";
-import { clone } from "lodash";
-import { nextTick, onUpdated, ref } from "vue";
+import { clone, cloneDeep } from "lodash";
+import { nextTick, onUpdated, ref, watch } from "vue";
 
 const visible = defineModel({ default: false });
 
 const mapDataViewerContainer = ref<HTMLDivElement | null>(null);
 
-onUpdated(async () => {
-	if (visible.value) {
-		nextTick(() => {
+watch(
+	() => visible.value,
+	async (isOpen) => {
+		if (isOpen) {
+			await nextTick(); // 等待 DOM 渲染（Modal 打开）
+
 			if (!mapDataViewerContainer.value) return;
-			const data = clone(useMapDataStore().$state);
-			const json = {
-				properties: data.mapItems.filter((m) => m.property !== undefined).map((m) => m.property),
-				...data,
-			};
-			renderObjectTree(mapDataViewerContainer.value, json);
-		});
-	}
-});
+
+			try {
+				const data = cloneDeep(useMapDataStore().$state);
+				const json = {
+					properties: data.mapItems.filter((m) => m.property !== undefined).map((m) => m.property),
+					...data,
+				};
+
+				// 清空旧内容（防止重复渲染）
+				mapDataViewerContainer.value.innerHTML = "";
+
+				// 渲染树
+				renderObjectTree(mapDataViewerContainer.value, json);
+			} catch (e) {
+				console.error("渲染 JSON 失败", e);
+			}
+		}
+	},
+	{ immediate: true },
+);
 </script>
 
 <template>

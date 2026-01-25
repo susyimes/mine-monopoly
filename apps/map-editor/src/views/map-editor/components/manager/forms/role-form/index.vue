@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { useMapDataStore, useResourceStore } from "@src/stores";
-import { addNewImage } from "@src/utils/file";
+import { addNewImage, convertToFpUrl } from "@src/utils/file";
 import { RolePreviewerRenderer } from "@src/utils/three/RolePreviewerRenderer";
 import { message } from "ant-design-vue";
-import { ref, reactive, onMounted, onUpdated, onBeforeUnmount, computed } from "vue";
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from "vue";
 import CodeEditor from "@src/components/code-editor/index.vue";
 import libContent from "./editor-lib.d.ts?raw";
 import templateText from "./template-text?raw";
 import { Role } from "@fatpaper-monopoly/types";
-import { clone } from "lodash";
 
 const { role } = defineProps<{ role: Role | undefined }>();
 const extraLibs = computed(() => useMapDataStore().extraLibs);
+
+// 使用 ref 代替 querySelector，更符合 Vue 规范且防止 ID 冲突
+const canvasContainerRef = ref<HTMLDivElement>();
+let rolePreviewer: RolePreviewerRenderer | null = null;
 
 onMounted(async () => {
 	if (role) {
@@ -25,6 +28,7 @@ onMounted(async () => {
 			message.error("获取角色资源失败");
 			return;
 		}
+		// Store 里的 url 已经是 fp-file:// 格式
 		roleForm.fileUrl = resource.url;
 		await loadRole(resource.url);
 	}
@@ -46,7 +50,6 @@ const roleForm = reactive<FormState>({
 	fileUrl: "",
 	initCode: "",
 });
-let rolePreviewer: RolePreviewerRenderer | null;
 
 const emits = defineEmits(["submit"]);
 
@@ -67,7 +70,10 @@ async function handleEditRole() {
 			return;
 		}
 		let imageId = role.imageId;
+
+		// 比较 URL (都是 fp-file:// 格式)
 		if (roleForm.fileUrl !== resource.url) {
+			// addNewImage 内部会处理 fp-file 路径的读取和保存
 			imageId = await addNewImage(roleForm.fileUrl, roleForm.name);
 			useResourceStore().removeImage(role.imageId);
 		}
@@ -89,6 +95,7 @@ async function handleEditRole() {
 
 async function handleCreateRole() {
 	try {
+		// 保存图片
 		const imageId = await addNewImage(roleForm.fileUrl, roleForm.name);
 		const role = {
 			id: `role-${crypto.randomUUID()}`,
@@ -112,17 +119,20 @@ async function handleAddRole() {
 		properties: ["openFile"],
 	});
 	if (res.filePaths.length > 0) {
-		roleForm.fileUrl = res.filePaths[0];
+		// 核心修改：转换为 fp-file 协议 URL，实现统一和预览
+		roleForm.fileUrl = convertToFpUrl(res.filePaths[0]);
 		await loadRole(roleForm.fileUrl);
 	}
 }
 
 async function loadRole(fileUrl: string) {
 	if (!rolePreviewer) {
-		const canvasContainer = document.querySelector("#form-preview-canvas-container") as HTMLDivElement;
-		rolePreviewer = new RolePreviewerRenderer(canvasContainer);
+		// 使用 ref 获取容器
+		if (canvasContainerRef.value) {
+			rolePreviewer = new RolePreviewerRenderer(canvasContainerRef.value);
+		}
 	}
-	await rolePreviewer.loadRole(fileUrl);
+	await rolePreviewer?.loadRole(fileUrl);
 }
 
 onBeforeUnmount(handleClose);
@@ -138,6 +148,10 @@ function handleClose() {
 <template>
 	<div class="role-form-container">
 		<a-form @finish="handleSubmit" :model="roleForm" name="basic" autocomplete="off" class="role-form">
+			<a-form-item label="ID">
+				<a-alert style="word-break: break-all" :message="roleForm.id" type="info" />
+			</a-form-item>
+
 			<a-form-item label="角色名称" name="name" :rules="[{ required: true, message: '请输入角色名称' }]">
 				<a-input v-model:value="roleForm.name" />
 			</a-form-item>
@@ -151,13 +165,12 @@ function handleClose() {
 			</a-form-item>
 
 			<a-form-item label="角色预览" name="fileUrl" :rules="[{ required: true, message: '请选择角色图片' }]">
-				<span class="role-image-url" v-if="roleForm.fileUrl">{{ roleForm.fileUrl }}</span>
-				<div id="form-preview-canvas-container" class="model-preview-canvas-container"></div>
-				<a-button @click="handleAddRole" type="primary">选择纸片人图片</a-button>
+				<div ref="canvasContainerRef" class="model-preview-canvas-container"></div>
+				<a-button @click="handleAddRole" size="small">选择纸片人图片</a-button>
 			</a-form-item>
 
 			<a-form-item>
-				<a-button style="float: right" type="primary" html-type="submit">提交</a-button>
+				<a-button style="width: 100%;" type="primary" html-type="submit">提交</a-button>
 			</a-form-item>
 		</a-form>
 		<div class="editor-container">
@@ -176,6 +189,10 @@ function handleClose() {
 
 	.role-form {
 		width: 25vw;
+		display: flex;
+		flex-direction: column;
+		overflow-y: scroll;
+		padding-right: 10px;
 	}
 
 	.editor-container {
@@ -193,6 +210,7 @@ function handleClose() {
 	border: 1px solid #ccc;
 	border-radius: 5px;
 	background-color: #f3f3f3;
+	word-break: break-all;
 }
 .model-preview-canvas-container {
 	display: block;
