@@ -85,7 +85,7 @@ function removePhase(group: PhaseGroupKey, id: string) {
 			</div>
 
 			<!-- 游戏初始化后阶段 -->
-			<h4>游戏初始化后</h4>
+			<h4>游戏基础内容初始化后</h4>
 			<div class="phase-container">
 				<div class="phase-item" v-for="(phase, index) in phases.gameInited">
 					<a-card
@@ -100,8 +100,14 @@ function removePhase(group: PhaseGroupKey, id: string) {
 						size="small"
 						:title="phase.name"
 					>
+						<template v-if="phase.mark == undefined" #extra>
+							<a-button size="small" type="link" danger @click="removePhase('gameInited', phase.id)">删除</a-button>
+						</template>
 						{{ phase.description }}
 					</a-card>
+					<a-button type="dashed" @click="addPhase('gameInited', index)" class="add-phase-button">
+						<FontAwesomeIcon :icon="['fas', 'plus']" />
+					</a-button>
 				</div>
 			</div>
 
@@ -199,10 +205,6 @@ function removePhase(group: PhaseGroupKey, id: string) {
 
 					<a-form-item label="阶段描述" name="description" :rules="[{ required: true, message: '输入阶段描述' }]">
 						<a-input v-model:value="currentPhase.description" />
-					</a-form-item>
-
-					<a-form-item>
-						<a-button type="primary" html-type="submit">保存</a-button>
 					</a-form-item>
 				</a-form>
 			</div>
