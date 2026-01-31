@@ -15,7 +15,10 @@
 	"dependencies": {
 		"@mine-monopoly/types": "workspace:*",
 		"@mine-monopoly/ui": "workspace:*",
-		"@mine-monopoly/utils": "workspace:*"
+		"@mine-monopoly/utils": "workspace:*",
+		"@modelcontextprotocol/sdk": "^1.0.4",
+		"express": "^4.18.2",
+		"zod": "^3.24.2"
 	},
 	"devDependencies": {
 		"ts-morph": "26.0.0"

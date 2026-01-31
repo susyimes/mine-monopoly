@@ -21,6 +21,14 @@ type Events = {
 	"map-event-unlink": string;
 	"map-index-update": string[];
 	"map-background-update": void;
+
+	// MCP 操作反馈事件
+	"mcp-operation": {
+		operation: string;
+		success: boolean;
+		message: string;
+		details?: any;
+	};
 };
 
 export const eventBus = mitt<Events>();

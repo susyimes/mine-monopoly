@@ -41,6 +41,12 @@ import {
 	faDatabase,
 	faSlidersH,
 	faCode,
+	faNetworkWired,
+	faRotate,
+	faPlay,
+	faStop,
+	faMagnifyingGlass,
+	faCopy,
 } from "@fortawesome/free-solid-svg-icons";
 import { eventBus } from "./utils/event-bus";
 import { loadMapDataFromPath } from "@src/utils/file";
@@ -74,6 +80,12 @@ library.add(
 	faDatabase,
 	faSlidersH,
 	faCode,
+	faNetworkWired,
+	faRotate,
+	faPlay,
+	faStop,
+	faMagnifyingGlass,
+	faCopy,
 );
 
 eventBus.on("renderer-ready", () => {
@@ -88,6 +100,10 @@ app.use(createPinia());
 app.use(router);
 
 app.mount("#app");
+
+// Initialize MCP Bridge (after app mount)
+import { initMCPBridge } from "./mcp/bridge-handler";
+initMCPBridge();
 
 import * as monaco from "monaco-editor";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";

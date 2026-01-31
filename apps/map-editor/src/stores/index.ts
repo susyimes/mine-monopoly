@@ -268,6 +268,46 @@ export const useResourceStore = defineStore("Resources", {
 			this.images.push(image);
 		},
 
+		/**
+		 * 添加临时模型（使用 empty.glb 模板）
+		 * @returns 新创建的模型资源
+		 */
+		async addTempModel(): Promise<ResourcesType> {
+			const id = `model-${crypto.randomUUID()}`;
+
+			// 使用 electronAPI 复制 empty.glb 到 temp 目录
+			const result = await window.electronAPI.copyEmptyResource("model");
+
+			const newModel: ResourcesType = {
+				id,
+				name: `临时模型 ${this.models.length + 1}`,
+				fileType: result.fileType,
+				url: result.url, // 直接使用返回的 fp-file:// URL
+			};
+			this.models.push(newModel);
+			return newModel;
+		},
+
+		/**
+		 * 添加临时图片（使用 empty.png 模板）
+		 * @returns 新创建的图片资源
+		 */
+		async addTempImage(): Promise<ResourcesType> {
+			const id = `image-${crypto.randomUUID()}`;
+
+			// 使用 electronAPI 复制 empty.png 到 temp 目录
+			const result = await window.electronAPI.copyEmptyResource("image");
+
+			const newImage: ResourcesType = {
+				id,
+				name: `临时图片 ${this.images.length + 1}`,
+				fileType: result.fileType,
+				url: result.url, // 直接使用返回的 fp-file:// URL
+			};
+			this.images.push(newImage);
+			return newImage;
+		},
+
 		removeModel(id: string) {
 			const deleteIndex = this.models.findIndex((m) => m.id === id);
 			if (deleteIndex < 0) throw Error("找不到目标模型资源");

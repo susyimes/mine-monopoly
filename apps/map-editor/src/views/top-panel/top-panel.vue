@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { useEditorStore, useMapDataStore, useResourceStore } from "@src/stores";
 import {
 	handleNewProtoFile,
@@ -6,6 +7,7 @@ import {
 	handleSaveAsOtherProtoFile,
 	handleSaveProtoFile,
 } from "@src/utils/file";
+import MCPControlPanel from "@src/components/mcp/MCPControlPanel.vue";
 
 const editorStore = useEditorStore();
 
@@ -25,6 +27,9 @@ const menus: MenuItem[] = [
 	{ label: "另存为", key: OperationType.SAVEAS },
 ];
 
+const mcpPanelVisible = ref(false);
+const mcpPanelRef = ref();
+
 function handleMenuClick(key: OperationType) {
 	switch (key) {
 		case OperationType.NEW:
@@ -34,44 +39,113 @@ function handleMenuClick(key: OperationType) {
 		case OperationType.OPEN:
 			handleOpenProtoFile();
 			break;
+
 		case OperationType.SAVE:
 			handleSaveProtoFile();
 			break;
+
 		case OperationType.SAVEAS:
 			handleSaveAsOtherProtoFile();
 			break;
 	}
 }
+
+function openMCPPanel() {
+	mcpPanelVisible.value = true;
+}
 </script>
 
 <template>
-	<div class="top-panel left">
-		<a-button
-			@click="handleMenuClick(menuItem.key)"
-			v-for="menuItem in menus"
-			class="menu-button"
-			size="small"
-			type="text"
-		>
-			<span>{{ menuItem.label }}</span>
-		</a-button>
+	<div class="top-panel-container">
+		<div class="top-panel left">
+			<!-- File Operations -->
+			<a-button
+				@click="handleMenuClick(menuItem.key)"
+				v-for="menuItem in menus"
+				class="menu-button"
+				size="small"
+				type="text"
+			>
+				<span>{{ menuItem.label }}</span>
+			</a-button>
+
+			<!-- Divider -->
+			<a-divider type="vertical" style="height: 20px; margin: 0 10px;" />
+
+			<!-- MCP Server Section -->
+			<div class="mcp-server-section">
+				<a-button size="small" type="text" @click="openMCPPanel">
+					MCP 服务器
+					<!-- Server Status Indicator Dot inside button -->
+					<span
+						v-if="mcpPanelRef?.serverRunning"
+						class="status-dot running"
+						title="运行中"
+					></span>
+					<span
+						v-else
+						class="status-dot stopped"
+						title="未启动"
+					></span>
+				</a-button>
+			</div>
+		</div>
+		<div class="top-panel right">
+			<span v-if="editorStore.currentFilePath">当前地图文件: {{ editorStore.currentFilePath }}</span>
+		</div>
 	</div>
-	<div class="top-panel right">
-		<span v-if="editorStore.currentFilePath">当前地图文件: {{ editorStore.currentFilePath }}</span>
-	</div>
+	<MCPControlPanel ref="mcpPanelRef" v-model="mcpPanelVisible" />
 </template>
 
 <style lang="scss" scoped>
+.top-panel-container {
+	display: flex;
+	width: 100%;
+	height: 100%;
+}
+
 .top-panel {
+	display: flex;
+	align-items: center;
+
+	&.left {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+	}
+
 	&.right {
-		flex: 1;
 		font-size: 0.7em;
 		text-align: right;
 		margin-right: 10px;
+		margin-left: auto;
 	}
 }
 
 .menu-button {
 	margin-left: 5px;
+}
+
+.mcp-server-section {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.status-dot {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	margin-left: 6px;
+	margin-bottom: 1px;
+
+	&.running {
+		background-color: #52c41a;
+	}
+
+	&.stopped {
+		background-color: #d9d9d9;
+	}
 }
 </style>

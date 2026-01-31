@@ -7,6 +7,8 @@ import fs from "node:fs";
 import url from "node:url";
 import { autoUpdater } from "electron-updater";
 import log from "electron-log";
+import { startHTTPMCPServer, type HTTPMCPServer } from "../src/mcp/http-server.js";
+import { setBridge, type IPCBridge } from "../src/mcp/bridge.js";
 
 protocol.registerSchemesAsPrivileged([
 	{
@@ -151,7 +153,18 @@ function createWindow() {
 	});
 }
 
-app.on("window-all-closed", () => {
+app.on("window-all-closed", async () => {
+	// 清理 HTTP 服务器
+	if (httpServer) {
+		try {
+			await httpServer.close();
+			httpServer = null;
+			mcpServerRunning = false;
+		} catch (error) {
+			console.error("Failed to close MCP server:", error);
+		}
+	}
+
 	if (process.platform !== "darwin") {
 		cleanTempDir();
 		app.quit();
@@ -258,6 +271,39 @@ ipcMain.handle("copy-file", async (event, fromFilePath: string, toFilePathtoFile
 	return { filePath: newFilePath, fileType: fileType.slice(1) };
 });
 
+// 复制 empty 资源到 temp 目录
+ipcMain.handle("copy-empty-resource", async (event, resourceType: "model" | "image") => {
+	const tempDir = path.join(process.cwd(), "temp");
+	fs.mkdirSync(tempDir, { recursive: true });
+
+	// 确定 empty 资源的文件名和扩展名
+	const fileName = resourceType === "model" ? "empty.glb" : "empty.png";
+	const fileType = resourceType === "model" ? "glb" : "png";
+
+	// 确定 empty 资源的源路径
+	// 开发环境：public/mock/
+	// 生产环境：dist/mock/ (RENDERER_DIST)
+	const sourceDir = isProduction ? RENDERER_DIST : path.join(process.env.APP_ROOT, "public");
+	const sourcePath = path.join(sourceDir, "mock", fileName);
+
+	// 生成唯一的文件名
+	const uniqueId = Date.now() + "-" + Math.random().toString(36).substring(2, 9);
+	const newFileName = `temp-${resourceType}-${uniqueId}.${fileType}`;
+	const targetPath = path.join(tempDir, newFileName);
+
+	// 复制文件
+	fs.copyFileSync(sourcePath, targetPath);
+
+	// 将本地绝对路径转换为自定义协议 URL（与 utils/file/index.ts 的 convertToFpUrl 一致）
+	const fpUrl = `fp-file://${targetPath.replace(/\\/g, "/")}`;
+
+	return {
+		filePath: targetPath,
+		fileType: fileType,
+		url: fpUrl,
+	};
+});
+
 ipcMain.handle("get-image-base64", async (event, filePath) => {
 	const fileContent = await readFile(filePath);
 	return fileContent.toString("base64");
@@ -289,6 +335,180 @@ ipcMain.handle("start-download-update", () => {
 // C. 退出并安装
 ipcMain.handle("quit-and-install", () => {
 	autoUpdater.quitAndInstall();
+});
+
+// MCP Server handlers
+let mcpServerRunning = false;
+let httpServer: HTTPMCPServer | null = null;
+
+ipcMain.handle("start-mcp-server", async (event) => {
+	console.log("[MCP] start-mcp-server called, mcpServerRunning:", mcpServerRunning);
+
+	if (mcpServerRunning) {
+		console.log("[MCP] Server already running, URL:", httpServer?.url);
+		return {
+			success: true,
+			message: "MCP Server already running",
+			url: httpServer?.url || null,
+		};
+	}
+
+	try {
+		console.log("[MCP] Starting HTTP MCP Server...");
+
+		// 设置 IPC bridge 以便 MCP 工具可以与渲染进程通信
+		const ipcBridge: IPCBridge = {
+			invokeTool: async (toolName, args) => {
+				return new Promise((resolve) => {
+					const timeout = setTimeout(() => {
+						resolve({ success: false, error: "Tool invocation timeout" });
+					}, 10000); // 10 second timeout
+
+					// Listen for the response
+					const responseHandler = (_event: any, data: any) => {
+						clearTimeout(timeout);
+						ipcMain.removeListener("mcp-tool-response", responseHandler);
+						resolve(data);
+					};
+
+					ipcMain.once("mcp-tool-response", responseHandler);
+
+					// Send the invocation request to renderer
+					if (win) {
+						win.webContents.send("mcp-invoke-tool", { toolName, args });
+					} else {
+						clearTimeout(timeout);
+						resolve({ success: false, error: "No window available" });
+					}
+				});
+			},
+			sendMessage: (channel, data) => {
+				if (win) {
+					win.webContents.send(channel, data);
+				}
+			},
+			onMessage: (channel, callback) => {
+				ipcMain.on(channel, (event, data) => callback(data));
+			},
+		};
+
+		// 设置全局 bridge
+		setBridge(ipcBridge);
+		console.log("[MCP] IPC Bridge set up successfully");
+
+		// 启动 HTTP 服务器（会等待服务器真正启动）
+		httpServer = await startHTTPMCPServer({
+			port: 3000, // 默认端口，如果被占用会自动分配
+			host: "127.0.0.1",
+			onReady: ({ port, url }: { port: any; url: any }) => {
+				console.log("[MCP] onReady callback - Server started on:", url);
+				console.log("[MCP] onReady - port:", port, "url:", url);
+				console.log("[MCP] onReady - url type:", typeof url);
+				mcpServerRunning = true;
+
+				// 通知所有窗口
+				console.log("[MCP] Sending mcp-server-status event to renderer");
+				if (win) {
+					console.log("[MCP] Window exists, sending event with data:", { running: true, url });
+					win.webContents.send("mcp-server-status", { running: true, url });
+					console.log("[MCP] Event sent successfully");
+				} else {
+					console.log("[MCP] ERROR: win is null!");
+				}
+			},
+			onError: (error: any) => {
+				console.error("[MCP] onError callback:", error);
+				if (win) {
+					win.webContents.send("mcp-server-error", { error: error.message });
+				}
+			},
+		});
+
+		console.log("[MCP] startHTTPMCPServer returned");
+		console.log("[MCP] httpServer object:", httpServer);
+		console.log("[MCP] httpServer.url:", httpServer?.url);
+		console.log("[MCP] httpServer.url type:", typeof httpServer?.url);
+
+		const result = {
+			success: true,
+			message: "MCP Server started",
+			url: httpServer.url,
+		};
+
+		console.log("[MCP] Returning result:", result);
+		return result;
+	} catch (error: any) {
+		console.error("[MCP] Failed to start MCP server:", error);
+		return {
+			success: false,
+			error: error.message,
+		};
+	}
+});
+
+ipcMain.handle("stop-mcp-server", async (event) => {
+	if (!mcpServerRunning || !httpServer) {
+		return { success: true, message: "MCP Server not running" };
+	}
+
+	try {
+		await httpServer.close();
+		httpServer = null;
+		mcpServerRunning = false;
+
+		if (win) {
+			win.webContents.send("mcp-server-status", { running: false, url: null });
+		}
+
+		return { success: true, message: "MCP Server stopped" };
+	} catch (error: any) {
+		console.error("Failed to stop MCP server:", error);
+		return {
+			success: false,
+			error: error.message,
+		};
+	}
+});
+
+ipcMain.handle("get-mcp-status", async () => {
+	return {
+		running: mcpServerRunning,
+		url: httpServer?.url || null,
+	};
+});
+
+ipcMain.handle("get-mcp-tools", async () => {
+	// Import and get all tools from the MCP server
+	const { getAllTools } = await import("../src/mcp/server.js");
+	const tools = getAllTools();
+
+	// Return simplified tool information
+	return tools.map((tool: any) => ({
+		name: tool.name,
+		description: tool.description,
+	}));
+});
+
+ipcMain.handle("mcp-call-tool", async (event, toolName: string, args: any) => {
+	// Forward the tool invocation to the renderer process
+	// We use a one-time listener to get the response
+	return new Promise((resolve) => {
+		const timeout = setTimeout(() => {
+			resolve({ success: false, error: "Tool invocation timeout" });
+		}, 10000); // 10 second timeout
+
+		// Listen for the response
+		const responseHandler = (_event: any, data: any) => {
+			clearTimeout(timeout);
+			ipcMain.removeListener("mcp-tool-response", responseHandler);
+			resolve(data);
+		};
+
+		ipcMain.once("mcp-tool-response", responseHandler);
+
+		// Send the invocation request to renderer
+		event.sender.send("mcp-invoke-tool", { toolName, args });
+	});
 });
 
 app.whenReady().then(createWindow);

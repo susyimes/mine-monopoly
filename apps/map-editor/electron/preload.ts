@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	copyFile: async (fromFilePath: string, toFilePath: string, newFileName: string) =>
 		ipcRenderer.invoke("copy-file", fromFilePath, toFilePath, newFileName),
 	clearTempDir: async () => ipcRenderer.invoke("clear-temp-dir"),
+	copyEmptyResource: async (resourceType: "model" | "image") =>
+		ipcRenderer.invoke("copy-empty-resource", resourceType),
 
 	//自定义文件操作
 	showOpenDialog: async (options: OpenDialogOptions): Promise<OpenDialogReturnValue> =>
@@ -59,5 +61,60 @@ contextBridge.exposeInMainWorld("updateAPI", {
 		ipcRenderer.on("update-status", subscription);
 		// 返回清理函数
 		return () => ipcRenderer.removeListener("update-status", subscription);
+	},
+});
+
+// Setup MCP tool listener in preload
+ipcRenderer.on("mcp-invoke-tool", async (event, { toolName, args }) => {
+	try {
+		// Call the globally registered handler
+		const handler = (globalThis as any).mcpToolHandler;
+		if (!handler) {
+			event.sender?.send("mcp-tool-response", {
+				success: false,
+				error: "MCP tool handler not initialized",
+			});
+			return;
+		}
+
+		const result = await handler(toolName, args);
+		event.sender?.send("mcp-tool-response", {
+			success: true,
+			data: result,
+		});
+	} catch (error: any) {
+		event.sender?.send("mcp-tool-response", {
+			success: false,
+			error: error.message || "Unknown error",
+		});
+	}
+});
+
+contextBridge.exposeInMainWorld("mcpAPI", {
+	// MCP Server control
+	startMCPServer: () => ipcRenderer.invoke("start-mcp-server"),
+	stopMCPServer: () => ipcRenderer.invoke("stop-mcp-server"),
+	getMCPStatus: () => ipcRenderer.invoke("get-mcp-status"),
+	getMCPTools: () => ipcRenderer.invoke("get-mcp-tools"),
+
+	// Listen for server status changes
+	onServerStatusChange: (callback: (status: { running: boolean; url?: string }) => void) => {
+		const listener = (_event: any, status: any) => callback(status);
+		ipcRenderer.on("mcp-server-status", listener);
+		return () => ipcRenderer.removeListener("mcp-server-status", listener);
+	},
+
+	// Listen for server errors
+	onServerError: (callback: (error: { error: string }) => void) => {
+		const listener = (_event: any, error: any) => callback(error);
+		ipcRenderer.on("mcp-server-error", listener);
+		return () => ipcRenderer.removeListener("mcp-server-error", listener);
+	},
+
+	// Register tool handler (called from renderer process)
+	registerToolHandler: (handler: (toolName: string, args: any) => Promise<any>) => {
+		console.log("[MCP Preload] Registering tool handler");
+		// Store in preload's global scope
+		(globalThis as any).mcpToolHandler = handler;
 	},
 });

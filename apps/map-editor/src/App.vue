@@ -8,15 +8,28 @@ import Update from "@src/components/common/update.vue";
 import { onMounted, onUnmounted } from "vue";
 import { eventBus } from "./utils/event-bus";
 import { loadMapDataFromPath } from "./utils/file";
+import { message } from "ant-design-vue";
 
 const version = window.electronAPI.getVersion();
 const isLoading = useEditorStore().isLoading;
 
 let removeListener: (() => void) | undefined;
+let removeMCPListener: (() => void) | undefined;
 
 const handleOpenMap = async (filePath: string) => {
 	console.log("收到文件路径，开始加载:", filePath);
 	await loadMapDataFromPath(filePath);
+};
+
+// 处理 MCP 操作反馈
+const handleMCPOperation = (data: { operation: string; success: boolean; message: string; details?: any }) => {
+	console.log("MCP 操作反馈:", data);
+
+	if (data.success) {
+		message.success(data.message);
+	} else {
+		message.error(data.message);
+	}
 };
 
 onMounted(() => {
@@ -29,10 +42,14 @@ onMounted(() => {
 		// 2. 发送就绪信号 (触发冷启动的数据推送)
 		window.electronAPI.rendererReady();
 	}
+
+	// 3. 监听 MCP 操作反馈事件
+	removeMCPListener = eventBus.on("mcp-operation", handleMCPOperation);
 });
 
 onUnmounted(() => {
 	removeListener && removeListener();
+	removeMCPListener && removeMCPListener();
 });
 </script>
 
