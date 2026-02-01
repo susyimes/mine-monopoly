@@ -200,6 +200,13 @@ async function copyMapItemId() {
 	}
 }
 
+function handleEffectCodeSave(newCode: string) {
+	if (formData.custom) {
+		formData.custom.effectCode = newCode;
+	}
+	effectEditorVisible.value = false;
+}
+
 const uiTemplate = computed(() => useMapDataStore().uiTemplates);
 </script>
 
@@ -405,7 +412,7 @@ const uiTemplate = computed(() => useMapDataStore().uiTemplates);
 		</div>
 
 		<a-modal v-model:open="effectEditorVisible" title="编辑触发代码" width="800px" destroyOnClose :footer="null">
-			<effect-editor v-if="formData.custom" v-model="formData.custom.effectCode" @save="effectEditorVisible = false" />
+			<effect-editor v-if="formData.custom" :value="formData.custom.effectCode" @save="handleEffectCodeSave" />
 		</a-modal>
 
 		<a-modal v-model:open="buildingModelVisible" title="选择建筑模型" destroyOnClose :footer="null">
