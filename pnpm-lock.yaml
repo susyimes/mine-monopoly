@@ -347,28 +347,6 @@ importers:
 
   packages/configs: {}
 
-  packages/mcp-server:
-    dependencies:
-      '@mine-monopoly/types':
-        specifier: workspace:*
-        version: link:../types
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.0.4
-        version: 1.25.3(hono@4.11.7)(zod@3.25.76)
-      express:
-        specifier: ^4.18.2
-        version: 4.18.2
-      zod:
-        specifier: ^3.24.2
-        version: 3.25.76
-    devDependencies:
-      '@types/node':
-        specifier: ^20.6.4
-        version: 20.6.4
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
-
   packages/types: {}
 
   packages/utils: {}

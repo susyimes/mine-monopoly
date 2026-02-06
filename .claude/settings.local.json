@@ -24,7 +24,10 @@
       "Bash(claude:*)",
       "Bash(xargs:*)",
       "mcp__mine-monopoly-mcp__*",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm why:*)",
+      "Bash(readlink:*)",
+      "Bash(pnpm build-editor:*)"
     ]
   },
   "mcpServers": {

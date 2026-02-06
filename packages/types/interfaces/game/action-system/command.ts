@@ -1,26 +1,65 @@
+/**
+ * 命令接口，用于封装命令类型和负载数据
+ * @template C - 命令映射类型
+ * @template K - 命令类型的键
+ */
 export type ICommand<C extends ICommandMap, K extends keyof C> = {
+	/** 命令类型 */
 	type: K;
+	/** 命令负载数据 */
 	payload: C[K]["payload"];
 };
 
+/**
+ * 命令执行上下文接口
+ * 用于在命令执行过程中传递状态和控制执行流程
+ * @template C - 命令映射类型
+ * @template K - 命令类型的键
+ */
 export interface ICommandContext<C extends ICommandMap, K extends keyof C> {
+	/** 取消命令执行 */
 	cancel(): void;
+	/** 设置命令执行结果 */
 	setResult(result: C[K]["result"]): void;
+	/** 命令执行结果（可选） */
 	result?: C[K]["result"];
 }
 
+/**
+ * 命令总线接口
+ * 负责注册命令处理器和执行命令，支持修饰器系统
+ * @template C - 命令映射类型
+ */
 export interface ICommandBus<C extends ICommandMap> {
+	/**
+	 * 执行命令
+	 * @param command - 要执行的命令
+	 * @returns 命令执行结果
+	 */
 	execute<K extends keyof C>(command: ICommand<C, K>): Promise<C[K]["result"]>;
 
+	/**
+	 * 设置命令处理器
+	 * @param type - 命令类型
+	 * @param handler - 命令处理函数
+	 */
 	setHandler<K extends keyof C>(
 		type: K,
 		handler: (payload: C[K]["payload"]) => C[K]["result"] | Promise<C[K]["result"]>
 	): void;
 }
 
+/**
+ * 命令映射接口
+ * 定义所有命令的负载（payload）和结果（result）类型
+ * 用作命令总线的类型约束
+ */
 export interface ICommandMap {
+	/** 命令类型字符串 */
 	[commandType: string]: {
+		/** 命令负载数据类型 */
 		payload: any;
+		/** 命令执行结果类型 */
 		result: any;
 	};
 }

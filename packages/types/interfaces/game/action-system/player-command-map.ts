@@ -2,73 +2,122 @@ import { IChanceCard, IPlayer, IProperty } from "../game-process";
 import { DiceResult, IDice } from "../util";
 import { ICommandMap } from "./command";
 
+/**
+ * 玩家命令映射
+ * 定义所有与玩家相关的命令类型、负载和结果
+ */
 export interface PlayerCommandMap extends ICommandMap {
-	// 地产
+	// ===== 地产相关命令 =====
+
+	/**
+	 * 玩家获得地产
+	 */
 	"player.property.gain": {
 		payload: { property: IProperty };
 		result: { property: IProperty };
 	};
 
+	/**
+	 * 玩家失去地产
+	 */
 	"player.property.lose": {
 		payload: { property: IProperty };
 		result: { property: IProperty };
 	};
 
-	// 机会卡
+	// ===== 机会卡相关命令 =====
+
+	/**
+	 * 玩家获得机会卡
+	 */
 	"player.card.gain": {
 		payload: { card: IChanceCard };
 		result: { card: IChanceCard };
 	};
 
+	/**
+	 * 玩家失去机会卡
+	 */
 	"player.card.lose": {
 		payload: { cardId: string };
 		result: { cardId: string };
 	};
 
-	// 金钱
+	// ===== 金钱相关命令 =====
+
+	/**
+	 * 玩家获得金钱
+	 */
 	"player.money.gain": {
 		payload: { money: number; source?: IPlayer };
 		result: { money: number; source?: IPlayer };
 	};
 
+	/**
+	 * 玩家失去金钱
+	 */
 	"player.money.lose": {
 		payload: { money: number; target?: IPlayer };
 		result: { money: number; target?: IPlayer };
 	};
 
-	// 移动
+	// ===== 移动相关命令 =====
+
+	/**
+	 * 设置玩家停止回合数
+	 */
 	"player.stop": {
 		payload: { stop: number };
 		result: { stop: number };
 	};
 
+	/**
+	 * 玩家行走指定步数
+	 */
 	"player.walk": {
 		payload: { steps: number };
 		result: { steps: number };
 	};
 
+	/**
+	 * 玩家传送到指定位置
+	 */
 	"player.tp": {
 		payload: { positionIndex: number };
 		result: { positionIndex: number };
 	};
 
-	// 游戏事件
+	// ===== 游戏事件相关命令 =====
+
+	/**
+	 * 设置玩家破产状态
+	 */
 	"player.bankrupted.set": {
 		payload: { bankrupted: boolean };
 		result: { bankrupted: boolean };
 	};
 
-	// 骰子
+	// ===== 骰子相关命令 =====
+
+	/**
+	 * 玩家掷骰子
+	 */
 	"player.dice.roll": {
 		payload: { dices: IDice[] };
 		result: { diceResult: DiceResult[] };
 	};
 
+	/**
+	 * 玩家添加骰子
+	 */
 	"player.dice.add": {
 		payload: { newDice: IDice };
 		result: { newDice: IDice };
 	};
 
+	/**
+	 * 玩家移除骰子
+	 */
 	"player.dice.remove": {
 		payload: { diceId: string };
 		result: { removeDice: IDice | undefined };

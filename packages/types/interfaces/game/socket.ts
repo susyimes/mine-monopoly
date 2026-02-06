@@ -18,274 +18,723 @@ import {
 import { Role, User } from "./item";
 import { DiceResult } from "./util";
 
+/**
+ * WebSocket 消息类型
+ * 用于 Monopoly 特定的 WebSocket 通信
+ */
 export type MonopolyWebSocketMsg = {
+	/** 消息类型 */
 	type: MonopolyWebSocketMsgType;
+
+	/** 消息数据 */
 	data: any;
 };
 
+/**
+ * 音乐接口
+ */
 export interface Music {
+	/** 音乐唯一标识 */
 	id: string;
+
+	/** 音乐名称 */
 	name: string;
+
+	/** 音乐 URL */
 	url: string;
 }
 
+/** Base64 编码字符串类型 */
 type Base64String = string;
+
+/**
+ * 房间地图信息类型
+ * 可以从服务器获取或使用自定义数据
+ */
 export type RoomMapInfo = { from: "server"; data: string } | { from: "custom"; data: Base64String };
 
+/**
+ * Socket 消息接口
+ * 定义客户端和服务器之间通信的消息格式
+ * @template T - 消息类型
+ * @template S - 消息来源（Client/Server）
+ */
 export interface SocketMessage<T extends SocketMsgType = SocketMsgType, S extends SocketMsgSource = SocketMsgSource> {
+	/** 消息类型 */
 	type: T;
+
+	/** 消息来源 */
 	source: S;
+
+	/** 消息数据（根据类型和来源有不同的数据格式） */
 	data: SocketMessageDataType[T][S];
+
+	/** 消息提示（可选） */
 	msg?: {
+		/** 提示类型 */
 		type: "info" | "success" | "warning" | "error";
+
+		/** 提示内容 */
 		content: string;
 	};
+
+	/** 额外数据（可选） */
 	extra?: any;
+
+	/** 房间 ID（可选） */
 	roomId?: string;
 }
 
+/**
+ * 客户端 Socket 消息类型
+ */
 export type ClientSocketMessage = {
 	[K in SocketMsgType]: SocketMessage<K, SocketMsgSource.Client>;
 }[SocketMsgType];
 
+/**
+ * 服务器 Socket 消息类型
+ */
 export type ServerSocketMessage = {
 	[K in SocketMsgType]: SocketMessage<K, SocketMsgSource.Server>;
 }[SocketMsgType];
 
+/**
+ * 操作消息类型
+ * 用于客户端发送操作请求
+ */
 type OperationMessage = {
 	[T in OperateType]: {
+		/** 操作类型 */
 		operateType: T;
+
+		/** 操作数据 */
 		data: PlayerOperationResult[T];
 	};
 }[OperateType];
 
+/**
+ * Socket 消息数据类型映射
+ * 定义每种消息类型在不同来源下的数据格式
+ */
 export interface SocketMessageDataType {
+	/**
+	 * 心跳消息
+	 * 用于保持连接活跃
+	 */
 	[SocketMsgType.Heart]: {
+		/** 客户端发送的数据（无） */
 		client: undefined;
+		/** 服务器发送的数据（无） */
 		server: undefined;
 	};
+
+	/**
+	 * 消息通知
+	 * 服务器向客户端发送消息提示
+	 */
 	[SocketMsgType.MsgNotify]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的数据（无） */
 		server: undefined;
 	};
+
+	/**
+	 * 游戏日志
+	 * 服务器向客户端发送游戏日志
+	 */
 	[SocketMsgType.GameLog]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的游戏日志 */
 		server: GameLog;
 	};
+
+	/**
+	 * 用户列表
+	 * 服务器向客户端发送用户列表
+	 */
 	[SocketMsgType.UserList]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的用户列表 */
 		server: User[];
 	};
+
+	/**
+	 * 房间列表
+	 * 服务器向客户端发送房间列表
+	 */
 	[SocketMsgType.RoomList]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的房间列表 */
 		server: Room[];
 	};
+
+	/**
+	 * 加入房间
+	 * 客户端请求加入房间
+	 */
 	[SocketMsgType.JoinRoom]: {
+		/** 客户端发送的用户信息 */
 		client: User;
+		/** 服务器返回的房间 ID */
 		server: { roomId: string };
 	};
+
+	/**
+	 * 离开房间
+	 * 客户端请求离开房间
+	 */
 	[SocketMsgType.LeaveRoom]: {
+		/** 客户端发送的数据（无） */
 		client: undefined;
+		/** 服务器返回的数据（无） */
 		server: undefined;
 	};
+
+	/**
+	 * 房间信息
+	 * 服务器向客户端发送房间信息
+	 */
 	[SocketMsgType.RoomInfo]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的房间信息 */
 		server: RoomInfo;
 	};
+
+	/**
+	 * 房间聊天
+	 * 客户端和服务器之间的聊天消息
+	 */
 	[SocketMsgType.RoomChat]: {
+		/** 客户端发送的聊天内容 */
 		client: string;
+		/** 服务器返回的完整聊天消息 */
 		server: ChatMessage;
 	};
+
+	/**
+	 * 准备状态切换
+	 * 客户端切换准备状态
+	 */
 	[SocketMsgType.ReadyToggle]: {
+		/** 客户端发送的数据（无） */
 		client: undefined;
+		/** 服务器返回的数据（无） */
 		server: undefined;
 	};
+
+	/**
+	 * 更改颜色
+	 * 客户端请求更改颜色
+	 */
 	[SocketMsgType.ChangeColor]: {
+		/** 客户端发送的颜色 */
 		client: string;
+		/** 服务器返回的数据（不支持） */
 		server: never;
 	};
+
+	/**
+	 * 踢出玩家
+	 * 房主踢出玩家
+	 */
 	[SocketMsgType.KickOut]: {
+		/** 客户端发送的被踢玩家 ID */
 		client: string;
-		server: undefined;
+		/** 服务器返回的数据（不支持） */
+		server: never;
 	};
+
+	/**
+	 * 更改地图
+	 * 房主更改游戏地图
+	 */
 	[SocketMsgType.ChangeMap]: {
+		/** 客户端发送的地图信息 */
 		client: RoomMapInfo;
+		/** 服务器返回的地图信息 */
 		server: RoomMapInfo;
 	};
+
+	/**
+	 * 更改角色
+	 * 客户端请求更改角色
+	 */
 	[SocketMsgType.ChangeRole]: {
+		/** 客户端发送的角色 ID */
 		client: string;
+		/** 服务器返回的角色 ID */
 		server: string;
 	};
+
+	/**
+	 * 更改游戏设置
+	 * 房主更改游戏设置
+	 */
 	[SocketMsgType.ChangeGameSetting]: {
+		/** 客户端发送的游戏设置 */
 		client: GameSetting;
+		/** 服务器返回的数据（不支持） */
 		server: never;
 	};
+
+	/**
+	 * 游戏开始
+	 * 房主开始游戏
+	 */
 	[SocketMsgType.GameStart]: {
+		/** 客户端发送的数据（无） */
 		client: undefined;
+		/** 服务器返回的数据（无） */
 		server: undefined;
 	};
+
+	/**
+	 * 游戏初始化
+	 * 服务器向客户端发送游戏初始化数据
+	 */
 	[SocketMsgType.GameInit]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的游戏数据 */
 		server: GameData;
 	};
+
+	/**
+	 * 游戏初始化完成
+	 * 客户端通知服务器游戏初始化完成
+	 */
 	[SocketMsgType.GameInitFinished]: {
+		/** 客户端发送的数据（无） */
 		client: undefined;
+		/** 服务器返回的数据（无） */
 		server: undefined;
 	};
+
+	/**
+	 * 游戏数据
+	 * 服务器向客户端同步游戏数据
+	 */
 	[SocketMsgType.GameData]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的游戏数据 */
 		server: GameData;
 	};
+
+	/**
+	 * 获得金钱
+	 * 服务器通知玩家获得金钱
+	 */
 	[SocketMsgType.GainMoney]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的金钱信息 */
 		server: {
+			/** 获得金钱的玩家 */
 			player: PlayerInfo;
+			/** 获得的金钱数量 */
 			money: number;
+			/** 金钱来源玩家（可选） */
 			source: PlayerInfo | undefined;
 		};
 	};
+
+	/**
+	 * 花费金钱
+	 * 服务器通知玩家花费金钱
+	 */
 	[SocketMsgType.CostMoney]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的金钱信息 */
 		server: {
+			/** 花费金钱的玩家 */
 			player: PlayerInfo;
+			/** 花费的金钱数量 */
 			money: number;
+			/** 收取金钱的目标玩家（可选） */
 			target: PlayerInfo | undefined;
 		};
 	};
+
+	/**
+	 * 回合轮换
+	 * 服务器通知客户端进入新回合
+	 */
 	[SocketMsgType.RoundTurn]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器返回的数据（无） */
 		server: undefined;
 	};
+
+	/**
+	 * 开始掷骰子
+	 * 服务器通知客户端开始掷骰子动画
+	 * @deprecated 未实现
+	 */
 	[SocketMsgType.RollDiceStart]: {
-		//TODO
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器返回的掷骰子玩家 ID */
 		server: string;
 	};
+
+	/**
+	 * 掷骰子结果
+	 * 服务器向客户端发送掷骰子结果
+	 */
 	[SocketMsgType.RollDiceResult]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器发送的掷骰子结果 */
 		server: {
+			/** 掷骰子结果 */
 			rollDiceResult: DiceResult[];
+			/** 掷骰子玩家 ID */
 			rollDicePlayerId: string;
 		};
 	};
+
+	/**
+	 * 使用机会卡
+	 * 客户端使用机会卡
+	 */
 	[SocketMsgType.UseChanceCard]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
+		/** 服务器返回的结果 */
 		server: { error: boolean };
 	};
+
+	/**
+	 * 剩余时间
+	 * 服务器向客户端发送倒计时剩余时间
+	 */
 	[SocketMsgType.RemainingTime]: {
+		/** 客户端发送的数据（不支持） */
 		client: never;
-		server: { eventMsg: string; remainingTime: number };
-	};
-	[SocketMsgType.RoundTimeOut]: {
-		//TODO
-		client: never;
-		server: never;
-	};
-	[SocketMsgType.PlayerWalk]: {
-		client: never;
-		server: { playerId: string; step: number; walkId: string };
-	};
-	[SocketMsgType.PlayerTp]: {
-		client: never;
-		server: { playerId: string; positionIndex: number; walkId: string };
-	};
-	[SocketMsgType.Operation]: {
-		client: OperationMessage;
-		server: never;
-	};
-	[SocketMsgType.Bankrupt]: {
-		client: never;
-		server: never;
-	};
-	[SocketMsgType.GameOver]: {
-		client: never;
-		server: undefined;
-	};
-	[SocketMsgType.PauseGame]: {
-		client: undefined;
-		server: undefined;
-	};
-	[SocketMsgType.ResumeGame]: {
-		client: undefined;
-		server: undefined;
-	};
-	[SocketMsgType.ConfirmDialog]: {
-		client: undefined;
+		/** 服务器发送的剩余时间信息 */
 		server: {
+			/** 事件消息 */
+			eventMsg: string;
+			/** 剩余时间（毫秒） */
+			remainingTime: number;
+		};
+	};
+
+	/**
+	 * 回合超时
+	 * 服务器通知客户端回合超时
+	 * @deprecated 未实现
+	 */
+	[SocketMsgType.RoundTimeOut]: {
+		/** 客户端发送的数据（不支持） */
+		client: never;
+		/** 服务器返回的数据（不支持） */
+		server: never;
+	};
+
+	/**
+	 * 玩家行走
+	 * 服务器通知客户端玩家行走
+	 */
+	[SocketMsgType.PlayerWalk]: {
+		/** 客户端发送的数据（不支持） */
+		client: never;
+		/** 服务器发送的行走信息 */
+		server: {
+			/** 行走的玩家 ID */
 			playerId: string;
+			/** 行走的步数 */
+			step: number;
+			/** 行走 ID */
+			walkId: string;
+		};
+	};
+
+	/**
+	 * 玩家传送
+	 * 服务器通知客户端玩家传送
+	 */
+	[SocketMsgType.PlayerTp]: {
+		/** 客户端发送的数据（不支持） */
+		client: never;
+		/** 服务器发送的传送信息 */
+		server: {
+			/** 传送的玩家 ID */
+			playerId: string;
+			/** 目标位置索引 */
+			positionIndex: number;
+			/** 行走 ID */
+			walkId: string;
+		};
+	};
+
+	/**
+	 * 操作
+	 * 客户端向服务器发送操作请求
+	 */
+	[SocketMsgType.Operation]: {
+		/** 客户端发送的操作消息 */
+		client: OperationMessage;
+		/** 服务器返回的数据（不支持） */
+		server: never;
+	};
+
+	/**
+	 * 破产
+	 * 服务器通知客户端玩家破产
+	 */
+	[SocketMsgType.Bankrupt]: {
+		/** 客户端发送的数据（不支持） */
+		client: never;
+		/** 服务器返回的数据（无） */
+		server: never;
+	};
+
+	/**
+	 * 游戏结束
+	 * 服务器通知客户端游戏结束
+	 */
+	[SocketMsgType.GameOver]: {
+		/** 客户端发送的数据（不支持） */
+		client: never;
+		/** 服务器返回的数据（无） */
+		server: undefined;
+	};
+
+	/**
+	 * 暂停游戏
+	 * 客户端请求暂停游戏
+	 */
+	[SocketMsgType.PauseGame]: {
+		/** 客户端发送的数据（无） */
+		client: undefined;
+		/** 服务器返回的数据（无） */
+		server: undefined;
+	};
+
+	/**
+	 * 恢复游戏
+	 * 客户端请求恢复游戏
+	 */
+	[SocketMsgType.ResumeGame]: {
+		/** 客户端发送的数据（无） */
+		client: undefined;
+		/** 服务器返回的数据（无） */
+		server: undefined;
+	};
+
+	/**
+	 * 确认对话框
+	 * 服务器向客户端显示确认对话框
+	 */
+	[SocketMsgType.ConfirmDialog]: {
+		/** 客户端发送的数据（不支持） */
+		client: undefined;
+		/** 服务器发送的对话框选项 */
+		server: {
+			/** 玩家 ID */
+			playerId: string;
+			/** 对话框选项 */
 			option: ConfirmDialogOption<InputOptionItem<string, any>[]>;
 		};
 	};
+
+	/**
+	 * 目标选择对话框
+	 * 服务器向客户端显示目标选择对话框
+	 */
 	[SocketMsgType.TargetSelectDialog]: {
+		/** 客户端发送的数据（不支持） */
 		client: undefined;
+		/** 服务器发送的对话框选项 */
 		server: {
+			/** 玩家 ID */
 			playerId: string;
+			/** 对话框选项 */
 			option: TargetSelectDialogOption<TargetSelectType>;
 		};
 	};
+
+	/**
+	 * 物品选择对话框
+	 * 服务器向客户端显示物品选择对话框
+	 */
 	[SocketMsgType.ItemSelectDialog]: {
+		/** 客户端发送的数据（不支持） */
 		client: undefined;
+		/** 服务器发送的对话框选项 */
 		server: {
+			/** 玩家 ID */
 			playerId: string;
+			/** 对话框选项 */
 			option: ItemSelectDialogOption;
 		};
 	};
+
+	/**
+	 * 消息卡片
+	 * 服务器向客户端显示消息卡片
+	 */
 	[SocketMsgType.MessageCard]: {
+		/** 客户端发送的数据（不支持） */
 		client: undefined;
+		/** 服务器发送的消息卡片选项 */
 		server: {
+			/** 消息卡片选项 */
 			option: MessageCardOption;
 		};
 	};
+
+	/**
+	 * UI 更新
+	 * 服务器通知客户端更新 UI
+	 */
 	[SocketMsgType.UI]: {
+		/** 客户端发送的数据（不支持） */
 		client: undefined;
+		/** 服务器返回的数据（无） */
 		server: undefined;
 	};
 }
 
+/**
+ * 房间接口
+ * 表示游戏房间的基本信息
+ */
 export interface Room {
+	/** 房间 ID */
 	roomId: string;
+
+	/** 房主 ID */
 	ownerId: string;
+
+	/** 房主名称 */
 	ownerName: string;
+
+	/** 房间内用户数量 */
 	userNum: number;
 }
 
+/**
+ * 房间信息接口
+ * 表示房间的详细信息
+ */
 export interface RoomInfo {
-	// mapInfo: RoomMapInfo | undefined;
+	/** 房间 ID */
 	roomId: string;
+
+	/** 房间内用户列表 */
 	userList: Array<User>;
+
+	/** 游戏是否已开始 */
 	isStarted: boolean;
+
+	/** 房主 ID */
 	ownerId: string;
+
+	/** 房主名称 */
 	ownerName: string;
+
+	/** 游戏设置 */
 	gameSetting: GameSetting;
 }
 
+/**
+ * 房间内角色接口
+ * 包含角色信息和图片 URL
+ */
 export interface RoleInRoom extends Role {
+	/** 角色图片 URL */
 	imageUrl: string;
 }
 
+/**
+ * 聊天消息接口
+ */
 export interface ChatMessage {
+	/** 消息唯一标识 */
 	id: string;
+
+	/** 消息类型 */
 	type: ChatMessageType;
+
+	/** 发送消息的用户 */
 	user: User;
+
+	/** 消息内容 */
 	content: string;
+
+	/** 消息时间戳 */
 	time: number;
 }
 
+/**
+ * 游戏日志接口
+ */
 export interface GameLog {
+	/** 日志唯一标识 */
 	id: string;
+
+	/** 日志时间戳 */
 	time: number;
+
+	/** 日志内容 */
 	content: string;
 }
 
+/**
+ * 玩家操作结果接口
+ * 定义每种操作类型对应的结果数据
+ */
 export interface PlayerOperationResult {
+	/** 游戏初始化完成 */
 	[OperateType.GameInitFinished]: undefined;
+
+	/** 掷骰子 */
 	[OperateType.RollDice]: undefined;
-	[OperateType.UseChanceCard]: { chanceCardId: string; targetIdList: string[] };
+
+	/** 使用机会卡 */
+	[OperateType.UseChanceCard]: {
+		/** 机会卡 ID */
+		chanceCardId: string;
+		/** 目标 ID 列表 */
+		targetIdList: string[];
+	};
+
+	/** 播放动画 */
 	[OperateType.Animation]: string;
+
+	/** 地图资源加载完成 */
 	[OperateType.MapResourceLoaded]: undefined;
+
+	/** 暂停游戏 */
 	[OperateType.PauseGame]: undefined;
+
+	/** 恢复游戏 */
 	[OperateType.ResumeGame]: undefined;
-	[OperateType.ConfirmDialogResult]: { id: string; confirm: boolean; data: any };
+
+	/** 确认对话框结果 */
+	[OperateType.ConfirmDialogResult]: {
+		/** 对话框 ID */
+		id: string;
+		/** 是否确认 */
+		confirm: boolean;
+		/** 对话框数据 */
+		data: any;
+	};
+
+	/** 目标选择对话框结果 */
 	[OperateType.TargetSelectDialogResult]: TargetSelectDialogResult<TargetSelectType>;
+
+	/** 物品选择对话框结果 */
 	[OperateType.ItemSelectDialogResult]: ItemSelectDialogResult;
 }

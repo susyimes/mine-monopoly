@@ -8,12 +8,10 @@
 		"dev-client": "pnpm --filter @mine-monopoly/client run dev",
 		"dev-server": "pnpm --filter @mine-monopoly/server run dev",
 		"dev-editor": "pnpm --filter @mine-monopoly/map-editor run dev",
-		"dev-mcp": "pnpm --filter @mine-monopoly/mcp-server run dev",
 		"build": "",
 		"build-client": "pnpm --filter @mine-monopoly/client run build",
 		"build-server": "pnpm --filter @mine-monopoly/server run build",
-		"build-editor": "pnpm --filter @mine-monopoly/map-editor run build",
-		"build-mcp": "pnpm --filter @mine-monopoly/mcp-server run build"
+		"build-editor": "pnpm --filter @mine-monopoly/map-editor run build"
 	},
 	"keywords": [],
 	"author": "",
