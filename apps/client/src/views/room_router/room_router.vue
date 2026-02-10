@@ -176,8 +176,8 @@ async function handleGetRandomPublicRoom(e: Event) {
 
 		& > .side-bar {
 			position: absolute;
-			right: 0;
-			top: 0;
+			right: .3rem;
+			top: .3rem;
 			display: flex;
 			flex-direction: column;
 			align-items: center;
@@ -195,7 +195,8 @@ async function handleGetRandomPublicRoom(e: Event) {
 
 	.join-room {
 		@include felt-patch(#ffedb7);
-		padding: 1.2rem;
+		padding: 1.8rem;
+		border-radius: 2rem;
 
 		& .title {
 			display: inline-block;

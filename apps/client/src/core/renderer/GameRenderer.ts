@@ -10,7 +10,7 @@ import {
 	GameMap,
 	DiceResult,
 } from "@mine-monopoly/types";
-import { useDeviceStatus, useLoading, useSettig, useUserInfo } from "@src/store";
+import { useDeviceStatus, useLoading, useSettig, useUserInfo, useUtil } from "@src/store";
 import { Component, ComponentPublicInstance, createApp, toRaw, watch, WatchStopHandle } from "vue";
 import { loadItemTypeModules } from "@src/utils/three/itemtype-loader";
 import { useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
@@ -92,6 +92,12 @@ export class GameRenderer {
 	private diceManager: DiceManager | null = null;
 	private isRenderDice = false;
 
+	// FPS 计算相关
+	private lastFrameTime: number = performance.now();
+	private frameCount: number = 0;
+	private fpsUpdateInterval: number = 1000; // 每1秒更新一次FPS
+	private lastFpsUpdateTime: number = performance.now();
+
 	constructor(canvas: HTMLCanvasElement, container: HTMLDivElement, mapData: GameMap) {
 		this.mapData = mapData;
 		this.container = container;
@@ -99,7 +105,16 @@ export class GameRenderer {
 		this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 		this.renderer.setClearAlpha(0);
-		this.renderer.setPixelRatio(window.devicePixelRatio * 2);
+
+		// 初始化画质设置
+		const settingStore = useSettig();
+		settingStore.initGraphicQuality();
+
+		// 应用初始像素比
+		const initialPixelRatio = settingStore.getPixelRatio();
+		console.log("[画质设置] 初始化像素比:", initialPixelRatio);
+		this.renderer.setPixelRatio(initialPixelRatio);
+
 		this.renderer.toneMapping = THREE.LinearToneMapping;
 		this.renderer.toneMappingExposure = 1.1;
 		this.renderer.shadowMap.enabled = true;
@@ -281,6 +296,9 @@ export class GameRenderer {
 				this.renderer.clearDepth();
 				this.renderer.render(this.diceManager.getScene(), this.diceManager.getCamera());
 			}
+
+			// 计算 FPS
+			this.updateFPS();
 		};
 
 		loop();
@@ -418,12 +436,18 @@ export class GameRenderer {
 
 		dirLight.castShadow = true;
 
-		dirLight.shadow.mapSize.width = 1028;
-		dirLight.shadow.mapSize.height = 1028;
+		// 提高阴影贴图分辨率以获得更清晰的阴影
+		dirLight.shadow.mapSize.width = 4096;
+		dirLight.shadow.mapSize.height = 4096;
 
+		// 调整阴影偏移以减少伪影
 		dirLight.shadow.bias = -0.0005;
 		dirLight.shadow.normalBias = 0.02;
 
+		// 设置阴影半径以软化边缘（PCFSoftShadowMap）
+		dirLight.shadow.radius = 2;
+
+		// 调整阴影相机范围
 		const d = 100;
 		dirLight.shadow.camera.left = -d;
 		dirLight.shadow.camera.right = d;
@@ -437,6 +461,15 @@ export class GameRenderer {
 
 	private initEventListener() {
 		const mapDataStore = useMapData();
+
+		// 监听画质变化事件
+		useEventBus().on("graphics:quality:change", ({ quality }: { quality: "low" | "medium" | "high" }) => {
+			console.log("[画质设置] 接收到画质变化事件:", quality);
+			const ratioMap = { low: 0.85, medium: 1.0, high: 2.0 };
+			const newPixelRatio = window.devicePixelRatio * ratioMap[quality];
+			this.applyPixelRatio(newPixelRatio);
+		});
+
 		useEventBus().on("round-trun", () => {
 			this.focusMe();
 		});
@@ -595,6 +628,27 @@ export class GameRenderer {
 		useEventBus().removeAll();
 		this.commonWatchers.forEach((f) => f());
 		this.diceManager && this.diceManager.dispose();
+	}
+
+	/**
+	 * 更新 FPS 计算
+	 */
+	private updateFPS() {
+		const now = performance.now();
+		this.frameCount++;
+
+		// 每隔 fpsUpdateInterval 毫秒更新一次 FPS
+		if (now - this.lastFpsUpdateTime >= this.fpsUpdateInterval) {
+			const elapsed = now - this.lastFpsUpdateTime;
+			const fps = Math.round((this.frameCount * 1000) / elapsed);
+
+			// 更新 store 中的 FPS 值
+			useUtil().fps = fps;
+
+			// 重置计数器
+			this.frameCount = 0;
+			this.lastFpsUpdateTime = now;
+		}
 	}
 
 	private async loadPlayersModules(playerList: Array<PlayerInfo>) {
@@ -1144,6 +1198,30 @@ export class GameRenderer {
 			this.updateCamera(this.controls, this.currentFocusModule, 8, 30);
 			this.controls.update();
 		}
+	}
+
+	/**
+	 * 应用新的像素比
+	 */
+	private applyPixelRatio(newPixelRatio: number) {
+		console.log("[画质设置] 应用像素比:", newPixelRatio);
+		console.log("[画质设置] 设置前 Canvas:", this.canvas.width, "x", this.canvas.height);
+
+		// 设置所有像素比
+		this.renderer.setPixelRatio(newPixelRatio);
+		this.composer.setPixelRatio(newPixelRatio);
+
+		// 更新相机和尺寸
+		this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+		this.camera.updateProjectionMatrix();
+		this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+		this.renderPass.setSize(this.container.clientWidth, this.container.clientHeight);
+		this.composer.setSize(this.container.clientWidth, this.container.clientHeight);
+		this.popElementRenderer.setSize(this.container.clientWidth, this.container.clientHeight);
+		this.diceManager && this.diceManager.updateAspect(this.container.clientWidth / this.container.clientHeight);
+
+		console.log("[画质设置] 设置后 Canvas:", this.canvas.width, "x", this.canvas.height);
+		console.log("[画质设置] 像素比生效:", this.renderer.getPixelRatio());
 	}
 }
 

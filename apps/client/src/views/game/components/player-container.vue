@@ -168,6 +168,7 @@ function handleShowPlayerDetail(player: PlayerInfo) {
 		box-sizing: border-box;
 		text-shadow: var(--text-shadow-surround-white);
 		margin-bottom: 0.3rem;
+		text-align: center;
 	}
 
 	.fly-money-container {

@@ -90,6 +90,7 @@ export const useUtil = defineStore("util", {
 	state: () => {
 		return {
 			ping: 0,
+			fps: 0,
 			isRollDiceAnimationPlay: false,
 			rollDiceResult: new Array<number>(),
 			waitingFor: { eventMsg: "", remainingTime: 0 },
@@ -170,6 +171,35 @@ export const useSettig = defineStore("setting", {
 			autoMusic: true,
 			musicVolume: 1,
 			lockRole: true,
+			// 画面质量设置：低/中/高三档
+			graphicQuality: "medium" as "low" | "medium" | "high",
 		};
+	},
+	actions: {
+		// 初始化画质设置（从 localStorage 读取或自动检测）
+		initGraphicQuality() {
+			try {
+				const saved = localStorage.getItem("graphicQuality");
+				if (saved && (saved === "low" || saved === "medium" || saved === "high")) {
+					this.graphicQuality = saved;
+					console.log("[画质设置] 从 localStorage 读取画质设置:", saved);
+				} else {
+					// 自动检测：根据 CPU 核心数
+					const cores = navigator.hardwareConcurrency || 4;
+					this.graphicQuality = cores <= 4 ? "low" : "medium";
+					console.log("[画质设置] 自动检测画质:", this.graphicQuality, "(CPU 核心数:", cores, ")");
+				}
+			} catch (e) {
+				// localStorage 失败，回退到自动检测
+				const cores = navigator.hardwareConcurrency || 4;
+				this.graphicQuality = cores <= 4 ? "low" : "medium";
+				console.warn("[画质设置] localStorage 读取失败，使用自动检测:", this.graphicQuality);
+			}
+		},
+		// 获取实际像素比
+		getPixelRatio(): number {
+			const ratioMap = { low: 0.85, medium: 1.0, high: 2.0 };
+			return window.devicePixelRatio * ratioMap[this.graphicQuality];
+		},
 	},
 });

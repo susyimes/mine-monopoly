@@ -27,7 +27,8 @@
       "Bash(npx tsc:*)",
       "Bash(pnpm why:*)",
       "Bash(readlink:*)",
-      "Bash(pnpm build-editor:*)"
+      "Bash(pnpm build-editor:*)",
+      "Bash(pnpm vue-tsc:*)"
     ]
   },
   "mcpServers": {

@@ -35,6 +35,7 @@ const avatarSrc = computed(() => {
 	box-sizing: border-box;
 	@include felt-patch(#ffedb7);
 	padding: 1.5rem;
+	border-radius: 1.8rem;
 
 	& > .avatar {
 		@include felt-patch(#ffffff);
