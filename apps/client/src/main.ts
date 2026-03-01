@@ -7,7 +7,7 @@ import "@src/assets/font/font.css";
 import App from "./App.vue";
 import router from "./router";
 import { createPinia } from "pinia";
-import "./axios";
+import { AXIOS_HANDLED_ERROR } from "@src/utils/api";
 
 /* import the fontawesome core */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -209,8 +209,15 @@ app.config.errorHandler = (err, instance, info) => {
 window.addEventListener("unhandledrejection", (event) => {
 	console.error("[Unhandled Promise]:", event.reason);
 
-	// 提取错误信息
 	const reason = event.reason;
+
+	// 检查是否已被 axios 拦截器处理
+	if (reason && reason[AXIOS_HANDLED_ERROR]) {
+		console.log("[Axios Handled]: 错误已在 axios 拦截器中处理");
+		event.preventDefault();
+		return;
+	}
+
 	const errMessage = reason instanceof Error ? reason.message : String(reason);
 	if (errMessage.includes("cancel") || errMessage.includes("abort")) return;
 

@@ -4,6 +4,7 @@ import router from "@src/router";
 import { __PROTOCOL__ } from "@src/../global.config";
 import { getUserByToken } from "@src/utils/api/user";
 import { exitFullScreen, randomString, setTimeOutAsync } from "@src/utils";
+import { clearAuthAndRedirect } from "@src/utils/auth";
 import { FPMessage } from "@mine-monopoly/ui";
 import { useUserInfo } from "@src/store";
 import { LoginDiceRenderer } from "@src/core/three/LoginDiceRenderer";
@@ -78,7 +79,7 @@ async function getUserInfoToRoomList() {
 					await setTimeOutAsync(2000, toRoomList);
 					return;
 				} catch (e: any) {
-					localStorage.removeItem("token");
+					clearAuthAndRedirect();
 					showDice.value = false;
 					showLoginMode.value = true;
 				}

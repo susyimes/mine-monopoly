@@ -1,41 +1,52 @@
-import { __MONOPOLYSERVER__ } from "@src/../global.config";
-import axios from "axios";
+import apiClient from "./index";
+import type { ApiResponse } from "@mine-monopoly/types";
+import { env } from "@mine-monopoly/env";
 
 export async function joinRoomApi(roomId: string) {
-	const { hostPeerId, needCreate, deleteIntervalMs } = (
-		await axios.get(`${__MONOPOLYSERVER__}/room-router/join`, {
-			params: { roomId },
-		})
-	).data as any;
-	return { hostPeerId, needCreate, deleteIntervalMs };
+	const response = await apiClient.get<
+		ApiResponse<{ hostPeerId: string; needCreate: boolean; deleteIntervalMs: number }>
+	>(`/room-router/join`, { params: { roomId } });
+	return response.data;
 }
 
-export async function emitHostPeerId(roomId: string, hostPeerId: string, hostName: string, hostId: string) {
-	await axios.post(`${__MONOPOLYSERVER__}/room-router/emit-host`, { roomId, hostPeerId, hostName, hostId });
+export async function emitHostPeerId(
+	roomId: string,
+	hostPeerId: string,
+	hostName: string,
+	hostId: string
+): Promise<void> {
+	await apiClient.post("/room-router/emit-host", {
+		roomId, hostPeerId, hostName, hostId,
+	});
 }
 
-export async function emitRoomHeart(roomId: string) {
-	await axios.get(`${__MONOPOLYSERVER__}/room-router/heart`, { params: { roomId } });
+export async function emitRoomHeart(roomId: string): Promise<void> {
+	await apiClient.get("/room-router/heart", { params: { roomId } });
 }
 
 export function deleteRoom(roomId: string) {
-	navigator.sendBeacon(`${__MONOPOLYSERVER__}/room-router/delete?roomId=${roomId}`);
+	// 使用 sendBeacon 在页面卸载时清理房间 - 不使用 apiClient
+	const url = `${env("PROTOCOL")}://${env("FATPAPER_DOMAIN")}:${env<number>("SERVER_PORT")}/room-router/delete?roomId=${roomId}`;
+	navigator.sendBeacon(url);
 }
 
-export async function getRandomPublicRoom() {
-	return (await axios.get(`${__MONOPOLYSERVER__}/room-router/random-public-room`)) as { roomId: string };
+export async function getRandomPublicRoom(): Promise<{ roomId: string }> {
+	const response = await apiClient.get<ApiResponse<{ roomId: string }>>("/room-router/random-public-room");
+	return response.data;
 }
 
-export async function setRoomPrivate(roomId: string, isPrivate: boolean) {
-	return (await axios.post(`${__MONOPOLYSERVER__}/room-router/set-private`, { roomId, isPrivate })) as {
-		roomId: string;
-		isPrivate: boolean;
-	};
+export async function setRoomPrivate(roomId: string, isPrivate: boolean): Promise<{ roomId: string; isPrivate: boolean }> {
+	const response = await apiClient.post<ApiResponse<{ roomId: string; isPrivate: boolean }>>(
+		"/room-router/set-private",
+		{ roomId, isPrivate }
+	);
+	return response.data;
 }
 
-export async function setRoomStarted(roomId: string, isStarted: boolean) {
-	return (await axios.post(`${__MONOPOLYSERVER__}/room-router/set-started`, { roomId, isStarted })) as {
-		roomId: string;
-		isStarted: boolean;
-	};
+export async function setRoomStarted(roomId: string, isStarted: boolean): Promise<{ roomId: string; isStarted: boolean }> {
+	const response = await apiClient.post<ApiResponse<{ roomId: string; isStarted: boolean }>>(
+		"/room-router/set-started",
+		{ roomId, isStarted }
+	);
+	return response.data;
 }

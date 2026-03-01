@@ -1,12 +1,19 @@
+import apiClient from "./index";
+import type { ApiResponse } from "@mine-monopoly/types";
 import { GameMapInDb } from "@mine-monopoly/types";
-import axios from "axios";
 
-export const getGameMapList = async (page: number, size: number) => {
-	const { total, gameMapList, current } = (await axios.get("/game-map/list", { params: { page, size } })).data as any;
+export async function getGameMapList(page: number, size: number) {
+	const response = await apiClient.get<
+		ApiResponse<{ total: number; gameMapList: GameMapInDb[]; current: number }>
+	>("/game-map/list", { params: { page, size } });
+
+	const { total, gameMapList, current } = response.data;
 	return { total, gameMapList, current };
-};
+}
 
-export const getGameMapById = async (mapId: string) => {
-	const data = (await axios.get("/game-map/info", { params: { id: mapId } })).data as any;
-	return data as GameMapInDb;
-};
+export async function getGameMapById(mapId: string): Promise<GameMapInDb> {
+	const response = await apiClient.get<ApiResponse<GameMapInDb>>("/game-map/info", {
+		params: { id: mapId },
+	});
+	return response.data;
+}

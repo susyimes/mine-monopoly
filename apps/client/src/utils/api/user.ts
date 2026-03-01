@@ -1,5 +1,5 @@
-import { __MONOPOLYSERVER__ } from "@src/../global.config";
-import axios from "axios";
+import apiClient from "./index";
+import type { ApiResponse } from "@mine-monopoly/types";
 
 interface UserInfo {
 	username: string;
@@ -8,9 +8,10 @@ interface UserInfo {
 	avatar: string;
 	color: string;
 }
-2;
 
-export async function getUserByToken(token: string) {
-	const res = await axios.get(`${__MONOPOLYSERVER__}/user/info`, { data: { token } });
-	return res.data as UserInfo;
+export async function getUserByToken(token: string): Promise<UserInfo> {
+	const response = await apiClient.get<ApiResponse<UserInfo>>("/user/info", {
+		data: { token },
+	});
+	return response.data;
 }
