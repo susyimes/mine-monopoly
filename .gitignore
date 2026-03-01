@@ -139,6 +139,7 @@ map-cache
 CLAUDE.md
 docs/plans/
 .claude/settings.local.json
+.claude/skills/commit
 
 #d.ts
 apps/map-editor/components.d.ts

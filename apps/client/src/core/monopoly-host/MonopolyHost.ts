@@ -13,6 +13,10 @@ export class MonopolyHost {
 
 	private intervalList: any[] = [];
 
+	private heartbeatTimeoutMap: Map<string, NodeJS.Timeout> = new Map();
+
+	private connectionVersionMap: Map<string, number> = new Map();
+
 	private destoryHandler: Function | undefined;
 
 	private constructor(peer: Peer, room: Room, heartContinuationTimeMs: number) {
@@ -35,6 +39,44 @@ export class MonopolyHost {
 		peer.on("connection", (conn) => {
 			let clientUserId = "";
 			let isOnline = false;
+			let connectionVersion = 0; // 当前连接的版本号
+			let heartbeatTimeoutId: NodeJS.Timeout | null = null;
+
+			// 清除心跳超时计时器
+			const clearHeartbeatTimeout = () => {
+				if (heartbeatTimeoutId) {
+					clearTimeout(heartbeatTimeoutId);
+					heartbeatTimeoutId = null;
+				}
+				if (clientUserId) {
+					const existingTimeout = _this.heartbeatTimeoutMap.get(clientUserId);
+					if (existingTimeout) {
+						clearTimeout(existingTimeout);
+						_this.heartbeatTimeoutMap.delete(clientUserId);
+					}
+				}
+			};
+
+			// 设置心跳超时检测
+			const resetHeartbeatTimeout = () => {
+				clearHeartbeatTimeout();
+				if (!clientUserId) return;
+
+				// 10秒无心跳视为断线
+				const timeoutId = setTimeout(() => {
+					const currentVersion = _this.connectionVersionMap.get(clientUserId);
+					if (clientUserId && isOnline && connectionVersion === currentVersion) {
+						isOnline = false;
+						_this.room.leave(clientUserId);
+						_this.clientList.delete(clientUserId);
+						clearHeartbeatTimeout();
+					}
+				}, 10000);
+
+				heartbeatTimeoutId = timeoutId;
+				_this.heartbeatTimeoutMap.set(clientUserId, timeoutId);
+			};
+
 			conn.once("data", (_data: any) => {
 				const msg: ClientSocketMessage = JSON.parse(_data, (key, value) => {
 					if (value === "Infinity") return Infinity;
@@ -47,14 +89,18 @@ export class MonopolyHost {
 					// 房间已经开始游戏
 					if (this.room.isUserInRoom(user.userId)) {
 						clientUserId = user.userId;
+						// 更新连接版本号
+						connectionVersion = (_this.connectionVersionMap.get(user.userId) || 0) + 1;
+						_this.connectionVersionMap.set(user.userId, connectionVersion);
+
 						// 如果是断线的玩家, 处理重连
-						this.room.handleUserReconnect(user.userId, conn);
-						if (_data.type === SocketMsgType.JoinRoom) {
-							if (!this.room) throw Error("在房间没创建时加入了房间");
-							this.clientList.set(user.userId, conn);
-							// this.room.join(user, conn);
-							isOnline = true;
-						}
+						this.room.handleUserReconnect(user.userId, conn, connectionVersion);
+						if (!this.room) throw Error("在房间没创建时加入了房间");
+						this.clientList.set(user.userId, conn);
+						// this.room.join(user, conn);
+						isOnline = true;
+						// 重连后立即启动心跳检测
+						resetHeartbeatTimeout();
 					} else {
 						conn.send(
 							JSON.stringify(<SocketMessage>{
@@ -88,24 +134,19 @@ export class MonopolyHost {
 						if (msg.type === SocketMsgType.JoinRoom) {
 							if (!this.room) throw Error("在房间没创建时加入了房间");
 							clientUserId = user.userId;
+							// 首次连接,设置版本号为 1
+							connectionVersion = (_this.connectionVersionMap.get(user.userId) || 0) + 1;
+							_this.connectionVersionMap.set(user.userId, connectionVersion);
+
 							this.clientList.set(user.userId, conn);
 							this.room.join(user, conn);
 							isOnline = true;
+							// 首次连接后启动心跳检测
+							resetHeartbeatTimeout();
 						}
 					}
 				}
 			});
-
-			// const noHeartHandler = debounce(
-			// 	() => {
-			// 		console.log("🚀 ~ MonopolyHost ~ peer.on ~ noHeartHandler:", clientUserId);
-			// 		if (!clientUserId) return;
-			// 		_this.room.leave(clientUserId);
-			// 		_this.clientList.delete(clientUserId);
-			// 	},
-			// 	20000,
-			// 	true
-			// );
 
 			conn.on("data", function (data: any) {
 				const socketMessage: ClientSocketMessage = JSON.parse(data.toString(), (key, value) => {
@@ -113,24 +154,40 @@ export class MonopolyHost {
 					if (value === "-Infinity") return -Infinity;
 					return value;
 				});
+
+				// 处理心跳消息
+				if (socketMessage.type === SocketMsgType.Heart) {
+					if (clientUserId) {
+						resetHeartbeatTimeout();
+					}
+				}
+
 				handleClientSocketMessage(conn, socketMessage, _this, clientUserId);
 			});
 
 			conn.on("close", () => {
-				if (clientUserId && isOnline) {
+				// 清除心跳超时计时器
+				clearHeartbeatTimeout();
+
+				// 只有当前版本号的连接才能触发断线
+				const currentVersion = _this.connectionVersionMap.get(clientUserId);
+				if (clientUserId && isOnline && connectionVersion === currentVersion) {
 					isOnline = false;
 					this.room.leave(clientUserId);
 					this.clientList.delete(clientUserId);
-					// noHeartHandler.cancel();
 				}
 			});
 
 			conn.on("error", (err) => {
-				if (clientUserId && isOnline && err.type === "not-open-yet") {
+				// 清除心跳超时计时器
+				clearHeartbeatTimeout();
+
+				// 只有当前版本号的连接才能触发断线
+				const currentVersion = _this.connectionVersionMap.get(clientUserId);
+				if (clientUserId && isOnline && connectionVersion === currentVersion && err.type === "not-open-yet") {
 					isOnline = false;
 					this.room.leave(clientUserId);
 					this.clientList.delete(clientUserId);
-					// noHeartHandler.cancel();
 				}
 			});
 

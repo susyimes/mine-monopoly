@@ -19,7 +19,6 @@ import {
 } from "@mine-monopoly/types";
 import { MonopolyHost } from "../monopoly-host/MonopolyHost";
 import { handleServerSocketMessage } from "./host-message-handlers";
-import { useRouter } from "vue-router";
 import router from "@src/router";
 import { debounce } from "@src/utils";
 import { useGameData } from "@src/store/game";
@@ -111,6 +110,17 @@ export class MonopolyClient {
 
 	private async linkToGameHost(hostPeerId: string) {
 		try {
+			// 清理旧连接和监听器
+			if (this.conn) {
+				this.conn.removeAllListeners();
+				this.conn.close();
+				this.conn = null;
+			}
+
+			// 清理所有定时器
+			this.intervalList.forEach((timer) => clearInterval(timer));
+			this.intervalList = [];
+
 			if (!this.peerClient) {
 				this.peerClient = await PeerClient.create(this.iceServerHost, this.iceServerPort);
 			}
@@ -164,7 +174,7 @@ export class MonopolyClient {
 						type: "error",
 						message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
 						onClosed: () => {
-							useRouter().replace("room-router");
+							router.replace("room-router");
 							this.destory();
 						},
 					});
@@ -178,7 +188,7 @@ export class MonopolyClient {
 						type: "error",
 						message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
 						onClosed: () => {
-							useRouter().replace("room-router");
+							router.replace("room-router");
 							this.destory();
 						},
 					});
@@ -200,7 +210,7 @@ export class MonopolyClient {
 				type: "error",
 				message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
 				onClosed: () => {
-					useRouter().replace("room-router");
+					router.replace("room-router");
 					this.destory();
 				},
 			});

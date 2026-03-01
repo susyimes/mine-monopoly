@@ -280,7 +280,7 @@ export class Room {
 		this.roomInfoBroadcast();
 	}
 
-	public async handleUserReconnect(userId: string, newCoon: DataConnection) {
+	public async handleUserReconnect(userId: string, newCoon: DataConnection, connectionVersion: number) {
 		const oldUser = this.userList.get(userId);
 		if (oldUser && this.mapInfo) {
 			oldUser.socketClient = newCoon;
