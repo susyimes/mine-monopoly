@@ -5,7 +5,8 @@
 <img src="docs/images/client-logo.png" alt="MineMonopoly Logo" width="120"/>
 <img src="docs/images/editor-logo.png" alt="MineMonopoly Editor Logo" width="120"/>
 
-基于混合 P2P 架构的多人在线大富翁游戏 | 支持 Web 和 Electron 桌面端
+**支持自定义地图的多人在线大富翁游戏**
+支持 Web 和 Electron 桌面端
 
 [![License](https://img.shields.io/badge/license-ISC-blue)](LICENSE)
 [![Vue 3](https://img.shields.io/badge/Vue-3.5.18-brightgreen)](https://vuejs.org/)
@@ -16,9 +17,20 @@
 
 ## 简介
 
-MineMonopoly 是一个基于 pnpm workspaces 的 monorepo 架构多人在线大富翁游戏。采用创新的混合 P2P 架构——中央服务器负责认证和房间发现，游戏逻辑由主机客户端运行，其他玩家通过 WebRTC (PeerJS) 点对点连接，实现低延迟、高可扩展的游戏体验。
+MineMonopoly 是一个基于 pnpm workspaces 的 monorepo 架构多人在线大富翁游戏。采用混合 P2P 架构——中央服务器负责认证和房间路由，游戏逻辑由主机客户端运行，其他玩家通过 WebRTC (PeerJS) 点对点连接，实现低延迟、高可扩展的游戏体验。
 
-项目提供完整的地图编辑器，支持创建自定义地图和游戏事件，同时支持 Web 浏览器和 Electron 桌面端双平台运行。
+项目提供完整的地图编辑器，支持创建**自定义地图**和**游戏事件**，同时支持 Web 浏览器和 Electron 桌面端双平台运行。
+
+## 技术架构
+
+### 核心技术栈
+
+- **前端**: Vue 3 + TypeScript + Vite + Pinia
+- **后端**: Express + TypeORM + MySQL
+- **渲染**: Three.js + PIXI.js
+- **通信**: PeerJS (WebRTC) + Socket.io
+- **桌面端**: Electron
+- **构建**: pnpm workspaces
 
 ## 核心特性
 
@@ -81,17 +93,6 @@ pnpm build-editor    # 构建地图编辑器
 ```
 
 构建产物在对应应用的 `dist` 目录。
-
-## 技术架构
-
-### 核心技术栈
-
-- **前端**: Vue 3 + TypeScript + Vite + Pinia
-- **后端**: Express + TypeORM + MySQL
-- **渲染**: Three.js + PIXI.js
-- **通信**: PeerJS (WebRTC) + Socket.io
-- **桌面端**: Electron
-- **构建**: pnpm workspaces
 
 ### 项目结构
 
