@@ -7,6 +7,13 @@ import { computed, reactive, ref, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
 import { MapEventType } from "@mine-monopoly/types";
+
+// 事件类型选项
+const eventTypeOptions = [
+	{ label: "到达事件", value: MapEventType.ArrivedEvent },
+	{ label: "经过事件", value: MapEventType.PassedEvent },
+	{ label: "普通事件", value: MapEventType.NormalEvents },
+];
 import { addNewImage, convertToFpUrl } from "@src/utils/file";
 import { Rule } from "ant-design-vue/es/form";
 import { cloneDeep } from "lodash";
@@ -121,6 +128,9 @@ const iconRule = async (_rule: Rule, value: string) => {
 			</a-form-item>
 			<a-form-item label="事件描述" name="description" :rules="[{ required: true, message: '请输入事件描述' }]">
 				<a-input v-model:value="mapEventForm.description" />
+			</a-form-item>
+			<a-form-item label="事件触发类型" name="type" :rules="[{ required: true, message: '请选择事件触发类型' }]">
+				<a-select v-model:value="mapEventForm.type" :options="eventTypeOptions" />
 			</a-form-item>
 			<a-form-item label="icon图片" name="iconUrl" :rules="[{ required: true, validator: iconRule }]">
 				<template v-if="iconUrl">

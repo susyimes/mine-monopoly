@@ -99,7 +99,7 @@ function handleDelete(id: string) {
 /* 复用 event-manager-container 的样式，保持统一 */
 .event-manager-container {
 	.ant-modal {
-		max-width: 96vw;
+		max-width: 90vw;
 		padding-bottom: 0;
 	}
 	.ant-modal-content {

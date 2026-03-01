@@ -14,7 +14,6 @@ const version = window.electronAPI.getVersion();
 const isLoading = useEditorStore().isLoading;
 
 let removeListener: (() => void) | undefined;
-let removeMCPListener: (() => void) | undefined;
 
 const handleOpenMap = async (filePath: string) => {
 	console.log("收到文件路径，开始加载:", filePath);
@@ -44,12 +43,12 @@ onMounted(() => {
 	}
 
 	// 3. 监听 MCP 操作反馈事件
-	removeMCPListener = eventBus.on("mcp-operation", handleMCPOperation);
+	eventBus.on("mcp-operation", handleMCPOperation);
 });
 
 onUnmounted(() => {
 	removeListener && removeListener();
-	removeMCPListener && removeMCPListener();
+	eventBus.off("mcp-operation", handleMCPOperation);
 });
 </script>
 
