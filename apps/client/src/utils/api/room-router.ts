@@ -31,8 +31,7 @@ export function deleteRoom(roomId: string) {
 }
 
 export async function getRandomPublicRoom(): Promise<{ roomId: string }> {
-	const response = await apiClient.get<ApiResponse<{ roomId: string }>>("/room-router/random-public-room");
-	return response.data;
+	return await apiClient.get<{ roomId: string }>("/room-router/random-public-room");
 }
 
 export async function setRoomPrivate(roomId: string, isPrivate: boolean): Promise<{ roomId: string; isPrivate: boolean }> {
