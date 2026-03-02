@@ -335,3 +335,7 @@ export function getDisplayValueByFormSchema(field: FormSchema, currentValue: any
 			break;
 	}
 }
+
+// 注意：不在此处导出音频模块，避免 Worker 环境加载 howler
+// 音频模块应通过 `@src/utils/audio` 专门导入
+// export * from "./audio";

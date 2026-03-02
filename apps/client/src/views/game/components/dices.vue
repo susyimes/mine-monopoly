@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useUtil } from "@src/store/index";
 import { useGameData } from "@src/store/game";
+import useEventBus from "@src/utils/event-bus";
+import { useAudioManager, SoundName } from "@src/utils/audio";
 
 const utilStore = useUtil();
 const gameDataStore = useGameData();
@@ -22,15 +24,22 @@ function handleRollDice() {
 const loopIndex = ref(0);
 let timer: any = null;
 
+function playDiceRollSound() {
+	const audio = useAudioManager();
+	audio.playSound(SoundName.DICE_ROLL);
+}
+
 // 启动轮播定时器 (每 1.2 秒切换一次显示的索引)
 onMounted(() => {
 	timer = setInterval(() => {
 		loopIndex.value = (loopIndex.value + 1) % 6; // 0-5 循环
 	}, 1200);
+	useEventBus().on("dice-roll", playDiceRollSound);
 });
 
 onBeforeUnmount(() => {
 	if (timer) clearInterval(timer);
+	useEventBus().remove("dice-roll", playDiceRollSound);
 });
 
 // --- 视图模型逻辑 ---
@@ -77,6 +86,7 @@ const displayDices = computed(() => {
 
 <template>
 	<div
+		v-sound.hover
 		id="game_dice_canvas"
 		class="dice-control-panel"
 		:class="{ 'can-roll': canRoll, disabled: !canRoll }"

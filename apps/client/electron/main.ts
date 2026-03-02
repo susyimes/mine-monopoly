@@ -42,6 +42,8 @@ function createWindow() {
 			preload: path.join(__dirname, "preload.mjs"),
 			devTools: isProduction ? false : true,
 			webSecurity: false,
+			// 允许自动播放音频，无需用户交互
+			autoplayPolicy: "no-user-gesture-required",
 		},
 		frame: false,
 	});

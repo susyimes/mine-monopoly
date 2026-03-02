@@ -169,7 +169,12 @@ export const useSettig = defineStore("setting", {
 	state: () => {
 		return {
 			autoMusic: true,
-			musicVolume: 1,
+			musicVolume: 0.3,
+			sfxVolume: 0.5,
+			masterVolume: 1,
+			masterMuted: false,
+			sfxMuted: false,
+			musicMuted: false,
 			lockRole: true,
 			// 画面质量设置：低/中/高三档
 			graphicQuality: "medium" as "low" | "medium" | "high",

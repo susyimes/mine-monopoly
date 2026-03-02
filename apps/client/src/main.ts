@@ -60,6 +60,9 @@ import {
 	faSquareCheck,
 	faVolumeLow,
 	faVolumeHigh,
+	faVolumeXmark,
+	faMinus,
+	faPlus,
 	faQuestion,
 	faBook,
 	faShuffle,
@@ -122,6 +125,9 @@ library.add(
 	faSquareCheck,
 	faVolumeLow,
 	faVolumeHigh,
+	faVolumeXmark,
+	faMinus,
+	faPlus,
 	faQuestion,
 	faBook,
 	faShuffle,
@@ -141,29 +147,58 @@ const pinia = createPinia();
 
 const app = createApp(App);
 
-app.use(pinia).use(router).component("font-awesome-icon", FontAwesomeIcon).mount("#app");
+app.use(pinia).use(router).component("font-awesome-icon", FontAwesomeIcon).directive("sound", soundDirective).mount("#app");
 
 initDeviceStatusListener();
 initSettingStore();
 
-import { gsap } from "gsap";
-import MotionPathPlugin from "gsap/MotionPathPlugin";
-import { isPC } from "./utils/platform";
-import { FPMessage } from "@mine-monopoly/ui";
-
-gsap.registerPlugin(MotionPathPlugin);
-
-function initSettingStore() {
+async function initSettingStore() {
 	const settingStore = useSettig();
 	const savedState = localStorage.getItem("setting");
 	if (savedState) {
 		settingStore.$patch(JSON.parse(savedState));
 	}
 
+	// 同步设置到音频管理器
+	const { useAudioManager } = await import("@src/utils/audio");
+	const audioManager = useAudioManager();
+	audioManager.setAutoMusic(settingStore.autoMusic);
+	audioManager.setMasterVolume(settingStore.masterVolume);
+	audioManager.setSFXVolume(settingStore.sfxVolume);
+	audioManager.setBGMVolume(settingStore.musicVolume);
+
+	// 同步静音状态
+	audioManager.setMasterMuted(settingStore.masterMuted);
+	audioManager.setSFXMuted(settingStore.sfxMuted);
+	audioManager.setBGMMuted(settingStore.musicMuted);
+
 	settingStore.$subscribe((mutation, state) => {
 		localStorage.setItem("setting", JSON.stringify(state));
+
+		// 同步设置到音频管理器
+		audioManager.setAutoMusic(state.autoMusic);
+		audioManager.setMasterVolume(state.masterVolume);
+		audioManager.setSFXVolume(state.sfxVolume);
+		audioManager.setBGMVolume(state.musicVolume);
+
+		// 同步独立静音状态
+		audioManager.setMasterMuted(state.masterMuted);
+		audioManager.setSFXMuted(state.sfxMuted);
+		audioManager.setBGMMuted(state.musicMuted);
 	});
+
+	// 初始化全局按钮音效
+	const { initAutoSound } = await import("@src/utils/audio/auto-sound");
+	initAutoSound();
 }
+
+import { gsap } from "gsap";
+import MotionPathPlugin from "gsap/MotionPathPlugin";
+import { isPC } from "./utils/platform";
+import { FPMessage } from "@mine-monopoly/ui";
+import soundDirective from "./directives/sound";
+
+gsap.registerPlugin(MotionPathPlugin);
 
 function initDeviceStatusListener() {
 	const deviceStatus = useDeviceStatus();
@@ -227,7 +262,7 @@ window.addEventListener("unhandledrejection", (event) => {
 
 // --- 捕获常规 JS 运行时错误 ---
 window.addEventListener("error", (event) => {
-	console.error("[Global JS Error]:", event.error);
+	console.error("[Global JS Error]:", event);
 
 	FPMessage({ type: "error", message: `程序异常: ${event.message}` });
 	event.preventDefault();
