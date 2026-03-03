@@ -26,6 +26,9 @@ import {
 	faRoad,
 	faMicrochip,
 	faArrowDown,
+	faArrowUp,
+	faArrowLeft,
+	faArrowRight,
 	faArrowsSpin,
 	faBezierCurve,
 	faXmark,
@@ -47,6 +50,7 @@ import {
 	faStop,
 	faMagnifyingGlass,
 	faCopy,
+	faObjectGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { eventBus } from "./utils/event-bus";
 import { loadMapDataFromPath } from "@src/utils/file";
@@ -65,6 +69,9 @@ library.add(
 	faRoad,
 	faMicrochip,
 	faArrowDown,
+	faArrowUp,
+	faArrowLeft,
+	faArrowRight,
 	faArrowsSpin,
 	faBezierCurve,
 	faXmark,
@@ -86,6 +93,7 @@ library.add(
 	faStop,
 	faMagnifyingGlass,
 	faCopy,
+	faObjectGroup,
 );
 
 eventBus.on("renderer-ready", () => {

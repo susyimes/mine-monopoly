@@ -174,68 +174,104 @@ const caremaModeNameMap: Record<CameraMode, string> = {
 };
 
 function handleOperationModeChange() {
+	// 如果当前是框选模式，切换操作模式时自动退出
+	if (editorStore.isBoxSelectMode) {
+		eventBus.emit("toggle-box-select-mode");
+	}
+
 	message.success({ content: `已切换到 ${operationModeNameMap[editorStore.currentEditMode]}`, duration: 1 });
 	eventBus.emit("change-operation-mode", editorStore.currentEditMode);
 }
 
 function handleCameraModeChange() {
+	// 如果当前是框选模式，切换视角时自动退出
+	if (editorStore.isBoxSelectMode) {
+		eventBus.emit("toggle-box-select-mode");
+	}
+
 	message.success({ content: `摄像机已切换到 ${caremaModeNameMap[editorStore.currentCameraMode]}`, duration: 1 });
 	eventBus.emit("change-camera-mode", editorStore.currentCameraMode);
+}
+
+function handleBoxSelectModeChange() {
+	const store = useEditorStore();
+	if (store.currentCameraMode !== CameraMode.Orthographic) {
+		message.warning("框选功能仅支持正交相机模式", 2);
+		return;
+	}
+
+	// 直接触发事件，让 renderer 处理状态切换
+	// 这样可以避免状态在 UI 层被提前改变导致 renderer 逻辑错误
+	eventBus.emit("toggle-box-select-mode");
 }
 </script>
 
 <template>
 	<div class="top-panel">
 		<div class="left">
-			<a-space>
-				<a-radio-group
-					@change="handleOperationModeChange"
-					button-style="solid"
-					class="mode-selector"
-					v-model:value="editorStore.currentEditMode"
-				>
-					<a-radio-button :value="OperationMode.Select">
-						<a-space>
-							<span v-if="editorStore.currentEditMode === OperationMode.Select">
-								{{ operationModeNameMap[OperationMode.Select] }}
-							</span>
-							<font-awesome-icon :icon="['fas', 'hand-pointer']" />
-						</a-space>
-					</a-radio-button>
-					<a-radio-button :value="OperationMode.Edit">
-						<a-space>
-							<span v-if="editorStore.currentEditMode === OperationMode.Edit">
-								{{ operationModeNameMap[OperationMode.Edit] }}
-							</span>
-							<font-awesome-icon :icon="['fas', 'plus']" />
-						</a-space>
-					</a-radio-button>
-				</a-radio-group>
+			<div class="mode-controls">
+				<a-space>
+					<a-radio-group
+						@change="handleOperationModeChange"
+						button-style="solid"
+						class="mode-selector"
+						v-model:value="editorStore.currentEditMode"
+					>
+						<a-radio-button :value="OperationMode.Select">
+							<a-space>
+								<span v-if="editorStore.currentEditMode === OperationMode.Select">
+									{{ operationModeNameMap[OperationMode.Select] }}
+								</span>
+								<font-awesome-icon :icon="['fas', 'hand-pointer']" />
+							</a-space>
+						</a-radio-button>
+						<a-radio-button :value="OperationMode.Edit">
+							<a-space>
+								<span v-if="editorStore.currentEditMode === OperationMode.Edit">
+									{{ operationModeNameMap[OperationMode.Edit] }}
+								</span>
+								<font-awesome-icon :icon="['fas', 'plus']" />
+							</a-space>
+						</a-radio-button>
+					</a-radio-group>
 
-				<a-radio-group
-					@change="handleCameraModeChange"
-					button-style="solid"
-					class="mode-selector"
-					v-model:value="editorStore.currentCameraMode"
+					<a-radio-group
+						@change="handleCameraModeChange"
+						button-style="solid"
+						class="mode-selector"
+						v-model:value="editorStore.currentCameraMode"
+					>
+						<a-radio-button :value="CameraMode.Perspective">
+							<a-space>
+								<span v-if="editorStore.currentCameraMode === CameraMode.Perspective">
+									{{ caremaModeNameMap[CameraMode.Perspective] }}
+								</span>
+								<font-awesome-icon :icon="['fas', 'camera']" />
+							</a-space>
+						</a-radio-button>
+						<a-radio-button :value="CameraMode.Orthographic">
+							<a-space>
+								<span v-if="editorStore.currentCameraMode === CameraMode.Orthographic">
+									{{ caremaModeNameMap[CameraMode.Orthographic] }}
+								</span>
+								<font-awesome-icon :icon="['fas', 'plane']" />
+							</a-space>
+						</a-radio-button>
+					</a-radio-group>
+				</a-space>
+
+				<a-button
+					v-if="editorStore.currentEditMode === OperationMode.Select && editorStore.currentCameraMode === CameraMode.Orthographic"
+					:type="editorStore.isBoxSelectMode ? 'primary' : 'default'"
+					@click="handleBoxSelectModeChange"
 				>
-					<a-radio-button :value="CameraMode.Perspective">
-						<a-space>
-							<span v-if="editorStore.currentCameraMode === CameraMode.Perspective">
-								{{ caremaModeNameMap[CameraMode.Perspective] }}
-							</span>
-							<font-awesome-icon :icon="['fas', 'camera']" />
-						</a-space>
-					</a-radio-button>
-					<a-radio-button :value="CameraMode.Orthographic">
-						<a-space>
-							<span v-if="editorStore.currentCameraMode === CameraMode.Orthographic">
-								{{ caremaModeNameMap[CameraMode.Orthographic] }}
-							</span>
-							<font-awesome-icon :icon="['fas', 'plane']" />
-						</a-space>
-					</a-radio-button>
-				</a-radio-group>
-			</a-space>
+					<a-space>
+						<span v-if="editorStore.isBoxSelectMode">退出框选</span>
+						<span v-else>框选模式</span>
+						<font-awesome-icon :icon="['fas', 'object-group']" />
+					</a-space>
+				</a-button>
+			</div>
 		</div>
 
 		<div class="right">
@@ -264,6 +300,18 @@ function handleCameraModeChange() {
 	justify-content: space-between;
 	pointer-events: initial;
 	gap: 10px;
+
+	.left {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+
+		.mode-controls {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+		}
+	}
 
 	& .right {
 		flex: 1;

@@ -257,6 +257,87 @@ export const useMapDataStore = defineStore("MapData", {
 			Object.assign(item, updates);
 		},
 
+		// 批量删除 MapItem
+		batchRemoveMapItem(ids: string[]) {
+			if (ids.length === 0) return;
+
+			ids.forEach(id => {
+				try {
+					const index = this.mapItems.findIndex((m) => m.id === id);
+					if (index === -1) {
+						console.error(`删除 MapItem ${id} 失败: 寻找MapItem失败`);
+						return;
+					}
+					// 手动解绑（不调用 removeMapItem 避免重复 updateMapIndex）
+					if (this.mapItems[index].linkto) {
+						const taget = this.findMapItemById(this.mapItems[index].linkto!);
+						if (taget) {
+							taget.beLinked = undefined;
+							taget.property = undefined;
+							eventBus.emit("map-item-unlink", this.mapItems[index].id);
+						}
+					}
+					if (this.mapItems[index].beLinked) {
+						const taget = this.findMapItemById(this.mapItems[index].beLinked);
+						if (taget) {
+							taget.linkto = undefined;
+							eventBus.emit("map-item-unlink", this.mapItems[index].beLinked);
+						}
+					}
+					this.mapItems.splice(index, 1);
+					eventBus.emit("map-item-deleted", id);
+				} catch (e) {
+					console.error(`删除 MapItem ${id} 失败:`, e);
+				}
+			});
+			// 批量删除完成后只更新一次
+			this.updateMapIndex([]);
+		},
+
+		// 批量移动 MapItem
+		batchMoveMapItem(ids: string[], deltaX: number, deltaY: number) {
+			if (ids.length === 0) return;
+			if (deltaX === 0 && deltaY === 0) return;
+
+			// 检测目标位置冲突
+			const conflicts: string[] = [];
+			ids.forEach(id => {
+				const item = this.findMapItemById(id);
+				if (!item) return;
+				const targetX = item.x + deltaX;
+				const targetY = item.y + deltaY;
+
+				// 检查目标位置是否被其他（非选中）MapItem 占用
+				const isOccupied = this.mapItems.some(other => {
+					return other.x === targetX && other.y === targetY && !ids.includes(other.id);
+				});
+
+				if (isOccupied) {
+					conflicts.push(`${id} -> (${targetX}, ${targetY})`);
+				}
+			});
+
+			if (conflicts.length > 0) {
+				throw Error(`目标位置已被占用: ${conflicts.join(", ")}`);
+			}
+
+			// 执行移动
+			ids.forEach(id => {
+				const item = this.findMapItemById(id);
+				if (item) {
+					this.updateMapItem(id, {
+						x: item.x + deltaX,
+						y: item.y + deltaY,
+					});
+				}
+			});
+
+			// 通知渲染器更新
+			ids.forEach(id => {
+				eventBus.emit("map-item-updated", id);
+			});
+		},
+
 		// MapEvent edit
 		updateMapEvent(mapEvent: MapEvent) {
 			this.editMapEvent(mapEvent);
@@ -375,6 +456,12 @@ type EditorState = {
 	currentCameraMode: CameraMode;
 	isLinkMode: boolean;
 	isLoading: boolean;
+	// 多选状态
+	selectedMapItemIds: string[];
+	isBoxSelectMode: boolean;
+	isBoxSelecting: boolean;
+	boxSelectStart: { x: number; y: number } | null;
+	boxSelectUpdateCounter: number;
 };
 
 type EditorAlert = {
@@ -452,6 +539,12 @@ export const useEditorStore = defineStore("Editor", {
 		currentCameraMode: CameraMode.Perspective,
 		isLinkMode: false,
 		isLoading: false,
+		// 多选状态初始值
+		selectedMapItemIds: [],
+		isBoxSelectMode: false,
+		isBoxSelecting: false,
+		boxSelectStart: null,
+		boxSelectUpdateCounter: 0,
 	}),
 	actions: {
 		setLoading(loading: boolean) {
@@ -463,6 +556,65 @@ export const useEditorStore = defineStore("Editor", {
 		},
 		setCameraMode(newMode: CameraMode) {
 			this.currentCameraMode = newMode;
+		},
+		// 多选相关 actions
+		toggleBoxSelectMode() {
+			if (this.currentCameraMode !== CameraMode.Orthographic) {
+				throw Error("框选功能仅支持正交相机模式");
+			}
+			this.isBoxSelectMode = !this.isBoxSelectMode;
+			// 重置框选状态
+			this.isBoxSelecting = false;
+			this.boxSelectStart = null;
+		},
+		exitBoxSelectMode() {
+			this.isBoxSelectMode = false;
+			this.isBoxSelecting = false;
+			this.boxSelectStart = null;
+		},
+		startBoxSelect(x: number, y: number) {
+			this.isBoxSelecting = true;
+			this.boxSelectStart = { x, y };
+		},
+		updateBoxSelect(x: number, y: number) {
+			// 触发响应式更新，让 renderer 获取最新的鼠标位置
+			this.boxSelectUpdateCounter++;
+		},
+		endBoxSelect() {
+			this.isBoxSelecting = false;
+			this.boxSelectStart = null;
+		},
+		setSelectedMapItemIds(ids: string[]) {
+			this.selectedMapItemIds = ids;
+			// 同时更新 currentMapItemId 以保持兼容性
+			this.currentMapItemId = ids.length === 1 ? ids[0] : undefined;
+		},
+		addSelectedMapItemId(id: string) {
+			if (!this.selectedMapItemIds.includes(id)) {
+				this.selectedMapItemIds.push(id);
+			}
+			// 保持与 setSelectedMapItemIds 一致的逻辑
+			if (this.selectedMapItemIds.length === 1) {
+				this.currentMapItemId = this.selectedMapItemIds[0];
+			} else {
+				this.currentMapItemId = undefined;
+			}
+		},
+		removeSelectedMapItemId(id: string) {
+			const index = this.selectedMapItemIds.indexOf(id);
+			if (index > -1) {
+				this.selectedMapItemIds.splice(index, 1);
+			}
+			// 保持与 setSelectedMapItemIds 一致的逻辑
+			if (this.selectedMapItemIds.length === 1) {
+				this.currentMapItemId = this.selectedMapItemIds[0];
+			} else {
+				this.currentMapItemId = undefined;
+			}
+		},
+		clearSelectedMapItemIds() {
+			this.selectedMapItemIds = [];
+			this.currentMapItemId = undefined;
 		},
 	},
 	getters: {
@@ -483,6 +635,13 @@ export const useEditorStore = defineStore("Editor", {
 			return res
 				.map((a) => ({ type: a.type, message: a.message }))
 				.sort((a, b) => alertLeverMap[a.type] - alertLeverMap[b.type]);
+		},
+		hasMultipleSelection: (state) => state.selectedMapItemIds.length > 1,
+		selectedMapItems: (state): MapItem[] => {
+			const items = state.selectedMapItemIds
+				.map((id) => useMapDataStore().findMapItemById(id))
+				.filter((item): item is MapItem => item !== undefined);
+			return items;
 		},
 	},
 });

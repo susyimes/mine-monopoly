@@ -182,6 +182,7 @@ const iconRule = async (_rule: Rule, value: string) => {
 		flex-direction: column;
 		overflow-y: scroll;
 		padding-right: 10px;
+		align-items: center;
 
 		.chance-card-preview {
 			margin: 10px 0;

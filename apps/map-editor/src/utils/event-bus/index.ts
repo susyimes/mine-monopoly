@@ -17,10 +17,21 @@ type Events = {
 	"map-item-unlink": string;
 	"map-item-type-selected": string | undefined;
 	"map-item-deleted": string;
+	"map-item-updated": string;
 	"map-event-link": string;
 	"map-event-unlink": string;
 	"map-index-update": string[];
 	"map-background-update": void;
+
+	// 框选模式相关事件
+	"toggle-box-select-mode": void;
+
+	// 批量移动地图项事件
+	"batch-move-map-items": {
+		ids: string[];
+		deltaX: number;
+		deltaY: number;
+	};
 
 	// MCP 操作反馈事件
 	"mcp-operation": {

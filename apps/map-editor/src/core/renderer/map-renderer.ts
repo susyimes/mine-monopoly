@@ -17,6 +17,7 @@ import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader";
 import { message } from "ant-design-vue";
+import { BoxSelector, projectToScreen, isPointInRect } from "@src/utils/three/box-selector";
 
 interface MapItemTypeWithModel extends MapItemType {
 	model: THREE.Object3D;
@@ -35,6 +36,7 @@ export class MapRenderer {
 	private currentRotation: 0 | 1 | 2 | 3 = 0;
 	private outlinePass: SolidOutlinePass;
 	private linkOutlinePass: SolidOutlinePass;
+	private multiSelectOutlinePass: SolidOutlinePass;
 	private composer: EffectComposer;
 
 	private itemTypesCache: Map<string, MapItemTypeWithModel> = new Map();
@@ -51,6 +53,8 @@ export class MapRenderer {
 	private mapEventInScene: Map<string, THREE.Object3D> = new Map();
 	private mapEventGroup: THREE.Group = new THREE.Group();
 	private linkHelperLine: DynamicLine;
+	private boxSelector: BoxSelector;
+	private justCompletedBoxSelect: boolean = false;
 
 	constructor(canvasEl: HTMLCanvasElement) {
 		this.renderer = new THREE.WebGLRenderer({ canvas: canvasEl });
@@ -118,6 +122,17 @@ export class MapRenderer {
 		this.linkOutlinePass.hiddenEdgeColor.set(0x6611ff);
 		this.composer.addPass(this.linkOutlinePass);
 
+		// 初始化框选高亮 Pass
+		this.multiSelectOutlinePass = new SolidOutlinePass(size, this.scene, this.camera);
+		this.multiSelectOutlinePass.edgeStrength = 10;
+		this.multiSelectOutlinePass.edgeThickness = 2.0; // 更粗的边框
+		this.multiSelectOutlinePass.visibleEdgeColor.set(0x00ff00); // 绿色高亮，便于区分
+		this.multiSelectOutlinePass.hiddenEdgeColor.set(0x00ff00);
+		this.multiSelectOutlinePass.enabled = true; // 确保启用
+		this.composer.addPass(this.multiSelectOutlinePass);
+
+		console.log('框选高亮 Pass 已初始化');
+
 		const gammaPass = new ShaderPass(GammaCorrectionShader);
 		this.composer.addPass(gammaPass);
 
@@ -125,6 +140,9 @@ export class MapRenderer {
 
 		// 灯光
 		this.initLight();
+
+		// 初始化框选器
+		this.boxSelector = new BoxSelector(canvasEl, this.scene);
 
 		window.addEventListener("resize", () => {
 			const w = canvasEl.clientWidth;
@@ -134,6 +152,7 @@ export class MapRenderer {
 			this.renderer.setSize(w, h);
 			this.composer.setSize(w, h);
 			this.outlinePass.setSize(w, h); // 避免 framebuffer zero size
+			this.multiSelectOutlinePass.setSize(w, h); // 更新框选高亮 Pass
 		});
 		this.initEventListeners();
 		eventBus.emit("renderer-ready");
@@ -213,6 +232,7 @@ export class MapRenderer {
 				case OperationMode.Edit:
 					this.outlinePass.selectedObjects = [];
 					this.linkOutlinePass.selectedObjects = [];
+					this.multiSelectOutlinePass.selectedObjects = [];
 					break;
 				case OperationMode.Select:
 					useEditorStore().currentMapItemTypeId = "";
@@ -231,6 +251,7 @@ export class MapRenderer {
 			if (!isLinkMode) {
 				this.outlinePass.selectedObjects = [];
 				this.linkOutlinePass.selectedObjects = [];
+				this.multiSelectOutlinePass.selectedObjects = [];
 			}
 		});
 
@@ -262,17 +283,34 @@ export class MapRenderer {
 			this.removeMapItem(mapItemId);
 		});
 
+		eventBus.on("toggle-box-select-mode", () => {
+			this.handleBoxSelectModeToggle();
+		});
+
+		eventBus.on("map-item-updated", (id: string) => {
+			this.handleMapItemUpdated(id);
+		});
+
+		eventBus.on("batch-move-map-items", (data: { ids: string[], deltaX: number, deltaY: number }) => {
+			console.log('[渲染器] 收到批量移动事件:', data);
+			this.handleBatchMoveMapItems(data.ids, data.deltaX, data.deltaY);
+		});
+
+		console.log('[渲染器初始化] batch-move-map-items 事件监听器已设置');
+
 		this.initMouseListener();
 		this.initKeyBoardListener();
 	}
 
 	private initMouseListener() {
 		this.canvasEl.addEventListener("mousemove", this.handleMouseMove.bind(this));
+		this.canvasEl.addEventListener("mousedown", this.handleMouseDown.bind(this));
+		this.canvasEl.addEventListener("mouseup", this.handleMouseUp.bind(this));
 		this.canvasEl.addEventListener("click", this.handleMouseClick.bind(this));
 	}
 
 	private initKeyBoardListener() {
-		document.addEventListener("keypress", this.handleKeyPress.bind(this));
+		document.addEventListener("keydown", this.handleKeyPress.bind(this));
 	}
 
 	private handleMouseMove(event: MouseEvent) {
@@ -280,9 +318,23 @@ export class MapRenderer {
 		const mouseY = -(event.offsetY / this.canvasEl.clientHeight) * 2 + 1;
 
 		this.point.set(mouseX, mouseY);
-
 		this.raycaster.setFromCamera(this.point, this.camera);
 
+		// 框选模式处理
+		if (useEditorStore().isBoxSelectMode && useEditorStore().isBoxSelecting) {
+			const store = useEditorStore();
+			if (store.boxSelectStart) {
+				this.boxSelector.show(
+					store.boxSelectStart.x,
+					store.boxSelectStart.y,
+					event.offsetX,
+					event.offsetY
+				);
+			}
+			return;
+		}
+
+		// 原有的鼠标移动逻辑
 		switch (useEditorStore().currentEditMode) {
 			case OperationMode.Edit:
 				this.handleMouseMoveInCreate();
@@ -322,6 +374,12 @@ export class MapRenderer {
 	private handleMouseMoveInMove() {}
 
 	private handleMouseClick(event: MouseEvent) {
+		// 如果刚刚完成了框选操作，忽略 click 事件
+		if (this.justCompletedBoxSelect) {
+			console.log('[点击处理] 跳过 click 事件，刚刚完成了框选');
+			return;
+		}
+
 		const mouseX = (event.offsetX / this.canvasEl.clientWidth) * 2 - 1;
 		const mouseY = -(event.offsetY / this.canvasEl.clientHeight) * 2 + 1;
 
@@ -364,14 +422,29 @@ export class MapRenderer {
 					const isLinkMode = useEditorStore().isLinkMode;
 					const id = temp.userData.id;
 					this.linkOutlinePass.selectedObjects = [];
+
+					// 检测 Ctrl/Cmd 键
+					const isMultiSelect = (window.event as MouseEvent)?.ctrlKey || (window.event as MouseEvent)?.metaKey;
+
 					if (isLinkMode) {
-						//链接模式选择第二个MapItem
+						// 链接模式保持原有逻辑
 						this.linkOutlinePass.selectedObjects = [temp];
 						eventBus.emit("other-map-item-selected", id);
+					} else if (isMultiSelect) {
+						// Ctrl 多选模式
+						const store = useEditorStore();
+						if (store.selectedMapItemIds.includes(id)) {
+							store.removeSelectedMapItemId(id);
+						} else {
+							store.addSelectedMapItemId(id);
+						}
+						this.updateSelectionHighlightWithObjects(store.selectedMapItemIds);
 					} else {
+						// 普通单选模式
+						useEditorStore().setSelectedMapItemIds([id]);
 						this.itemSelected(id);
 						this.outlinePass.selectedObjects = [temp];
-						//把绑定的另一方高亮
+						// 把绑定的另一方高亮
 						const mapItem = useMapDataStore().findMapItemById(id);
 						if (mapItem) {
 							const targetId = mapItem.beLinked || mapItem.linkto || "";
@@ -385,7 +458,8 @@ export class MapRenderer {
 				}
 			}
 		} else {
-			this.clearSelect();
+			// 点击空白处，清空选择
+			this.clearMultiSelect();
 			eventBus.emit("other-map-item-selected", "");
 		}
 	}
@@ -395,6 +469,87 @@ export class MapRenderer {
 			event.preventDefault();
 			await handleSaveProtoFile();
 		}
+
+		// 框选模式快捷键
+		if (event.code === "KeyB") {
+			event.preventDefault();
+			eventBus.emit("toggle-box-select-mode");
+			return;
+		}
+
+		if (event.code === "Escape") {
+			event.preventDefault();
+			const store = useEditorStore();
+			if (store.isBoxSelectMode) {
+				eventBus.emit("toggle-box-select-mode");
+			} else {
+				this.clearMultiSelect();
+			}
+			return;
+		}
+
+		// Ctrl+A 全选
+		if (event.ctrlKey && event.code === "KeyA") {
+			event.preventDefault();
+			const allIds = Array.from(this.mapItemsInScene.keys());
+			useEditorStore().setSelectedMapItemIds(allIds);
+			this.updateSelectionHighlightWithObjects(allIds);
+			message.success(`已全选 ${allIds.length} 个 MapItem`, 1);
+			return;
+		}
+
+		// Delete/Backspace 批量删除
+		if (event.code === "Delete" || event.code === "Backspace") {
+			event.preventDefault();
+			const store = useEditorStore();
+			if (store.selectedMapItemIds.length > 0) {
+				try {
+					useMapDataStore().batchRemoveMapItem(store.selectedMapItemIds);
+					store.clearSelectedMapItemIds();
+					this.updateSelectionHighlight();
+					message.success(`删除成功`, 1);
+				} catch (e: any) {
+					message.error(e.message, 2);
+				}
+			} else {
+				message.info("未选中任何 MapItem", 1);
+			}
+			return;
+		}
+
+		// 方向键批量移动
+		if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) {
+			event.preventDefault();
+			const store = useEditorStore();
+			if (store.selectedMapItemIds.length > 0) {
+				let deltaX = 0;
+				let deltaY = 0;
+
+				switch (event.code) {
+					case "ArrowUp":
+						deltaY = -1;
+						break;
+					case "ArrowDown":
+						deltaY = 1;
+						break;
+					case "ArrowLeft":
+						deltaX = -1;
+						break;
+					case "ArrowRight":
+						deltaX = 1;
+						break;
+				}
+
+				// 通过事件总线触发移动，与 UI 按钮走相同的代码路径
+				eventBus.emit("batch-move-map-items", {
+					ids: store.selectedMapItemIds,
+					deltaX,
+					deltaY
+				});
+			}
+			return;
+		}
+
 		if (useEditorStore().currentEditMode !== OperationMode.Edit || !this.previewBoxInCreate) return;
 		if (event.code === "KeyR") {
 			this.currentRotation = (++this.currentRotation % 4) as 0 | 1 | 2 | 3;
@@ -404,6 +559,182 @@ export class MapRenderer {
 			useEditorStore().currentMapItemTypeId = "";
 			this.updatePreviewBox();
 		}
+	}
+
+	private handleBoxSelectModeToggle() {
+		const store = useEditorStore();
+		if (!store.isBoxSelectMode) {
+			// 进入框选模式
+			try {
+				store.toggleBoxSelectMode();
+				this.controls.enabled = false;
+				this.canvasEl.style.cursor = "crosshair";
+				message.info("已进入框选模式，拖拽鼠标框选，Esc 退出", 2);
+			} catch (e: any) {
+				message.error(e.message, 2);
+			}
+		} else {
+			// 退出框选模式
+			store.exitBoxSelectMode();
+			this.controls.enabled = true;
+			this.canvasEl.style.cursor = "default";
+			this.boxSelector.hide();
+			this.clearMultiSelect();
+		}
+	}
+
+	private handleMouseDown(event: MouseEvent) {
+		if (!useEditorStore().isBoxSelectMode) return;
+
+		const x = event.offsetX;
+		const y = event.offsetY;
+
+		useEditorStore().startBoxSelect(x, y);
+		this.boxSelector.show(x, y, x, y);
+	}
+
+	private handleMouseUp(event: MouseEvent) {
+		if (!useEditorStore().isBoxSelectMode || !useEditorStore().isBoxSelecting) return;
+
+		const store = useEditorStore();
+		if (!store.boxSelectStart) return;
+
+		const startX = store.boxSelectStart.x;
+		const startY = store.boxSelectStart.y;
+		const currentX = event.offsetX;
+		const currentY = event.offsetY;
+
+		this.performBoxSelection(startX, startY, currentX, currentY);
+		this.boxSelector.hide();
+		store.endBoxSelect();
+
+		// 标记刚刚完成了框选
+		this.justCompletedBoxSelect = true;
+
+		// 短暂延迟后重置标记（防止 click 事件中误判）
+		setTimeout(() => {
+			this.justCompletedBoxSelect = false;
+		}, 100);
+	}
+
+	private performBoxSelection(startX: number, startY: number, currentX: number, currentY: number) {
+		const canvasSize = {
+			width: this.canvasEl.clientWidth,
+			height: this.canvasEl.clientHeight,
+		};
+
+		// 计算选择矩形
+		const rect = {
+			minX: Math.min(startX, currentX),
+			maxX: Math.max(startX, currentX),
+			minY: Math.min(startY, currentY),
+			maxY: Math.max(startY, currentY),
+		};
+
+		// 找出所有在框内的 MapItem
+		const selectedIds: string[] = [];
+		for (const [id, object] of this.mapItemsInScene) {
+			const screenPos = projectToScreen(object.position, this.camera, canvasSize);
+			if (isPointInRect(screenPos, rect)) {
+				selectedIds.push(id);
+			}
+		}
+
+		console.log('框选结果:', selectedIds.length, '个 MapItem');
+
+		// 先设置状态
+		useEditorStore().setSelectedMapItemIds(selectedIds);
+
+		// 立即更新高亮（不使用 setTimeout），直接传入 selectedIds
+		this.updateSelectionHighlightWithObjects(selectedIds);
+
+		if (selectedIds.length > 0) {
+			message.success(`已选中 ${selectedIds.length} 个 MapItem`, 1);
+		}
+	}
+
+	private updateSelectionHighlight() {
+		const selectedIds = useEditorStore().selectedMapItemIds;
+		const selectedObjects: THREE.Object3D[] = [];
+
+		console.log('[高亮系统] 开始更新高亮');
+		console.log('[高亮系统] 选中ID数量:', selectedIds.length);
+		console.log('[高亮系统] 选中IDs:', selectedIds);
+		console.log('[高亮系统] 场景中对象数量:', this.mapItemsInScene.size);
+
+		selectedIds.forEach(id => {
+			const object = this.mapItemsInScene.get(id);
+			if (object) {
+				console.log('[高亮系统] 找到对象:', id, object.name || object.type);
+				selectedObjects.push(object);
+			} else {
+				console.warn('[高亮系统] 未找到对象:', id);
+			}
+		});
+
+		console.log('[高亮系统] 准备高亮的对象数量:', selectedObjects.length);
+		console.log('[高亮系统] outlinePass 实例:', this.outlinePass);
+		console.log('[高亮系统] outlinePass.selectedObjects 之前:', this.outlinePass.selectedObjects.length);
+
+		// 清空 linkOutlinePass，避免干扰
+		this.linkOutlinePass.selectedObjects = [];
+
+		// 设置要高亮的对象
+		this.outlinePass.selectedObjects = selectedObjects;
+
+		console.log('[高亮系统] outlinePass.selectedObjects 之后:', this.outlinePass.selectedObjects.length);
+
+		// 确保 composer 正确配置
+		console.log('[高亮系统] composer passes:', this.composer.passes.length);
+
+		// 尝试强制更新（某些 Three.js 版本需要）
+		if (this.composer.renderer) {
+			console.log('[高亮系统] 强制渲染一帧');
+			this.composer.render();
+		}
+
+		console.log('[高亮系统] 高亮更新完成');
+	}
+
+	/**
+	 * 同步更新高亮，直接传入选中的ID列表
+	 * 用于解决响应式状态更新延迟导致的高亮不同步问题
+	 */
+	private updateSelectionHighlightWithObjects(selectedIds: string[]) {
+		const selectedObjects: THREE.Object3D[] = [];
+
+		console.log('[框选高亮] 开始更新高亮');
+		console.log('[框选高亮] 传入ID数量:', selectedIds.length);
+
+		selectedIds.forEach(id => {
+			const object = this.mapItemsInScene.get(id);
+			if (object) {
+				console.log('[框选高亮] 找到对象:', id, object.name || object.type);
+				selectedObjects.push(object);
+			} else {
+				console.warn('[框选高亮] 未找到对象:', id);
+			}
+		});
+
+		console.log('[框选高亮] 准备高亮的对象数量:', selectedObjects.length);
+		console.log('[框选高亮] multiSelectOutlinePass:', this.multiSelectOutlinePass);
+
+		// 清空其他高亮 Pass，避免干扰
+		this.outlinePass.selectedObjects = [];
+		this.linkOutlinePass.selectedObjects = [];
+
+		// 使用专门的框选高亮 Pass
+		this.multiSelectOutlinePass.selectedObjects = selectedObjects;
+
+		console.log('[框选高亮] multiSelectOutlinePass.selectedObjects:', this.multiSelectOutlinePass.selectedObjects.length);
+		console.log('[框选高亮] 更新完成');
+	}
+
+	private clearMultiSelect() {
+		useEditorStore().clearSelectedMapItemIds();
+		this.outlinePass.selectedObjects = [];
+		this.linkOutlinePass.selectedObjects = [];
+		this.multiSelectOutlinePass.selectedObjects = []; // 清空框选高亮
 	}
 
 	private itemSelected(id: string) {
@@ -490,6 +821,7 @@ export class MapRenderer {
 
 		this.outlinePass.renderCamera = this.camera;
 		this.linkOutlinePass.renderCamera = this.camera;
+		this.multiSelectOutlinePass.renderCamera = this.camera;
 		this.composer.passes.forEach((pass) => {
 			if ("camera" in pass) {
 				(pass as any).camera = this.camera;
@@ -617,11 +949,171 @@ export class MapRenderer {
 		this.clearSelect();
 	}
 
+	private handleMapItemUpdated(id: string) {
+		const mapItem = useMapDataStore().findMapItemById(id);
+		const object = this.mapItemsInScene.get(id);
+
+		if (mapItem && object) {
+			this.setItemPositionOnMap(object, mapItem.x, mapItem.y, mapItem.rotation);
+		}
+	}
+
+	private async handleBatchMoveMapItems(ids: string[], deltaX: number, deltaY: number) {
+		try {
+			console.log('[批量移动] 开始移动', ids.length, '个 MapItem, 方向:', deltaX, deltaY);
+
+			useMapDataStore().batchMoveMapItem(ids, deltaX, deltaY);
+
+			// 更新 3D 对象位置
+			ids.forEach(id => {
+				const object = this.mapItemsInScene.get(id);
+				const mapItem = useMapDataStore().findMapItemById(id);
+				if (object && mapItem) {
+					this.setItemPositionOnMap(object, mapItem.x, mapItem.y, mapItem.rotation);
+					console.log('[批量移动] 更新对象位置:', id, '→', mapItem.x, mapItem.y);
+				}
+			});
+
+			// 刷新相关的视觉元素（使用 await）
+			await this.refreshRelatedElements(ids);
+
+			message.success('移动成功', 1);
+		} catch (e: any) {
+			console.error('[批量移动] 错误:', e);
+			message.error(e.message, 2);
+		}
+	}
+
+	/**
+	 * 刷新与指定 MapItem 相关的所有视觉元素
+	 * 包括：地图事件图标、连接线、地图索引路径
+	 */
+	private async refreshRelatedElements(ids: string[]) {
+		console.log('[刷新元素] 开始刷新相关元素，数量:', ids.length);
+
+		// 1. 刷新地图事件图标位置
+		await this.refreshMapEventIcons(ids);
+
+		// 2. 刷新连接线
+		this.refreshLinkLines(ids);
+
+		// 3. 刷新地图索引路径
+		this.refreshMapIndexPath();
+
+		console.log('[刷新元素] 刷新完成');
+	}
+
+	/**
+	 * 刷新地图事件图标
+	 * 注意：事件图标需要重新创建，不能简单地更新位置
+	 */
+	private async refreshMapEventIcons(ids: string[]) {
+		console.log('[刷新图标] 开始刷新图标，数量:', ids.length);
+
+		for (const id of ids) {
+			const mapItem = useMapDataStore().findMapItemById(id);
+			if (!mapItem || !mapItem.mapEventId) {
+				console.log('[刷新图标] 跳过，没有事件:', id);
+				continue;
+			}
+
+			// 移除旧的事件图标
+			const existingIcon = this.mapEventInScene.get(id);
+			if (existingIcon) {
+				console.log('[刷新图标] 移除旧图标:', id);
+				this.mapEventGroup.remove(existingIcon);
+				this.mapEventInScene.delete(id);
+			}
+
+			// 重新创建事件图标（使用 addMapEventIcon）
+			console.log('[刷新图标] 重新创建图标:', id);
+			await this.addMapEventIcon(mapItem);
+		}
+
+		console.log('[刷新图标] 图标刷新完成');
+	}
+
+	/**
+	 * 刷新连接线
+	 * 需要移除旧连接线并重新创建
+	 */
+	private refreshLinkLines(ids: string[]) {
+		// 收集需要刷新连接线的所有 MapItem（包括相关的连接）
+		const itemsToRefresh = new Set<string>(ids);
+
+		// 添加链接到这些项的其他项
+		ids.forEach(id => {
+			const mapItem = useMapDataStore().findMapItemById(id);
+			if (mapItem) {
+				if (mapItem.linkto && !ids.includes(mapItem.linkto)) {
+					itemsToRefresh.add(mapItem.linkto);
+				}
+				if (mapItem.beLinked && !ids.includes(mapItem.beLinked)) {
+					itemsToRefresh.add(mapItem.beLinked);
+				}
+			}
+		});
+
+		// 移除所有相关的旧连接线
+		itemsToRefresh.forEach(id => {
+			this.removeLinkLine(id);
+		});
+
+		// 重新创建所有相关的连接线
+		itemsToRefresh.forEach(id => {
+			const mapItem = useMapDataStore().findMapItemById(id);
+			if (mapItem) {
+				this.addLinkLine(mapItem);
+			}
+		});
+
+		console.log('[刷新元素] 刷新了', itemsToRefresh.size, '个连接线');
+	}
+
+	/**
+	 * 刷新地图索引路径
+	 * 完全重新绘制路径
+	 */
+	private refreshMapIndexPath() {
+		// 清空现有路径
+		this.mapIndexLineGroup.clear();
+
+		// 重新绘制
+		const mapIndex = useMapDataStore().mapIndex;
+		if (mapIndex.length === 0) return;
+
+		// 接头
+		const indexList = [...mapIndex, mapIndex[0]];
+		const mapItemPositionList = indexList.map((mapItemId) => {
+			const mapItem = this.mapItemsInScene.get(mapItemId);
+			if (mapItem) {
+				const p = new THREE.Vector3();
+				p.copy(mapItem.position);
+				p.y = 0.1;
+				return p;
+			} else {
+				throw new Error("错误的路径");
+			}
+		});
+
+		const line = createMultiLine(mapItemPositionList, {
+			color: 0x009ad6,
+			dashed: true,
+			dashScale: 3,
+			dashSize: 0.2,
+			gapSize: 0.2,
+		});
+
+		this.mapIndexLineGroup.add(line);
+		console.log('[刷新元素] 地图索引路径已更新');
+	}
+
 	private clearSelect() {
 		useEditorStore().currentMapItemId = "";
 		useEditorStore().isLinkMode = false;
 		this.outlinePass.selectedObjects = [];
 		this.linkOutlinePass.selectedObjects = [];
+		this.multiSelectOutlinePass.selectedObjects = [];
 	}
 
 	private async updatePreviewBox(itemTypeId?: string) {
@@ -787,7 +1279,16 @@ export class MapRenderer {
 			e && e.loseContext();
 		}
 		this.canvasEl.removeEventListener("mousemove", this.handleMouseMove);
+		this.canvasEl.removeEventListener("mousedown", this.handleMouseDown);
+		this.canvasEl.removeEventListener("mouseup", this.handleMouseUp);
 		this.canvasEl.removeEventListener("click", this.handleMouseClick);
-		document.removeEventListener("keyup", this.handleKeyPress);
+		document.removeEventListener("keydown", this.handleKeyPress);
+
+		// 清理框选高亮 Pass
+		this.composer.removePass(this.multiSelectOutlinePass);
+		this.multiSelectOutlinePass.dispose();
+
+		// 清理框选器
+		this.boxSelector.destroy();
 	}
 }
