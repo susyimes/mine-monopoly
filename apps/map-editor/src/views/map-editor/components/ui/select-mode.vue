@@ -106,13 +106,8 @@ function handleUnLink() {
 
 function handleMapItemDelete() {
 	if (selectedCount.value > 0) {
-		try {
-			useMapDataStore().batchRemoveMapItem(editorStore.selectedMapItemIds);
-			editorStore.clearSelectedMapItemIds();
-			message.success("删除成功", 1);
-		} catch (e: any) {
-			message.error(e.message, 1);
-		}
+		// 通过 event bus 统一处理删除操作，与键盘删除走相同的代码路径
+		eventBus.emit("batch-delete-map-items", editorStore.selectedMapItemIds);
 	}
 }
 </script>

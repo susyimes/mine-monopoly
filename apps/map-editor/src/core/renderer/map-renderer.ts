@@ -296,7 +296,22 @@ export class MapRenderer {
 			this.handleBatchMoveMapItems(data.ids, data.deltaX, data.deltaY);
 		});
 
-		console.log('[渲染器初始化] batch-move-map-items 事件监听器已设置');
+		eventBus.on("batch-delete-map-items", async (ids: string[]) => {
+			console.log('[渲染器] 收到批量删除事件:', ids);
+			await this.handleBatchDeleteMapItems(ids);
+		});
+
+		eventBus.on("batch-select-all", () => {
+			console.log('[渲染器] 收到全选事件');
+			this.handleBatchSelectAll();
+		});
+
+		eventBus.on("clear-selection", () => {
+			console.log('[渲染器] 收到清空选择事件');
+			this.clearMultiSelect();
+		});
+
+		console.log('[渲染器初始化] 批量操作事件监听器已设置完成');
 
 		this.initMouseListener();
 		this.initKeyBoardListener();
@@ -483,7 +498,8 @@ export class MapRenderer {
 			if (store.isBoxSelectMode) {
 				eventBus.emit("toggle-box-select-mode");
 			} else {
-				this.clearMultiSelect();
+				// 通过事件总线触发清空选择，保持代码一致性
+				eventBus.emit("clear-selection");
 			}
 			return;
 		}
@@ -491,10 +507,8 @@ export class MapRenderer {
 		// Ctrl+A 全选
 		if (event.ctrlKey && event.code === "KeyA") {
 			event.preventDefault();
-			const allIds = Array.from(this.mapItemsInScene.keys());
-			useEditorStore().setSelectedMapItemIds(allIds);
-			this.updateSelectionHighlightWithObjects(allIds);
-			message.success(`已全选 ${allIds.length} 个 MapItem`, 1);
+			// 通过事件总线触发全选，保持代码一致性
+			eventBus.emit("batch-select-all");
 			return;
 		}
 
@@ -503,14 +517,8 @@ export class MapRenderer {
 			event.preventDefault();
 			const store = useEditorStore();
 			if (store.selectedMapItemIds.length > 0) {
-				try {
-					useMapDataStore().batchRemoveMapItem(store.selectedMapItemIds);
-					store.clearSelectedMapItemIds();
-					this.updateSelectionHighlight();
-					message.success(`删除成功`, 1);
-				} catch (e: any) {
-					message.error(e.message, 2);
-				}
+				// 通过事件总线触发删除，与 UI 按钮走相同的代码路径
+				eventBus.emit("batch-delete-map-items", store.selectedMapItemIds);
 			} else {
 				message.info("未选中任何 MapItem", 1);
 			}
@@ -984,6 +992,39 @@ export class MapRenderer {
 		}
 	}
 
+	private async handleBatchDeleteMapItems(ids: string[]) {
+		try {
+			console.log('[批量删除] 开始删除', ids.length, '个 MapItem');
+
+			const store = useEditorStore();
+
+			// 执行删除操作
+			useMapDataStore().batchRemoveMapItem(ids);
+
+			// 刷新相关视觉元素（事件图标、连接线、索引路径）
+			await this.refreshRelatedElements(ids);
+
+			// 清空选中状态
+			store.clearSelectedMapItemIds();
+			this.updateSelectionHighlight();
+
+			message.success(`删除成功`, 1);
+		} catch (e: any) {
+			console.error('[批量删除] 错误:', e);
+			message.error(e.message, 2);
+		}
+	}
+
+	/**
+	 * 处理全选操作
+	 */
+	private handleBatchSelectAll() {
+		const allIds = Array.from(this.mapItemsInScene.keys());
+		useEditorStore().setSelectedMapItemIds(allIds);
+		this.updateSelectionHighlightWithObjects(allIds);
+		message.success(`已全选 ${allIds.length} 个 MapItem`, 1);
+	}
+
 	/**
 	 * 刷新与指定 MapItem 相关的所有视觉元素
 	 * 包括：地图事件图标、连接线、地图索引路径
@@ -1012,18 +1053,22 @@ export class MapRenderer {
 
 		for (const id of ids) {
 			const mapItem = useMapDataStore().findMapItemById(id);
-			if (!mapItem || !mapItem.mapEventId) {
-				console.log('[刷新图标] 跳过，没有事件:', id);
-				continue;
-			}
-
+			
 			// 移除旧的事件图标
 			const existingIcon = this.mapEventInScene.get(id);
+			console.log("🚀 ~ MapRenderer ~ refreshMapEventIcons ~ existingIcon:", existingIcon)
 			if (existingIcon) {
 				console.log('[刷新图标] 移除旧图标:', id);
 				this.mapEventGroup.remove(existingIcon);
 				this.mapEventInScene.delete(id);
 			}
+			
+			console.log("🚀 ~ MapRenderer ~ refreshMapEventIcons ~ mapItem:", mapItem)
+			if (!mapItem || !mapItem.mapEventId) {
+				console.log('[刷新图标] 跳过，没有事件:', id);
+				continue;
+			}
+
 
 			// 重新创建事件图标（使用 addMapEventIcon）
 			console.log('[刷新图标] 重新创建图标:', id);

@@ -33,6 +33,15 @@ type Events = {
 		deltaY: number;
 	};
 
+	// 批量删除地图项事件
+	"batch-delete-map-items": string[];
+
+	// 全选地图项事件
+	"batch-select-all": void;
+
+	// 清空选择事件
+	"clear-selection": void;
+
 	// MCP 操作反馈事件
 	"mcp-operation": {
 		operation: string;
