@@ -57,7 +57,11 @@ const init = () => {
 defineExpose({ init });
 
 const handleSubmit = () => {
-	emit("confirm", currentSelected.value);
+	// 始终返回数组格式，单选时返回包含单个元素的数组
+	const result = isMultiple.value
+		? (currentSelected.value as string[])
+		: [currentSelected.value as string].filter(Boolean);
+	emit("confirm", result);
 	visible.value = false;
 };
 
