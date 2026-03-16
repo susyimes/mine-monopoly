@@ -38,7 +38,6 @@ import {
 	MapEventType,
 } from "@mine-monopoly/types";
 
-import { RoundTimeTimer } from "./class/RoundTimeTimer";
 import { Player } from "./class/Player";
 import { Property } from "./class/Property";
 import { ChanceCard } from "./class/ChanceCard";
@@ -207,7 +206,6 @@ export class GameProcess implements IGameProcess {
 	private isGameOver: boolean = false;
 	private timeoutList: any[] = []; //计时器列表
 	private intervalTimerList: any[] = []; //计时器列表
-	public roundTimeTimer: RoundTimeTimer; //倒计时
 	private gameLogList: GameLog[] = [];
 
 	public currentMultiplier: number = 1;
@@ -224,11 +222,22 @@ export class GameProcess implements IGameProcess {
 		console.dir(gameSetting);
 		console.dir(gameSetting.initMoney.value);
 
-		this.roundTimeTimer = new RoundTimeTimer(15, 1000);
+		// 绑定倒计时广播到 OperateListener
+		operationListener.setGlobalTickCallback((timeouts) => {
+			if (timeouts.length === 0) {
+				this.roundRemainingTimeBroadcast(0);
+				return;
+			}
+
+			// 找到最小的剩余时间（最紧急的操作）
+			const minRemaining = Math.min(...timeouts.map(t => t.remainingMs));
+			this.roundRemainingTimeBroadcast(minRemaining / 1000);
+		});
+
 		if (gameSetting.slackOffMode) {
 			operationListener.on(roomOwnerId, OperateType.PauseGame, () => {
 				console.log("PauseGame");
-				this.roundTimeTimer.pause();
+				operationListener.pause();
 				this.gameBroadcast(<ServerSocketMessage>{
 					type: SocketMsgType.PauseGame,
 					msg: {
@@ -239,7 +248,7 @@ export class GameProcess implements IGameProcess {
 			});
 			operationListener.on(roomOwnerId, OperateType.ResumeGame, () => {
 				console.log("ResumeGame");
-				this.roundTimeTimer.resume();
+				operationListener.resume();
 				this.gameBroadcast(<ServerSocketMessage>{
 					type: SocketMsgType.ResumeGame,
 					msg: {
@@ -515,13 +524,6 @@ export class GameProcess implements IGameProcess {
 					if (owner.id === arrivedPlayer.id) {
 						//地产是自己的
 						if (property.level < property.maxLevel) {
-							this.roundTimeTimer.setTimeOutFunction(() => {
-								operationListener.emit(arrivedPlayer.id, OperateType.ConfirmDialogResult, {
-									id: arrivedPlayer.id,
-									confirm: false,
-									data: undefined,
-								});
-							}); //到时间就结束操作
 							//已有房产, 升级房屋
 							const playerRes = await this.showConfirmDialog(arrivedPlayer.id, {
 								title: `升级 ${property.name}`,
@@ -529,7 +531,6 @@ export class GameProcess implements IGameProcess {
 								cancelText: `不要`,
 								confirmText: `升！`,
 							});
-							this.roundRemainingTimeBroadcast(0);
 							if (playerRes.confirm) {
 								await this.handlePlayerBuildUp(arrivedPlayer, property);
 							}
@@ -569,17 +570,9 @@ export class GameProcess implements IGameProcess {
 					}
 				} else {
 					// this.eventMsg = `等待 ${arrivedPlayer.name} 购买地皮`;
-					this.roundTimeTimer.setTimeOutFunction(() => {
-						operationListener.emit(arrivedPlayer.id, OperateType.ConfirmDialogResult, {
-							id: arrivedPlayer.id,
-							confirm: false,
-							data: undefined,
-						});
-					}); //到时间就结束操作
 					//地皮没有购买
 					//空地, 买房
 					//等待客户端回应买房
-					// this.roundRemainingTimeBroadcast(0);
 					const playerRes = await this.showConfirmDialog(arrivedPlayer.id, {
 						title: `购买 ${property.name}`,
 						content: `${generatePropertyHtml(property.getPropertyInfo())}`,
@@ -616,7 +609,6 @@ export class GameProcess implements IGameProcess {
 
 	private async gameLoop() {
 		this.gameDataBroadcast();
-		this.roundTimeTimer.setIntervalFunction(this.roundRemainingTimeBroadcast);
 		//游戏循环
 		while (!this.isGameOver) {
 			//回合循环 加载回合开始阶段
@@ -667,7 +659,6 @@ export class GameProcess implements IGameProcess {
 			}
 			this.eventBus.emit("game.round.end");
 		}
-		this.roundTimeTimer.clearInterval();
 	}
 
 	public async handlePlayerBuyProperty(player: IPlayer, property: IProperty) {
@@ -738,7 +729,7 @@ export class GameProcess implements IGameProcess {
 		chanceCardId: string,
 		targetIdList: string[],
 	): Promise<boolean> {
-		this.roundTimeTimer.stop();
+		operationListener.clearAllTimers();
 		const _this = this;
 
 		const chanceCard = sourcePlayer.getCardById(chanceCardId);
@@ -1012,7 +1003,16 @@ export class GameProcess implements IGameProcess {
 				option,
 			},
 		});
-		return (await operationListener.onceAsync(playerId, OperateType.ConfirmDialogResult)) as ConfirmDialogResult<I>;
+
+		// 使用带超时的方法
+		return (await operationListener.onceAsyncWithTimeout(
+			playerId,
+			OperateType.ConfirmDialogResult,
+			{
+				timeout: 15000,
+				defaultValue: { id: playerId, confirm: false, data: undefined } as any
+			}
+		)) as ConfirmDialogResult<I>;
 	}
 
 	public async showTargetSelectDialog<I extends TargetSelectType>(
@@ -1039,9 +1039,14 @@ export class GameProcess implements IGameProcess {
 				option,
 			},
 		});
-		return (await operationListener.onceAsync(
+
+		return (await operationListener.onceAsyncWithTimeout(
 			playerId,
 			OperateType.TargetSelectDialogResult,
+			{
+				timeout: 15000,
+				defaultValue: { id: playerId, selected: [] } as any
+			}
 		)) as TargetSelectDialogResult<I>;
 	}
 
@@ -1066,7 +1071,15 @@ export class GameProcess implements IGameProcess {
 				option,
 			},
 		});
-		return (await operationListener.onceAsync(playerId, OperateType.ItemSelectDialogResult)) as ItemSelectDialogResult;
+
+		return (await operationListener.onceAsyncWithTimeout(
+			playerId,
+			OperateType.ItemSelectDialogResult,
+			{
+				timeout: 15000,
+				defaultValue: { id: playerId, selected: undefined } as any
+			}
+		)) as ItemSelectDialogResult;
 	}
 
 	public async showMessageCard(playerIds: string[], option: MessageCardOption): Promise<void> {
@@ -1248,6 +1261,7 @@ export class GameProcess implements IGameProcess {
 		this.players.keys().forEach((playerId) => {
 			operationListener.removeAll(playerId);
 		});
+		operationListener.clearAllTimers();
 		this.intervalTimerList.forEach((id) => {
 			clearInterval(id);
 		});

@@ -2,7 +2,6 @@ import { GameLinkItem, TargetSelectType } from "../../../../types/enums/game/gam
 import { OperateType } from "../../../../types/enums/game/game-process";
 import { GameMap } from "../map";
 import { PlayerOperationResult, ServerSocketMessage } from "../socket";
-import { IRoundTimeTimer } from "../util";
 import { IPlayer, IProperty, IChanceCard } from "./entities"; // 引用 entities
 import { ChanceCardInfo } from "./infos"; // 引用 infos
 import { IGameRuntimeStack, GameContext, GameEvent, GameRuntimeEvent } from "./events"; // 引用 events
@@ -78,9 +77,6 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	/** 游戏运行时栈（事件队列管理） */
 	gameRuntimeStack: IGameRuntimeStack<GameContext>;
 
-	/** 回合倒计时定时器 */
-	roundTimeTimer: IRoundTimeTimer;
-
 	/** 游戏结束规则检查函数 */
 	gameOverRuleFunction: () => Promise<boolean>;
 
@@ -139,11 +135,13 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	 * 监听单次玩家操作（异步）
 	 * @param playerId - 玩家 ID
 	 * @param operationType - 操作类型
+	 * @param options - 可选配置（超时时间、默认值）
 	 * @returns 操作结果
 	 */
 	oncePlayerOperationAsync<T extends OperateType>(
 		playerId: string,
-		operationType: T
+		operationType: T,
+		options?: { timeout?: number; defaultValue?: PlayerOperationResult[T] }
 	): Promise<PlayerOperationResult[T]>;
 
 	/**
