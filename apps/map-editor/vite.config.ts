@@ -8,46 +8,52 @@ import monacoEditorPlugin from "vite-plugin-monaco-editor-esm";
 import generateMonacoDTS from "./plugins/vite-plugin-generate-monaco-dts";
 import pkg from "./package.json";
 
-export default defineConfig({
-	base: "./",
-	define: {
-		// 注入全局变量
-		__APP_VERSION__: JSON.stringify(pkg.version),
-		__BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-	},
-	plugins: [
-		vue(),
-		generateMonacoDTS(),
-		Components({
-			resolvers: [
-				AntDesignVueResolver({
-					importStyle: "less", // 使用 Less 样式（Ant Design 默认）
-				}),
-			],
-			dts: true,
-		}),
-		electron({
-			main: {
-				entry: "electron/main.ts",
-			},
-			preload: {
-				input: path.join(__dirname, "electron/preload.ts"),
-			},
-			renderer: process.env.NODE_ENV === "test" ? undefined : {},
-		}),
-	],
-	build: {
-		outDir: "dist/frontend",
-	},
-	resolve: {
-		alias: [
-			{
-				find: "@src",
-				replacement: path.resolve(path.dirname("./"), "src"),
-			},
+export default defineConfig(({ command, mode }) => {
+	const isCheck = mode === 'check';
+
+	return {
+		base: "./",
+		define: {
+			// 注入全局变量
+			__APP_VERSION__: JSON.stringify(pkg.version),
+			__BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+		},
+		plugins: [
+			vue(),
+			generateMonacoDTS(),
+			Components({
+				resolvers: [
+					AntDesignVueResolver({
+						importStyle: "less", // 使用 Less 样式（Ant Design 默认）
+					}),
+				],
+				dts: true,
+			}),
+			electron({
+				main: {
+					entry: "electron/main.ts",
+				},
+				preload: {
+					input: path.join(__dirname, "electron/preload.ts"),
+				},
+				renderer: process.env.NODE_ENV === "test" ? undefined : {},
+			}),
 		],
-	},
-	worker: {
-		format: "es", // 重要：让 worker 用 ESM 格式
-	},
+		build: {
+			outDir: isCheck ? "dist/check" : "dist/frontend",
+			minify: isCheck ? false : 'terser',
+			sourcemap: isCheck ? 'inline' : false,
+		},
+		resolve: {
+			alias: [
+				{
+					find: "@src",
+					replacement: path.resolve(path.dirname("./"), "src"),
+				},
+			],
+		},
+		worker: {
+			format: "es", // 重要：让 worker 用 ESM 格式
+		},
+	};
 });

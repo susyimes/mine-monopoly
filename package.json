@@ -11,7 +11,10 @@
 		"build": "",
 		"build-client": "pnpm --filter @mine-monopoly/client run build",
 		"build-server": "pnpm --filter @mine-monopoly/server run build",
-		"build-editor": "pnpm --filter @mine-monopoly/map-editor run build"
+		"build-editor": "pnpm --filter @mine-monopoly/map-editor run build",
+		"check-client": "pnpm --filter @mine-monopoly/client run check",
+		"check-editor": "pnpm --filter @mine-monopoly/map-editor run check",
+		"check-all": "pnpm --filter @mine-monopoly/client run check && pnpm --filter @mine-monopoly/map-editor run check"
 	},
 	"keywords": [],
 	"author": "",

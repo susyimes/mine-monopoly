@@ -10,7 +10,9 @@ import { envPlugin } from "../../packages/env/src/vite-plugin-env.ts";
 const APP_VERSION_SHORT = pkg.version.split(".").slice(0, 2).join(".");
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
+	const isCheck = mode === 'check';
+
 	return {
 		base: "./",
 		define: {
@@ -38,7 +40,9 @@ export default defineConfig(({ command }) => {
 			}),
 		],
 		build: {
-			outDir: "dist/frontend",
+			outDir: isCheck ? "dist/check" : "dist/frontend",
+			minify: isCheck ? false : 'terser',
+			sourcemap: isCheck ? 'inline' : false,
 		},
 		resolve: {
 			alias: [
@@ -56,7 +60,8 @@ export default defineConfig(({ command }) => {
 			port: 5173,
 		},
 		esbuild: {
-			drop: command === "build" ? ["console", "debugger"] : [],
+			// 只在生产构建（非 check）时删除 console 和 debugger
+			drop: (command === 'build' && !isCheck) ? ['console', 'debugger'] : [],
 		},
 	};
 });
