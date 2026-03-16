@@ -129,6 +129,22 @@ const updateLibs = (libs: string[]) => {
 	});
 };
 
+/**
+ * 更新合并后的类型库（从 props.staticTypes、mapDataStore.extraLibs 和 uiTemplates）
+ */
+const updateMergedLibs = () => {
+	if (!globalMonacoState.monacoInstance) {
+		return;
+	}
+
+	const mapDataStore = useMapDataStore();
+	const globalExtraLibs = mapDataStore.extraLibs || '';
+	const uiTemplates = mapDataStore.uiTemplates || [];
+
+	const mergedLibs = mergeTypeLibs(props.staticTypes, globalExtraLibs, uiTemplates);
+	updateLibs(mergedLibs);
+};
+
 // =========================================================
 // 🎨 高亮显示
 // =========================================================
@@ -199,7 +215,7 @@ const initEditor = async () => {
 
 		// 等待 DOM 更新后再注入类型库，确保响应式数据已准备好
 		await nextTick();
-		updateLibs();
+		updateMergedLibs();
 
 		// 创建 Model（使用唯一 URI）
 		const modelUri = monacoInstance.Uri.parse(`file:///main-${containerId}.ts`);
@@ -283,11 +299,19 @@ watch(code, (newValue) => {
 	}
 });
 
-// 2. 外部 Libs 变化 -> 重新生成 .d.ts
+// 2. 向后兼容：如果旧的 extraLibs prop 被传递，使用旧逻辑（发出警告）
 watch(
 	() => props.extraLibs,
 	() => {
-		updateLibs();
+		if (props.extraLibs && props.extraLibs.length > 0) {
+			console.warn('[CodeEditor] extraLibs prop is deprecated. Use staticTypes instead.');
+			// 注意：不使用 return，确保旧代码仍然能够正常工作
+			// 旧的 extraLibs 可能已经包含了所有需要的类型库
+			updateLibs(props.extraLibs);
+		} else {
+			// 新逻辑：合并 staticTypes 和全局额外类型库
+			updateMergedLibs();
+		}
 	},
 	{ deep: true, immediate: true },
 );
@@ -296,15 +320,15 @@ watch(
 watch(
 	() => props.staticTypes,
 	() => {
-		updateLibs();
+		updateMergedLibs();
 	},
 );
 
-// 3. Store 中 UI 模板变化 -> 重新生成 $ui__xxx 类型
+// 4. Store 中 UI 模板变化 -> 重新生成 $ui__xxx 类型
 watch(
 	() => mapDataStore.uiTemplates,
 	() => {
-		updateLibs();
+		updateMergedLibs();
 		updateHighlights();
 	},
 	{ deep: true },
