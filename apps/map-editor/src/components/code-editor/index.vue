@@ -55,6 +55,54 @@ const containerId = `monaco-container-${Date.now()}-${Math.random().toString(36)
 // 📚 类型库管理
 // =========================================================
 
+/**
+ * 合并三种类型库：组件静态类型、全局额外类型库、动态 UI 模板类型
+ */
+function mergeTypeLibs(
+  staticTypes: string | undefined,
+  globalExtraLibs: string,
+  uiTemplates: any[]
+): string[] {
+  const libs: string[] = [];
+
+  // 1. 添加组件静态类型（如果有）
+  if (staticTypes) {
+    libs.push(staticTypes);
+  }
+
+  // 2. 添加全局额外类型库（如果有）
+  if (globalExtraLibs) {
+    libs.push(globalExtraLibs);
+  }
+
+  // 3. 生成动态 UI 模板类型（$ui__xxx）
+  if (uiTemplates && uiTemplates.length > 0) {
+    const declarations = uiTemplates
+      .map(
+        (ui) => `
+    /**
+     * **组件名称**: ${ui.name}\n
+     * **slug**: ${ui.slug}
+     * * ID: \`${ui.id}\`
+     */
+    const $ui__${ui.slug}: UISchema;
+  `,
+      )
+      .join("\n");
+
+    const libContent = `
+    declare global {
+      ${declarations}
+    }
+    export {};
+  `;
+
+    libs.push(libContent);
+  }
+
+  return libs;
+}
+
 const updateLibs = () => {
 	if (!globalMonacoState.monacoInstance) {
 		return;
