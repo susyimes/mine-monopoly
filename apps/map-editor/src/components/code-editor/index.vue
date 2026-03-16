@@ -12,9 +12,11 @@ const props = withDefaults(
 		language?: 'typescript' | 'javascript' | 'html' | string;
 		templateText?: string;
 		extraLibs?: string[];      // 标记为 deprecated
+		skipTypeLibs?: boolean;     // 新增：跳过类型库注入（用于额外类型库编辑器）
 	}>(),
 	{
 		language: 'typescript',
+		skipTypeLibs: false,
 	},
 );
 
@@ -33,10 +35,12 @@ const globalMonacoState: {
 	monacoInstance: typeof monaco | null;
 	extraLibs: monaco.IDisposable[];
 	isInitialized: boolean;
+	extraLibsEditorCount: number; // 额外库编辑器实例计数（用于阻止类型库注入）
 } = {
 	monacoInstance: null,
 	extraLibs: [],
 	isInitialized: false,
+	extraLibsEditorCount: 0,
 };
 
 // =========================================================
@@ -108,25 +112,44 @@ const updateLibs = (libs: string[]) => {
 		return;
 	}
 
+	// 如果有额外库编辑器实例打开，不注入任何类型库
+	if (globalMonacoState.extraLibsEditorCount > 0) {
+		return;
+	}
+
 	const monacoInstance = globalMonacoState.monacoInstance;
 	const tsDefaults = monacoInstance.languages.typescript.typescriptDefaults;
 
-	// 1. 清理所有旧库
-	globalMonacoState.extraLibs.forEach((disposable) => {
-		try {
-			disposable.dispose();
-		} catch (e) {
-			// 忽略已经 dispose 的错误
-		}
-	});
-	globalMonacoState.extraLibs = [];
+	// 使用 setExtraLibs 一次性设置所有类型库
+	// 这比 addExtraLib + dispose() 更可靠，因为 dispose() 存在 bug
+	const libsWithUri = libs.map((content, index) => ({
+		content,
+		filePath: `file:///lib-${index}.d.ts`,
+	}));
+	tsDefaults.setExtraLibs(libsWithUri);
 
-	// 2. 注入新的类型库
-	libs.forEach((content, index) => {
-		const uri = `file:///lib-${index}.d.ts`;
-		const disposable = tsDefaults.addExtraLib(content, uri);
-		globalMonacoState.extraLibs.push(disposable);
-	});
+	// 清空跟踪数组（setExtraLibs 不返回 disposable）
+	globalMonacoState.extraLibs = [];
+};
+
+/**
+ * 清除所有已注入的类型库（用于额外库编辑器）
+ * 注意：由于 Monaco Editor 的 bug，dispose() 无法真正移除类型库
+ * 必须使用 setExtraLibs([]) 来清空
+ */
+const clearAllLibs = () => {
+	if (!globalMonacoState.monacoInstance) {
+		return;
+	}
+
+	const monacoInstance = globalMonacoState.monacoInstance;
+	const tsDefaults = monacoInstance.languages.typescript.typescriptDefaults;
+
+	// 使用 setExtraLibs([]) 清空所有类型库（这是唯一有效的方法）
+	tsDefaults.setExtraLibs([]);
+
+	// 清空跟踪数组
+	globalMonacoState.extraLibs = [];
 };
 
 /**
@@ -134,6 +157,11 @@ const updateLibs = (libs: string[]) => {
  */
 const updateMergedLibs = () => {
 	if (!globalMonacoState.monacoInstance) {
+		return;
+	}
+
+	// 如果是额外类型库编辑器，不注入任何类型库
+	if (props.skipTypeLibs) {
 		return;
 	}
 
@@ -215,7 +243,13 @@ const initEditor = async () => {
 
 		// 等待 DOM 更新后再注入类型库，确保响应式数据已准备好
 		await nextTick();
-		updateMergedLibs();
+
+		// 如果是额外类型库编辑器，清除所有类型库；否则注入类型库
+		if (props.skipTypeLibs) {
+			clearAllLibs();
+		} else {
+			updateMergedLibs();
+		}
 
 		// 创建 Model（使用唯一 URI）
 		const modelUri = monacoInstance.Uri.parse(`file:///main-${containerId}.ts`);
@@ -299,24 +333,7 @@ watch(code, (newValue) => {
 	}
 });
 
-// 2. 向后兼容：如果旧的 extraLibs prop 被传递，使用旧逻辑（发出警告）
-watch(
-	() => props.extraLibs,
-	() => {
-		if (props.extraLibs && props.extraLibs.length > 0) {
-			console.warn('[CodeEditor] extraLibs prop is deprecated. Use staticTypes instead.');
-			// 注意：不使用 return，确保旧代码仍然能够正常工作
-			// 旧的 extraLibs 可能已经包含了所有需要的类型库
-			updateLibs(props.extraLibs);
-		} else {
-			// 新逻辑：合并 staticTypes 和全局额外类型库
-			updateMergedLibs();
-		}
-	},
-	{ deep: true, immediate: true },
-);
-
-// 3. 静态类型变化 -> 重新生成 .d.ts
+// 2. 静态类型变化 -> 重新生成 .d.ts
 watch(
 	() => props.staticTypes,
 	() => {
@@ -324,7 +341,7 @@ watch(
 	},
 );
 
-// 4. Store 中 UI 模板变化 -> 重新生成 $ui__xxx 类型
+// 3. Store 中 UI 模板变化 -> 重新生成 $ui__xxx 类型
 watch(
 	() => mapDataStore.uiTemplates,
 	() => {
@@ -349,10 +366,18 @@ watch(
 // =========================================================
 
 onMounted(async () => {
+	// 如果是额外库编辑器，增加全局计数器
+	if (props.skipTypeLibs) {
+		globalMonacoState.extraLibsEditorCount++;
+	}
 	await initEditor();
 });
 
 onBeforeUnmount(() => {
+	// 如果是额外库编辑器，减少全局计数器
+	if (props.skipTypeLibs) {
+		globalMonacoState.extraLibsEditorCount--;
+	}
 	destroyEditor();
 });
 </script>

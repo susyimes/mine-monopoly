@@ -43,7 +43,7 @@ function handleClose() {
 		title="全局TS类型"
 	>
 		<div class="editor-container">
-			<code-editor v-model="localEffectCode" :template-text="''" />
+			<code-editor v-model="localEffectCode" :skip-type-libs="true" />
 		</div>
 	</a-modal>
 </template>
