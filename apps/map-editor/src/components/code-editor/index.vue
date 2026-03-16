@@ -103,7 +103,7 @@ function mergeTypeLibs(
   return libs;
 }
 
-const updateLibs = () => {
+const updateLibs = (libs: string[]) => {
 	if (!globalMonacoState.monacoInstance) {
 		return;
 	}
@@ -121,50 +121,12 @@ const updateLibs = () => {
 	});
 	globalMonacoState.extraLibs = [];
 
-	// 2. 注入外部传入的 extraLibs（使用固定 URI）
-	if (props.extraLibs) {
-		props.extraLibs.forEach((content, index) => {
-			// 使用固定的 URI，确保新的库覆盖旧的库
-			const uri = `file:///extra-lib-${index}.d.ts`;
-			const disposable = tsDefaults.addExtraLib(content, uri);
-			globalMonacoState.extraLibs.push(disposable);
-		});
-	}
-
-	// 3. 注入静态类型（使用固定 URI）
-	if (props.staticTypes) {
-		const disposable = tsDefaults.addExtraLib(props.staticTypes, `file:///static-types.d.ts`);
+	// 2. 注入新的类型库
+	libs.forEach((content, index) => {
+		const uri = `file:///lib-${index}.d.ts`;
+		const disposable = tsDefaults.addExtraLib(content, uri);
 		globalMonacoState.extraLibs.push(disposable);
-	}
-
-	// 3. 注入动态 Store 变量 ($ui__xxx)
-	const uis = mapDataStore.uiTemplates || [];
-	if (uis.length > 0) {
-		const declarations = uis
-			.map(
-				(ui) => `
-    /**
-     * **组件名称**: ${ui.name}\n
-     * **slug**: ${ui.slug}
-     * * ID: \`${ui.id}\`
-     */
-    const $ui__${ui.slug}: UISchema;
-  `,
-			)
-			.join("\n");
-
-		const libContent = `
-    declare global {
-      ${declarations}
-    }
-    export {};
-  `;
-
-		// 使用固定的 URI
-		const uri = `file:///dynamic-ui-types.d.ts`;
-		const disposable = tsDefaults.addExtraLib(libContent, uri);
-		globalMonacoState.extraLibs.push(disposable);
-	}
+	});
 };
 
 // =========================================================
