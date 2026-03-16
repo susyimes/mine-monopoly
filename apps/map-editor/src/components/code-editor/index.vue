@@ -7,16 +7,18 @@ import { useMapDataStore } from "@src/stores";
 
 const props = withDefaults(
 	defineProps<{
-		templateText: string;
-		extraLibs?: string[];
-		language?: "typescript" | "javascript" | "html" | string;
+		modelValue: string;
+		staticTypes?: string;      // 新增：组件静态类型
+		language?: 'typescript' | 'javascript' | 'html' | string;
+		templateText?: string;
+		extraLibs?: string[];      // 标记为 deprecated
 	}>(),
 	{
-		language: "typescript",
+		language: 'typescript',
 	},
 );
 
-const code = defineModel<string>();
+const code = defineModel<string>('modelValue');
 
 const containerRef = ref<HTMLDivElement | null>(null);
 const mapDataStore = useMapDataStore();
@@ -79,6 +81,12 @@ const updateLibs = () => {
 			const disposable = tsDefaults.addExtraLib(content, uri);
 			globalMonacoState.extraLibs.push(disposable);
 		});
+	}
+
+	// 3. 注入静态类型（使用固定 URI）
+	if (props.staticTypes) {
+		const disposable = tsDefaults.addExtraLib(props.staticTypes, `file:///static-types.d.ts`);
+		globalMonacoState.extraLibs.push(disposable);
 	}
 
 	// 3. 注入动态 Store 变量 ($ui__xxx)
@@ -186,7 +194,7 @@ const initEditor = async () => {
 		// 创建 Model（使用唯一 URI）
 		const modelUri = monacoInstance.Uri.parse(`file:///main-${containerId}.ts`);
 		model = monacoInstance.editor.createModel(
-			code.value || props.templateText || "",
+			code.value || (props.templateText || ""),
 			props.language,
 			modelUri
 		);
@@ -272,6 +280,14 @@ watch(
 		updateLibs();
 	},
 	{ deep: true, immediate: true },
+);
+
+// 3. 静态类型变化 -> 重新生成 .d.ts
+watch(
+	() => props.staticTypes,
+	() => {
+		updateLibs();
+	},
 );
 
 // 3. Store 中 UI 模板变化 -> 重新生成 $ui__xxx 类型
