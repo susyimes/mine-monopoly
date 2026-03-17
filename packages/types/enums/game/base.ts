@@ -25,6 +25,7 @@ export const enum SocketMsgType {
 	RollDiceResult = "RollDiceResult", //掷骰子
 	UseChanceCard = "UseChanceCard", //使用机会卡
 	RemainingTime = "RemainingTime", //回合剩余时间
+	CurrentEventName = "CurrentEventName", //当前事件名称
 	RoundTimeOut = "RoundTimeOut", //回合超时
 	PlayerWalk = "PlayerWalk", //位置移动方式1：玩家角色走路
 	PlayerTp = "PlayerTp", //位置移动方式2：传送

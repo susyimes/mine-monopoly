@@ -93,7 +93,8 @@ export const useUtil = defineStore("util", {
 			fps: 0,
 			isRollDiceAnimationPlay: false,
 			rollDiceResult: new Array<number>(),
-			waitingFor: { eventMsg: "", remainingTime: 0, totalTime: 0 },
+			currentEventName: "", // 新增：独立的事件名称状态
+			waitingFor: { remainingTime: 0, totalTime: 0 }, // 移除 eventMsg
 			timeOut: false,
 			canUseCard: useGameData().canIOperate,
 			canRoll: useGameData().canIOperate,

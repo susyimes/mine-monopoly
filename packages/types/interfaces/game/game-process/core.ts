@@ -253,10 +253,10 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	gameBroadcast(msg: ServerSocketMessage): void;
 
 	/**
-	 * 设置倒计时广播的自定义事件消息
-	 * @param eventMsg - 自定义事件消息，传入 null 则清除自定义消息，恢复使用当前游戏阶段名称
+	 * 设置当前事件名称
+	 * @param eventName - 事件名称
 	 */
-	setRemainingTimeEventMsg(eventMsg: string | null): void;
+	setCurrentEventName(eventName: string): void;
 
 	// ===== 对话框交互 =====
 

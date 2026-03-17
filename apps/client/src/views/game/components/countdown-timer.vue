@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const roomInfoStore = useRoomInfo();
 const utilStore = useUtil();
 
+const _currentEventName = computed(() => utilStore.currentEventName);
 const _waitingFor = computed(() => utilStore.waitingFor);
 const _timeOut = computed(() => utilStore.timeOut);
 
@@ -18,7 +19,7 @@ const _blockWidth = computed(() => `${(_waitingFor.value.remainingTime / _roundT
 	<div class="countdown-timer">
 		<div class="block" :style="{ width: _blockWidth }"></div>
 		<div class="text" v-if="!_timeOut">
-			<FontAwesomeIcon icon="clock" /><span>{{ _waitingFor.eventMsg }}: {{ _waitingFor.remainingTime }} 秒</span>
+			<FontAwesomeIcon icon="clock" /><span>{{ _currentEventName }}: {{ _waitingFor.remainingTime }} 秒</span>
 		</div>
 		<div class="text" v-else><FontAwesomeIcon icon="clock-rotate-left" /><span>等待下一步</span></div>
 	</div>

@@ -199,7 +199,6 @@ export class GameProcess implements IGameProcess {
 	private timeoutList: any[] = []; //计时器列表
 	private intervalTimerList: any[] = []; //计时器列表
 	private gameLogList: GameLog[] = [];
-	private customEventMsg: string | null = null; // 自定义倒计时事件消息
 
 	public currentMultiplier: number = 1;
 
@@ -972,22 +971,25 @@ export class GameProcess implements IGameProcess {
 	}
 
 	public roundRemainingTimeBroadcast = (remainingTime: number, totalTime: number) => {
-		// 优先使用自定义的 eventMsg，如果没有则使用当前游戏阶段的名称
-		const eventMsg = this.customEventMsg ?? this.currentGamePhase?.name ?? "";
 		const msg: ServerSocketMessage = {
 			type: SocketMsgType.RemainingTime,
 			source: SocketMsgSource.Server,
-			data: { eventMsg, remainingTime, totalTime },
+			data: { remainingTime, totalTime },
 		};
 		this.gameBroadcast(msg);
 	};
 
 	/**
-	 * 设置倒计时广播的自定义事件消息
-	 * @param eventMsg - 自定义事件消息，传入 null 则清除自定义消息，恢复使用当前游戏阶段名称
+	 * 设置当前事件名称
+	 * @param eventName - 事件名称
 	 */
-	public setRemainingTimeEventMsg(eventMsg: string | null): void {
-		this.customEventMsg = eventMsg;
+	public setCurrentEventName(eventName: string): void {
+		const msg: ServerSocketMessage = {
+			type: SocketMsgType.CurrentEventName,
+			source: SocketMsgSource.Server,
+			data: { eventName },
+		};
+		this.gameBroadcast(msg);
 	}
 
 	public async showConfirmDialog<I extends InputOptionItem<string, any>[]>(

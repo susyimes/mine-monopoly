@@ -94,6 +94,9 @@ export function handleServerSocketMessage(msg: ServerSocketMessage, client: Mono
 		case SocketMsgType.RemainingTime:
 			handleRemainingTime(msg, client);
 			break;
+		case SocketMsgType.CurrentEventName:
+			handleCurrentEventName(msg, client);
+			break;
 		case SocketMsgType.RoundTurn:
 			handleRoundTurn(msg, client);
 			break;
@@ -324,14 +327,20 @@ const handleGameLog: ServerMessageHandler<SocketMsgType.GameLog> = (msg) => {
 };
 
 const handleRemainingTime: ServerMessageHandler<SocketMsgType.RemainingTime> = (msg) => {
-	const waitingFor = msg.data;
+	const { remainingTime, totalTime } = msg.data;
 	const utilStore = useUtil();
-	utilStore.waitingFor = waitingFor;
-	utilStore.timeOut = waitingFor.remainingTime <= 0;
-	if (waitingFor.remainingTime <= 0) {
+	utilStore.waitingFor = { remainingTime, totalTime };
+	utilStore.timeOut = remainingTime <= 0;
+	if (remainingTime <= 0) {
 		utilStore.canRoll = false;
 		useEventBus().emit(GameEventType.TimeOut);
 	}
+};
+
+const handleCurrentEventName: ServerMessageHandler<SocketMsgType.CurrentEventName> = (msg) => {
+	const { eventName } = msg.data;
+	const utilStore = useUtil();
+	utilStore.currentEventName = eventName;
 };
 
 const handleRoundTurn: ServerMessageHandler<SocketMsgType.RoundTurn> = (msg) => {

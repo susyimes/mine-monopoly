@@ -422,12 +422,22 @@ export interface SocketMessageDataType {
 		client: never;
 		/** 服务器发送的剩余时间信息 */
 		server: {
-			/** 事件消息 */
-			eventMsg: string;
 			/** 剩余时间（秒） */
 			remainingTime: number;
 			/** 总时间（秒） */
 			totalTime: number;
+		};
+	};
+
+	/**
+	 * 当前事件名称
+	 * 服务器向客户端发送当前事件的名称
+	 */
+	[SocketMsgType.CurrentEventName]: {
+		client: never;
+		server: {
+			/** 事件名称 */
+			eventName: string;
 		};
 	};
 
