@@ -6,12 +6,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const roomInfoStore = useRoomInfo();
 const utilStore = useUtil();
 
-//TODO
-const _roundTotalTime = 20;
 const _waitingFor = computed(() => utilStore.waitingFor);
 const _timeOut = computed(() => utilStore.timeOut);
 
-const _blockWidth = computed(() => `${(_waitingFor.value.remainingTime / _roundTotalTime) * 100}%`);
+// 使用动态的总时间，如果没有则默认为 20 秒
+const _roundTotalTime = computed(() => _waitingFor.value.totalTime || 20);
+const _blockWidth = computed(() => `${(_waitingFor.value.remainingTime / _roundTotalTime.value) * 100}%`);
 </script>
 
 <template>

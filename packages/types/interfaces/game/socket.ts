@@ -424,8 +424,10 @@ export interface SocketMessageDataType {
 		server: {
 			/** 事件消息 */
 			eventMsg: string;
-			/** 剩余时间（毫秒） */
+			/** 剩余时间（秒） */
 			remainingTime: number;
+			/** 总时间（秒） */
+			totalTime: number;
 		};
 	};
 

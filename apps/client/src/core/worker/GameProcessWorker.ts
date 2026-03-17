@@ -79,14 +79,14 @@ function reportWorkerError(error: Error | string, context?: string, additionalDa
 		stack: error instanceof Error ? error.stack : undefined,
 		info: context,
 		timestamp: new Date().toISOString(),
-		additionalData
+		additionalData,
 	};
 
 	// 通过 postMessage 发送到主线程
 	try {
 		self.postMessage({
 			type: "worker-error",
-			data: errorInfo
+			data: errorInfo,
 		});
 	} catch (e) {
 		// 如果无法发送错误，至少在控制台输出
@@ -99,15 +99,11 @@ function reportWorkerError(error: Error | string, context?: string, additionalDa
 self.addEventListener("error", (event) => {
 	console.error("[Worker Uncaught Error]:", event);
 
-	reportWorkerError(
-		event.error || event.message,
-		"Uncaught Exception in Worker",
-		{
-			filename: event.filename,
-			lineno: event.lineno,
-			colno: event.colno
-		}
-	);
+	reportWorkerError(event.error || event.message, "Uncaught Exception in Worker", {
+		filename: event.filename,
+		lineno: event.lineno,
+		colno: event.colno,
+	});
 
 	event.preventDefault();
 });
@@ -117,13 +113,9 @@ self.addEventListener("unhandledrejection", (event) => {
 	console.error("[Worker Unhandled Rejection]:", event.reason);
 
 	const reason = event.reason;
-	reportWorkerError(
-		reason instanceof Error ? reason : String(reason),
-		"Unhandled Promise Rejection in Worker",
-		{
-			promise: "Promise rejection"
-		}
-	);
+	reportWorkerError(reason instanceof Error ? reason : String(reason), "Unhandled Promise Rejection in Worker", {
+		promise: "Promise rejection",
+	});
 
 	event.preventDefault();
 });
@@ -207,6 +199,7 @@ export class GameProcess implements IGameProcess {
 	private timeoutList: any[] = []; //计时器列表
 	private intervalTimerList: any[] = []; //计时器列表
 	private gameLogList: GameLog[] = [];
+	private customEventMsg: string | null = null; // 自定义倒计时事件消息
 
 	public currentMultiplier: number = 1;
 
@@ -225,13 +218,14 @@ export class GameProcess implements IGameProcess {
 		// 绑定倒计时广播到 OperateListener
 		operationListener.setGlobalTickCallback((timeouts) => {
 			if (timeouts.length === 0) {
-				this.roundRemainingTimeBroadcast(0);
+				this.roundRemainingTimeBroadcast(0, 0);
 				return;
 			}
 
-			// 找到最小的剩余时间（最紧急的操作）
-			const minRemaining = Math.min(...timeouts.map(t => t.remainingMs));
-			this.roundRemainingTimeBroadcast(minRemaining / 1000);
+			// 找到最小的剩余时间（最紧急的操作），向上取整显示为整数秒
+			const minRemaining = Math.min(...timeouts.map((t) => t.remainingMs));
+			const minTotalTime = Math.min(...timeouts.map((t) => t.totalTime)); // 找到最小的总时间
+			this.roundRemainingTimeBroadcast(Math.ceil(minRemaining / 1000), Math.ceil(minTotalTime / 1000));
 		});
 
 		if (gameSetting.slackOffMode) {
@@ -458,7 +452,7 @@ export class GameProcess implements IGameProcess {
 				let animationTimer = setTimeout(() => {
 					operationListener.emit(player.id, OperateType.Animation, walkId);
 				}, animationDuration);
-				
+
 				//等待客户端完成动画发回指令
 				await new Promise((resolve) => {
 					listenAnimationCallback("");
@@ -917,6 +911,7 @@ export class GameProcess implements IGameProcess {
 	public async oncePlayerOperationAsync<T extends OperateType>(
 		playerId: string,
 		operationType: T,
+		options?: { timeout?: number; defaultValue?: PlayerOperationResult[T] },
 	): Promise<PlayerOperationResult[T]> {
 		const player = this.players.get(playerId);
 
@@ -925,8 +920,11 @@ export class GameProcess implements IGameProcess {
 			return await aiManager.makeDecision(player, operationType);
 		}
 
-		// 否则等待真实玩家输入
-		return await operationListener.onceAsync(playerId, operationType);
+		// 真实玩家，使用带超时的方法
+		return await operationListener.onceAsyncWithTimeout(playerId, operationType, {
+			timeout: options?.timeout ?? 15000,
+			defaultValue: options?.defaultValue ?? (undefined as any),
+		});
 	}
 
 	public emitPlayerOperation<T extends OperateType>(
@@ -973,19 +971,29 @@ export class GameProcess implements IGameProcess {
 		this.gameRuntimeStack.push(...gameEvents);
 	}
 
-	public roundRemainingTimeBroadcast = (remainingTime: number) => {
-		const eventMsg = this.currentGamePhase?.name || "";
+	public roundRemainingTimeBroadcast = (remainingTime: number, totalTime: number) => {
+		// 优先使用自定义的 eventMsg，如果没有则使用当前游戏阶段的名称
+		const eventMsg = this.customEventMsg ?? this.currentGamePhase?.name ?? "";
 		const msg: ServerSocketMessage = {
 			type: SocketMsgType.RemainingTime,
 			source: SocketMsgSource.Server,
-			data: { eventMsg, remainingTime },
+			data: { eventMsg, remainingTime, totalTime },
 		};
 		this.gameBroadcast(msg);
 	};
 
+	/**
+	 * 设置倒计时广播的自定义事件消息
+	 * @param eventMsg - 自定义事件消息，传入 null 则清除自定义消息，恢复使用当前游戏阶段名称
+	 */
+	public setRemainingTimeEventMsg(eventMsg: string | null): void {
+		this.customEventMsg = eventMsg;
+	}
+
 	public async showConfirmDialog<I extends InputOptionItem<string, any>[]>(
 		playerId: string,
 		option: ConfirmDialogOption<I>,
+		config?: { timeout?: number; defaultValue?: ConfirmDialogResult<I> },
 	): Promise<ConfirmDialogResult<I>> {
 		const player = this.players.get(playerId);
 
@@ -1005,19 +1013,16 @@ export class GameProcess implements IGameProcess {
 		});
 
 		// 使用带超时的方法
-		return (await operationListener.onceAsyncWithTimeout(
-			playerId,
-			OperateType.ConfirmDialogResult,
-			{
-				timeout: 15000,
-				defaultValue: { id: playerId, confirm: false, data: undefined } as any
-			}
-		)) as ConfirmDialogResult<I>;
+		return (await operationListener.onceAsyncWithTimeout(playerId, OperateType.ConfirmDialogResult, {
+			timeout: config?.timeout,
+			defaultValue: config?.defaultValue ?? ({ id: playerId, confirm: false, data: undefined } as any),
+		})) as ConfirmDialogResult<I>;
 	}
 
 	public async showTargetSelectDialog<I extends TargetSelectType>(
 		playerId: string,
 		option: TargetSelectDialogOption<I>,
+		config?: { timeout?: number; defaultValue?: TargetSelectDialogResult<I> },
 	): Promise<TargetSelectDialogResult<I>> {
 		const player = this.players.get(playerId);
 
@@ -1040,17 +1045,17 @@ export class GameProcess implements IGameProcess {
 			},
 		});
 
-		return (await operationListener.onceAsyncWithTimeout(
-			playerId,
-			OperateType.TargetSelectDialogResult,
-			{
-				timeout: 15000,
-				defaultValue: { id: playerId, selected: [] } as any
-			}
-		)) as TargetSelectDialogResult<I>;
+		return (await operationListener.onceAsyncWithTimeout(playerId, OperateType.TargetSelectDialogResult, {
+			timeout: config?.timeout,
+			defaultValue: config?.defaultValue ?? { target: [] },
+		})) as TargetSelectDialogResult<I>;
 	}
 
-	public async showItemSelectDialog(playerId: string, option: ItemSelectDialogOption): Promise<ItemSelectDialogResult> {
+	public async showItemSelectDialog(
+		playerId: string,
+		option: ItemSelectDialogOption,
+		config?: { timeout?: number; defaultValue?: ItemSelectDialogResult },
+	): Promise<ItemSelectDialogResult> {
 		const player = this.players.get(playerId);
 
 		// 如果玩家是AI托管，直接返回决策，不显示对话框
@@ -1072,14 +1077,10 @@ export class GameProcess implements IGameProcess {
 			},
 		});
 
-		return (await operationListener.onceAsyncWithTimeout(
-			playerId,
-			OperateType.ItemSelectDialogResult,
-			{
-				timeout: 15000,
-				defaultValue: { id: playerId, selected: undefined } as any
-			}
-		)) as ItemSelectDialogResult;
+		return (await operationListener.onceAsyncWithTimeout(playerId, OperateType.ItemSelectDialogResult, {
+			timeout: config?.timeout,
+			defaultValue: config?.defaultValue ?? { selected: [] },
+		})) as ItemSelectDialogResult;
 	}
 
 	public async showMessageCard(playerIds: string[], option: MessageCardOption): Promise<void> {

@@ -93,7 +93,7 @@ export const useUtil = defineStore("util", {
 			fps: 0,
 			isRollDiceAnimationPlay: false,
 			rollDiceResult: new Array<number>(),
-			waitingFor: { eventMsg: "", remainingTime: 0 },
+			waitingFor: { eventMsg: "", remainingTime: 0, totalTime: 0 },
 			timeOut: false,
 			canUseCard: useGameData().canIOperate,
 			canRoll: useGameData().canIOperate,

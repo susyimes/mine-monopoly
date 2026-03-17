@@ -28,6 +28,7 @@ export class OperateListener {
 	private globalTickCallback: ((timeouts: Array<{
 		playerId: string;
 		remainingMs: number;
+		totalTime: number;  // 总时间（毫秒）
 	}>) => void) | null = null;
 
 	constructor() {}
@@ -100,6 +101,7 @@ export class OperateListener {
 		callback: (timeouts: Array<{
 			playerId: string;
 			remainingMs: number;
+			totalTime: number;  // 总时间（毫秒）
 		}>) => void
 	): void {
 		this.globalTickCallback = callback;
@@ -116,6 +118,7 @@ export class OperateListener {
 			return {
 				playerId: timerData.playerId,
 				remainingMs: remaining,
+				totalTime: timerData.timeout,  // 添加总时间
 			};
 		});
 

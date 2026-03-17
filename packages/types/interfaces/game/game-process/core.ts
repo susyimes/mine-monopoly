@@ -252,37 +252,52 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	 */
 	gameBroadcast(msg: ServerSocketMessage): void;
 
+	/**
+	 * 设置倒计时广播的自定义事件消息
+	 * @param eventMsg - 自定义事件消息，传入 null 则清除自定义消息，恢复使用当前游戏阶段名称
+	 */
+	setRemainingTimeEventMsg(eventMsg: string | null): void;
+
 	// ===== 对话框交互 =====
 
 	/**
 	 * 显示确认对话框
 	 * @param playerId - 玩家 ID
 	 * @param option - 对话框选项
+	 * @param config - 配置选项（超时时间和默认值）
 	 * @returns 对话框结果
 	 */
 	showConfirmDialog<I extends InputOptionItem<string, any>[]>(
 		playerId: string,
-		option: ConfirmDialogOption<I>
+		option: ConfirmDialogOption<I>,
+		config?: { timeout?: number; defaultValue?: ConfirmDialogResult<I> }
 	): Promise<ConfirmDialogResult<I>>;
 
 	/**
 	 * 显示目标选择对话框
 	 * @param playerId - 玩家 ID
 	 * @param option - 对话框选项
+	 * @param config - 配置选项（超时时间和默认值）
 	 * @returns 对话框结果
 	 */
 	showTargetSelectDialog<I extends TargetSelectType>(
 		playerId: string,
-		option: TargetSelectDialogOption<I>
+		option: TargetSelectDialogOption<I>,
+		config?: { timeout?: number; defaultValue?: TargetSelectDialogResult<I> }
 	): Promise<TargetSelectDialogResult<I>>;
 
 	/**
 	 * 显示物品选择对话框
 	 * @param playerId - 玩家 ID
 	 * @param option - 对话框选项
+	 * @param config - 配置选项（超时时间和默认值）
 	 * @returns 对话框结果
 	 */
-	showItemSelectDialog(playerId: string, option: ItemSelectDialogOption): Promise<ItemSelectDialogResult>;
+	showItemSelectDialog(
+		playerId: string,
+		option: ItemSelectDialogOption,
+		config?: { timeout?: number; defaultValue?: ItemSelectDialogResult }
+	): Promise<ItemSelectDialogResult>;
 
 	/**
 	 * 显示消息卡片
