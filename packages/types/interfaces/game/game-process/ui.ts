@@ -71,6 +71,8 @@ export interface ConfirmDialogOption extends DialogOption {}
  * 确认对话框结果接口
  */
 export type ConfirmDialogResult = {
+	/** 对话框 ID */
+	id: string;
 	/** 确认状态 */
 	confirm: boolean;
 };
@@ -89,6 +91,12 @@ export interface FormField<K extends string, D> {
 
 	/** 默认值 */
 	defaultValue: D;
+
+	/** 最小值（仅 number-input 有效） */
+	min?: number;
+
+	/** 最大值（仅 number-input 有效） */
+	max?: number;
 }
 
 /**

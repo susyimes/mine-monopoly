@@ -437,6 +437,8 @@ const handleFormDialog: ServerMessageHandler<SocketMsgType.FormDialog> = (msg, c
 		type: typeof field.defaultValue === "number" ? "number-input" : "select",
 		label: field.label,
 		defaultValue: field.defaultValue,
+		min: field.min,
+		max: field.max,
 	}));
 
 	// 显示表单对话框，同时显示 content 和表单

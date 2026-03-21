@@ -109,6 +109,15 @@ const handleDialogClose = () => {
 	font-size: 1rem;
 	color: var(--color-text-regular, #333);
 	line-height: 1.5;
+
+	// 支持 \n 换行符
+	// 使用 pre-line 保留换行符，但折叠其他空白
+	white-space: pre-line;
+
+	// 在表单前添加 margin
+	:deep(.custom-form) {
+		margin-top: 1rem;
+	}
 }
 
 .message-footer {

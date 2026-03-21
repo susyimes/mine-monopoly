@@ -243,6 +243,19 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	gameMsgNotifyBroadcast(type: "success" | "warning" | "error" | "info", msg: string): void;
 
 	/**
+	 * 发送消息通知给指定玩家列表
+	 * @param playerIdList - 玩家 ID 列表
+	 * @param msg - 消息对象
+	 */
+	messageNotify(
+		playerIdList: string[],
+		msg: {
+			type: "info" | "success" | "warning" | "error";
+			content: string;
+		}
+	): void;
+
+	/**
 	 * 广播游戏日志
 	 * @param log - 日志内容
 	 */

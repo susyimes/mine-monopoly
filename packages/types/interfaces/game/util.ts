@@ -101,4 +101,10 @@ export interface FormSchema {
 
 	/** 下拉选项（仅 select 有效） */
 	options?: SelectOption[];
+
+	/** 最小值（仅 number-input 有效） */
+	min?: number;
+
+	/** 最大值（仅 number-input 有效） */
+	max?: number;
 }

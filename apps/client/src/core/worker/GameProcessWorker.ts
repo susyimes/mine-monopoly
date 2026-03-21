@@ -1025,7 +1025,7 @@ export class GameProcess implements IGameProcess {
 		// 使用带超时的方法
 		return (await operationListener.onceAsyncWithTimeout(playerId, OperateType.ConfirmDialogResult, {
 			timeout: config?.timeout,
-			defaultValue: config?.defaultValue ?? { confirm: false },
+			defaultValue: config?.defaultValue ?? { id: playerId, confirm: false },
 		})) as ConfirmDialogResult;
 	}
 

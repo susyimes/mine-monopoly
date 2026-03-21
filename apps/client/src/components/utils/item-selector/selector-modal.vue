@@ -19,6 +19,9 @@ const props = defineProps({
 	renderItem: { type: Function, default: undefined },
 	// 对话框内容（字符串或 UI Schema），显示在物品列表之前（可选）
 	content: { type: [String, Object] as PropType<string | UISchema>, default: undefined },
+	// 按钮文本
+	confirmText: { type: String, default: "确认" },
+	cancelText: { type: String, default: undefined },
 });
 
 const emit = defineEmits(["confirm", "cancel"]);
@@ -76,7 +79,14 @@ const handleCancel = () => {
 </script>
 
 <template>
-	<FpDialog v-model:visible="visible" :append-to-body="false" @submit="handleSubmit" @cancel="handleCancel">
+	<FpDialog
+		v-model:visible="visible"
+		:append-to-body="false"
+		:confirm-text="confirmText"
+		:cancel-text="cancelText"
+		@submit="handleSubmit"
+		@cancel="handleCancel"
+	>
 		<template #title>{{ title }}</template>
 
 		<div class="selector-container">

@@ -16,6 +16,8 @@ const props = withDefaults(
 		hiddenFooter?: boolean;
 		style?: CSSProperties | string; // 兼容字符串和对象写法
 		appendToBody?: boolean; // 可选：是否传送到 body
+		confirmText?: string; // 确认按钮文本
+		cancelText?: string; // 取消按钮文本（如果提供，则显示取消按钮）
 	}>(),
 	{
 		closable: true,
@@ -23,6 +25,7 @@ const props = withDefaults(
 		hiddenFooter: false,
 		style: "",
 		appendToBody: true,
+		confirmText: "确认",
 	}
 );
 
@@ -65,7 +68,8 @@ function closeDialog() {
 					</div>
 
 					<div class="fp-dialog-footer" v-if="!hiddenFooter">
-						<button :disabled="submitDisable" @click="handleSubmit">确认</button>
+						<button v-if="cancelText" class="btn-cancel" @click="closeDialog">{{ cancelText }}</button>
+						<button class="btn-confirm" :disabled="submitDisable" @click="handleSubmit">{{ confirmText }}</button>
 					</div>
 				</div>
 			</div>
@@ -152,7 +156,9 @@ function closeDialog() {
 	}
 
 	.fp-dialog-footer {
-		text-align: right;
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.75rem;
 		padding: 0.6rem;
 
 		button {
@@ -160,18 +166,33 @@ function closeDialog() {
 			border-radius: 6px;
 			font-size: 1rem;
 			cursor: pointer;
-			background-color: var(--color-third);
-			color: white;
 			border: none;
 			transition: filter 0.2s;
 
-			&:disabled {
-				opacity: 0.5;
-				cursor: not-allowed;
+			&.btn-confirm {
+				background-color: var(--color-third);
+				color: white;
+
+				&:disabled {
+					opacity: 0.5;
+					cursor: not-allowed;
+				}
+
+				&:not(:disabled):hover {
+					filter: brightness(0.9);
+				}
 			}
 
-			&:not(:disabled):hover {
-				filter: brightness(0.9);
+			&.btn-cancel {
+				border: 1px solid #b0b1b3;
+				background-color: #ffffff;
+				color: var(--color-third);
+				border-color: var(--color-third);
+				text-shadow: none;
+
+				&:hover {
+					filter: brightness(0.95);
+				}
 			}
 		}
 	}

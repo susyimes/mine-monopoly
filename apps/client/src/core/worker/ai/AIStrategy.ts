@@ -199,7 +199,7 @@ export class AIManager {
 			confirm = false;
 		}
 
-		return { confirm };
+		return { id: player.id, confirm };
 	}
 
 	/**

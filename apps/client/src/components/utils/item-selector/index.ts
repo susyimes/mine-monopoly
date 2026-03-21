@@ -12,6 +12,9 @@ interface SelectorOptions<T = any> {
 	column?: number;
 	selectedKey?: string[];
 	appContext?: AppContext;
+	confirmText?: string;
+	cancelText?: string;
+	content?: string | object;
 }
 
 export function showItemSelector(options: SelectorOptions): Promise<string[]> {

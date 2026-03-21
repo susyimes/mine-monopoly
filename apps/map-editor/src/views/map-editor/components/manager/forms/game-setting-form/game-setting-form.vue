@@ -113,6 +113,30 @@ function save() {
 						</a-col>
 					</a-row>
 
+					<!-- 数字类型专属：最大最小值设置 -->
+					<a-row v-if="field.type === 'number-input'" :gutter="16" style="margin-top: -8px">
+						<a-col :span="12">
+							<a-form-item label="最小值 (可选)">
+								<a-input-number
+									v-model:value="field.min"
+									style="width: 100%"
+									placeholder="不限制"
+									allowClear
+								/>
+							</a-form-item>
+						</a-col>
+						<a-col :span="12">
+							<a-form-item label="最大值 (可选)">
+								<a-input-number
+									v-model:value="field.max"
+									style="width: 100%"
+									placeholder="不限制"
+									allowClear
+								/>
+							</a-form-item>
+						</a-col>
+					</a-row>
+
 					<div v-if="field.type === 'select'" class="options-area">
 						<div class="options-header">选项列表：</div>
 

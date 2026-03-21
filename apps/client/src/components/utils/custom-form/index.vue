@@ -100,6 +100,8 @@ const handleSubmit = () => {
 				:disabled="disable"
 				v-model.number="formData[field.key]"
 				:placeholder="field.placeholder"
+				:min="field.min"
+				:max="field.max"
 				class="form-control"
 			/>
 
