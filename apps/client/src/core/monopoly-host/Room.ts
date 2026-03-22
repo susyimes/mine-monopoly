@@ -249,8 +249,17 @@ export class Room {
 					}
 				}
 
+				// 显示地图加载遮罩
+				this.sendToClient(userInRoom.socketClient, SocketMsgType.LoadingControl, {
+					show: true,
+					text: "地图加载中...",
+				});
+
 				// 发送地图信息
 				this.sendToClient(userInRoom.socketClient, SocketMsgType.ChangeMap, this.mapInfo);
+
+				// 等待地图资源加载完成
+				await this.operationListener.onceAsync(userInRoom.userId, OperateType.MapResourceLoaded);
 			}
 
 			return true;
@@ -317,7 +326,17 @@ export class Room {
 		if (oldUser && this.mapInfo) {
 			oldUser.socketClient = newCoon;
 			this.roomInfoBroadcast();
+
+			// 显示地图加载遮罩
+			this.sendToClient(oldUser.socketClient, SocketMsgType.LoadingControl, {
+				show: true,
+				text: "地图加载中...",
+			});
+
+			// 发送地图信息
 			this.sendToClient(oldUser.socketClient, SocketMsgType.ChangeMap, this.mapInfo);
+
+			// 等待地图资源加载完成
 			await this.operationListener.onceAsync(userId, OperateType.MapResourceLoaded);
 
 			if (this.gameProcessWorker) {
@@ -344,6 +363,12 @@ export class Room {
 		if (data.from === "server") {
 			this.mapInfo = data;
 			//如果地图来源为服务器 (安全的)
+			// 通知所有客户端显示 loading
+			this.roomBroadcast({
+				type: SocketMsgType.LoadingControl,
+				source: SocketMsgSource.Server,
+				data: { show: true, text: "地图加载中..." },
+			});
 			sendChangeMapMessage();
 		} else if ((data.from = "custom")) {
 			//如果地图来源为玩家 (有风险的)
@@ -369,7 +394,12 @@ export class Room {
 
 			const res = await Promise.all(promiseArr);
 			if (res.some((r) => !r.confirm)) {
-				useLoading().hideLoading();
+				// 有玩家拒绝，通知所有客户端隐藏 loading
+				this.roomBroadcast({
+					type: SocketMsgType.LoadingControl,
+					source: SocketMsgSource.Server,
+					data: { show: false },
+				});
 				this.roomBroadcast({
 					type: SocketMsgType.MsgNotify,
 					source: SocketMsgSource.Server,
@@ -377,6 +407,12 @@ export class Room {
 					msg: { type: "error", content: "有玩家拒绝使用自定义地图" },
 				});
 			} else {
+				// 所有玩家同意，通知所有客户端显示地图加载 loading
+				this.roomBroadcast({
+					type: SocketMsgType.LoadingControl,
+					source: SocketMsgSource.Server,
+					data: { show: true, text: "地图加载中..." },
+				});
 				this.mapInfo = data;
 				sendChangeMapMessage();
 			}

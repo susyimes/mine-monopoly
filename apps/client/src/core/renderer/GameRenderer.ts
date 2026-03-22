@@ -467,6 +467,14 @@ export class GameRenderer {
 	private initOutlinePass() {}
 
 	private initEventListener() {
+		// 监听当前回合玩家变化
+		useEventBus().on("game-currentPlayerIdInRound", (newPlayerId: string, oldPlayerId: string) => {
+			if (newPlayerId && newPlayerId !== oldPlayerId) {
+				console.log("[相机] 回合切换:", oldPlayerId, "->", newPlayerId);
+				this.focusPlayerById(newPlayerId);
+			}
+		});
+
 		const mapDataStore = useMapData();
 
 		// 监听画质变化事件
@@ -494,9 +502,6 @@ export class GameRenderer {
 			this.focusOnSelf();
 		});
 
-		useEventBus().on("round-trun", () => {
-			this.focusMe();
-		});
 		useEventBus().on("player-walk", async (walkPlayerId: string, step: number, walkId: string) => {
 			//拆散重叠的玩家模型;
 			// this.breakUpPlayersInSameMapItem();
@@ -1234,11 +1239,15 @@ export class GameRenderer {
 	}
 
 	private focusPlayerById(id: string) {
-		this.currentFocusModule = this.playerEntities.get(id)?.model || null;
-		if (this.currentFocusModule) {
-			this.updateCamera(this.controls, this.currentFocusModule, 8, 30);
-			this.controls.update();
+		const playerEntity = this.playerEntities.get(id);
+		if (!playerEntity) {
+			console.warn(`[相机] 无法聚焦玩家: 找不到 ID 为 ${id} 的玩家实体`);
+			return;
 		}
+
+		this.currentFocusModule = playerEntity.model;
+		this.updateCamera(this.controls, this.currentFocusModule, 8, 30);
+		this.controls.update();
 	}
 
 	/**

@@ -137,6 +137,11 @@ export const useGameData = defineStore("game-data", {
 
 			this.$patch(newGamedata);
 
+			// 检查回合玩家是否变化
+			if (oldGameData.currentPlayerIdInRound !== newGamedata.currentPlayerIdInRound) {
+				eventBus.emit("game-currentPlayerIdInRound", newGamedata.currentPlayerIdInRound, oldGameData.currentPlayerIdInRound);
+			}
+
 			compareObjectArrays(oldGameData.players, newGamedata.players, "id", (itemId, key, oldValue, newValue) => {
 				eventBus.emit(`player-${key}`, itemId, oldValue, newValue);
 			});

@@ -367,13 +367,13 @@ export interface SocketMessageDataType {
 
 	/**
 	 * 回合轮换
-	 * 服务器通知客户端进入新回合
+	 * 服务器通知所有客户端进入新回合,广播当前回合玩家 ID
 	 */
 	[SocketMsgType.RoundTurn]: {
 		/** 客户端发送的数据（不支持） */
 		client: never;
-		/** 服务器返回的数据（无） */
-		server: undefined;
+		/** 服务器返回的当前回合玩家 ID */
+		server: string;
 	};
 
 	/**
@@ -639,6 +639,22 @@ export interface SocketMessageDataType {
 		client: undefined;
 		/** 服务器返回的数据（无） */
 		server: undefined;
+	};
+
+	/**
+	 * Loading 控制
+	 * 服务器控制客户端的 loading 显示/隐藏
+	 */
+	[SocketMsgType.LoadingControl]: {
+		/** 客户端发送的数据（不支持） */
+		client: never;
+		/** 服务器发送的 loading 控制指令 */
+		server: {
+			/** 是否显示 loading */
+			show: boolean;
+			/** loading 文本（可选） */
+			text?: string;
+		};
 	};
 }
 

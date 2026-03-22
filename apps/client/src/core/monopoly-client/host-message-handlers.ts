@@ -145,6 +145,9 @@ export function handleServerSocketMessage(msg: ServerSocketMessage, client: Mono
 		case SocketMsgType.MessageCard:
 			handleMessageCardDialog(msg, client);
 			break;
+		case SocketMsgType.LoadingControl:
+			handleLoadingControl(msg);
+			break;
 		default:
 			break;
 	}
@@ -200,9 +203,6 @@ const handleRoomInfoReply: ServerMessageHandler<SocketMsgType.RoomInfo> = (msg) 
 const handleChangeMap: ServerMessageHandler<SocketMsgType.ChangeMap> = async (msg, client) => {
 	try {
 		const data = msg.data;
-		// 根据地图来源显示不同的 loading 文本
-		const loadingText = data.from === "custom" ? "地图传输中..." : "地图加载中...";
-		useLoading().showLoading(loadingText);
 		let gameMap, mapInfo;
 		switch (data.from) {
 			case "server": {
@@ -386,9 +386,24 @@ const handleCurrentEventName: ServerMessageHandler<SocketMsgType.CurrentEventNam
 };
 
 const handleRoundTurn: ServerMessageHandler<SocketMsgType.RoundTurn> = (msg) => {
+	const currentRoundPlayerId = msg.data;
 	const utilStore = useUtil();
-	utilStore.canRoll = true;
-	utilStore.canUseCard = true;
+	const isMyTurn = currentRoundPlayerId === useUserInfo().userId;
+
+	// 只有当前回合玩家才能操作
+	if (isMyTurn) {
+		utilStore.canRoll = true;
+		utilStore.canUseCard = true;
+		// 只在是自己的回合时显示提示
+		FPMessage({
+			type: "info",
+			message: "现在是你的回合啦！",
+		});
+	} else {
+		utilStore.canRoll = false;
+		utilStore.canUseCard = false;
+	}
+
 	useEventBus().emit("round-turn");
 };
 
@@ -442,10 +457,6 @@ const handleConfirmDialog: ServerMessageHandler<SocketMsgType.ConfirmDialog> = (
 	const data = msg.data;
 	FPMessageBox(data.option)
 		.then(() => {
-			// 玩家同意后，根据还有多少玩家未确认显示不同的 loading
-			const totalPlayers = data.option.totalPlayers || 1;
-			const loadingText = totalPlayers === 1 ? "等待地图传输..." : "等待其他玩家同意...";
-			useLoading().showLoading(loadingText);
 			client.sendMsg({
 				type: SocketMsgType.Operation,
 				source: SocketMsgSource.Client,
@@ -576,6 +587,15 @@ const handleItemSelectDialog: ServerMessageHandler<SocketMsgType.ItemSelectDialo
 const handleMessageCardDialog: ServerMessageHandler<SocketMsgType.MessageCard> = (msg, client) => {
 	const data = msg.data;
 	FPMessageCard(data.option);
+};
+
+const handleLoadingControl: ServerMessageHandler<SocketMsgType.LoadingControl> = (msg) => {
+	const { show, text } = msg.data;
+	if (show) {
+		useLoading().showLoading(text || "加载中...");
+	} else {
+		useLoading().hideLoading();
+	}
 };
 
 function buildDefaultFormData(fields: FormField<string, any>[]): Record<string, any> {

@@ -42,6 +42,8 @@ export const enum SocketMsgType {
 	UI = "UI", //在客户端增添UI
 	/** 表单对话框 */
 	FormDialog = "FormDialog",
+	/** Loading 控制 */
+	LoadingControl = "LoadingControl",
 }
 
 export enum SocketMsgSource {

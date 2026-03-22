@@ -683,6 +683,9 @@ export class GameProcess implements IGameProcess {
 				}
 
 				this.eventBus.emit("player.round.start", { player });
+				this.currentRoundPlayer = player;
+				this.roundTurnNotify(player.id);
+				this.gameDataBroadcast();
 				const context: PlayerRoundContext = {
 					currentRoundPlayer: player,
 				};
@@ -690,6 +693,7 @@ export class GameProcess implements IGameProcess {
 				for (const phase of playerRoundPhases) {
 					await this.runGamePhase(phase, context);
 				}
+				this.currentRoundPlayer = null;
 				this.eventBus.emit("player.round.end", { player });
 			}
 
@@ -1294,15 +1298,16 @@ export class GameProcess implements IGameProcess {
 		return `@-#${type}#-#${id}#`;
 	}
 
+	/**
+	 * 通知所有客户端进入新回合
+	 * 广播当前回合玩家 ID,让每个客户端自行判断是否是自己的回合
+	 * @param playerId - 当前回合玩家的 ID
+	 */
 	public roundTurnNotify(playerId: string) {
-		this.sendToPlayer(playerId, {
+		this.gameBroadcast({
 			type: SocketMsgType.RoundTurn,
 			source: SocketMsgSource.Server,
-			data: undefined,
-			msg: {
-				type: "info",
-				content: "现在是你的回合啦！",
-			},
+			data: playerId,
 		});
 		this.gameLogBroadcast(`---接下来是 ${this.createGameLinkItem(GameLinkItem.Player, playerId)} 的回合---`);
 	}
