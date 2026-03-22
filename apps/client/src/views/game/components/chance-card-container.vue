@@ -32,9 +32,14 @@ async function handleChanceCardClick(card: ChanceCardClientInfo) {
 		cancelText: "取消",
 	})
 		.then((target) => {
-			useMonopolyClient().useChanceCard(card.id, target);
+			// 确保只有在用户确认时才使用卡片
+			if (target && target.length >= 0) {
+				useMonopolyClient().useChanceCard(card.id, target);
+			}
 		})
-		.catch();
+		.catch(() => {
+			// 用户取消操作，不需要处理
+		});
 }
 </script>
 

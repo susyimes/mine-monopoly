@@ -24,8 +24,9 @@ export async function showTargetSelector(
 				console.log("🚀 ~ showTargetSelector ~ targetSelectedIdList:", targetSelectedIdList);
 				resolve(targetSelectedIdList);
 			})
-			.catch((e) => {
-				reject([]);
+			.catch(() => {
+				// 用户取消操作，直接 reject，不传递任何值
+				reject(null);
 			});
 	});
 }

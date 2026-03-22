@@ -396,6 +396,7 @@ export class GameProcess implements IGameProcess {
 			this.players.set(player.id, player);
 
 			player.commandBus.setHandler("player.walk", async (payload) => {
+				this.setCurrentEventName(`${player.name} 走路中`);
 				const { steps } = payload;
 				const walkId = randomString(16);
 				const msg: ServerSocketMessage = {
@@ -443,6 +444,7 @@ export class GameProcess implements IGameProcess {
 			});
 
 			player.commandBus.setHandler("player.tp", async (payload) => {
+				this.setCurrentEventName(`${player.name} 传送中`);
 				const { positionIndex } = payload;
 				const walkId = randomString(16);
 				const msg: ServerSocketMessage = {
@@ -741,13 +743,28 @@ export class GameProcess implements IGameProcess {
 			return false;
 		}
 
+		// 2. 验证目标列表是否为空
+		const cardType = chanceCard.getType();
+		const needsTarget = cardType !== TargetSelectType.ToSelf;
+		const hasTarget = targetIdList && targetIdList.length > 0;
+
+		if (needsTarget && !hasTarget) {
+			sendChanceCardCallback(sourcePlayer.id, true, "机会卡使用失败: 请选择使用目标");
+			return false;
+		}
+
+		// 3. 对于不需要目标的卡片类型，清空目标列表以避免混淆
+		if (!needsTarget) {
+			targetIdList = [];
+		}
+
 		try {
 			const cardName = chanceCard.getName();
 			const sourceLink = this.createGameLinkItem(GameLinkItem.Player, sourcePlayer.id);
 			const cardLink = this.createGameLinkItem(GameLinkItem.ChanceCard, chanceCard.getSourceId());
 
-			// 2. 根据类型执行逻辑 & 组装日志
-			// 我们在这里执行核心逻辑，如果有问题直接 throw new Error("原因")
+			// 4. 根据类型执行逻辑 & 组装日志
+			// 这里执行核心逻辑，如果有问题直接 throw new Error("原因")
 			switch (chanceCard.getType()) {
 				case TargetSelectType.ToSelf: {
 					await chanceCard.use(sourcePlayer, sourcePlayer, this);
@@ -803,8 +820,8 @@ export class GameProcess implements IGameProcess {
 					throw new Error(`未知的机会卡目标类型: ${chanceCard.getType()}`);
 			}
 
-			// 3. 成功后的通用处理
-			sourcePlayer.loseCard(chanceCardId); // 扣除卡片
+			// 5. 成功后的通用处理
+			await sourcePlayer.loseCard(chanceCardId); // 扣除卡片
 
 			// 发送成功通知给当前玩家
 			this.sendToPlayer(sourcePlayer.id, {
@@ -825,7 +842,7 @@ export class GameProcess implements IGameProcess {
 
 			return true;
 		} catch (e: any) {
-			// 4. 统一错误处理
+			// 6. 统一错误处理
 			const errorMessage = e.message || "未知错误";
 
 			// 发送错误通知

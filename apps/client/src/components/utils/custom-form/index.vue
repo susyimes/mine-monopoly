@@ -63,12 +63,69 @@ watch(formData, (newData) => {
 	emit("update:modelValue", { ...newData });
 }, { deep: true });
 
+// 数字输入失焦时校验和修正
+const handleNumberBlur = (field: FormSchema) => {
+	if (field.type !== "number-input") return;
+
+	const val = formData.value[field.key];
+	if (val === undefined || val === null || val === "") return;
+
+	const numVal = Number(val);
+	let corrected = false;
+	let correctedVal = numVal;
+
+	// 检查最小值
+	if (field.min !== undefined && numVal < field.min) {
+		correctedVal = field.min;
+		corrected = true;
+	}
+
+	// 检查最大值
+	if (field.max !== undefined && numVal > field.max) {
+		correctedVal = field.max;
+		corrected = true;
+	}
+
+	// 如果需要修正，更新表单数据
+	if (corrected) {
+		formData.value[field.key] = correctedVal;
+	}
+};
+
 const handleSubmit = () => {
+	// 校验必填项并修正数字输入
 	for (const field of props.schema) {
 		const val = formData.value[field.key];
+
+		// 检查必填项
 		if (val === undefined || val === null || val === "") {
 			alert(`【${field.label}】是必填项`);
 			return;
+		}
+
+		// 数字输入校验和自动修正
+		if (field.type === "number-input") {
+			const numVal = Number(val);
+			let corrected = false;
+			let correctedVal = numVal;
+
+			// 检查最小值
+			if (field.min !== undefined && numVal < field.min) {
+				correctedVal = field.min;
+				corrected = true;
+			}
+
+			// 检查最大值
+			if (field.max !== undefined && numVal > field.max) {
+				correctedVal = field.max;
+				corrected = true;
+			}
+
+			// 如果需要修正，更新表单数据并提示用户
+			if (corrected) {
+				formData.value[field.key] = correctedVal;
+				console.warn(`【${field.label}】的值 ${numVal} 已自动修正为 ${correctedVal}`);
+			}
 		}
 	}
 
@@ -102,6 +159,7 @@ const handleSubmit = () => {
 				:placeholder="field.placeholder"
 				:min="field.min"
 				:max="field.max"
+				@blur="handleNumberBlur(field)"
 				class="form-control"
 			/>
 

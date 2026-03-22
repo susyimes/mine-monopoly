@@ -12,14 +12,14 @@ const _timeOut = computed(() => utilStore.timeOut);
 
 // 使用动态的总时间，如果没有则默认为 20 秒
 const _roundTotalTime = computed(() => _waitingFor.value.totalTime || 20);
-const _blockWidth = computed(() => `${(_waitingFor.value.remainingTime / _roundTotalTime.value) * 100}%`);
+const _blockWidth = computed(() => `${((_waitingFor.value.remainingTime + 1) / _roundTotalTime.value) * 100}%`);
 </script>
 
 <template>
 	<div class="countdown-timer">
 		<div class="block" :style="{ width: _blockWidth }"></div>
 		<div class="text" v-if="!_timeOut">
-			<FontAwesomeIcon icon="clock" /><span>{{ _currentEventName }}: {{ _waitingFor.remainingTime }} 秒</span>
+			<FontAwesomeIcon icon="clock" /><span>{{ _currentEventName }}: {{ _waitingFor.remainingTime + 1 }} 秒</span>
 		</div>
 		<div class="text" v-else><FontAwesomeIcon icon="clock-rotate-left" /><span>等待下一步</span></div>
 	</div>
@@ -45,7 +45,6 @@ const _blockWidth = computed(() => `${(_waitingFor.value.remainingTime / _roundT
 	left: 50%;
 	transform: translate(-50%, -50%);
 	z-index: var(--z-countdown-timer);
-
 
 	& > .block {
 		position: absolute;

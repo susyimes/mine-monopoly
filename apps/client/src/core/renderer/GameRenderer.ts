@@ -837,7 +837,6 @@ export class GameRenderer {
 					const box = new THREE.Box3().setFromObject(propertyBuildModel);
 					// 计算边界框的高度
 					const size = box.getSize(new THREE.Vector3());
-					console.log("🚀 ~ GameRenderer ~ updateBuilding ~ size:", size);
 					textSpriteModel.position.y = 1;
 					propertyBuildModel.add(textSpriteModel);
 					houseItem.group = propertyBuildModel;

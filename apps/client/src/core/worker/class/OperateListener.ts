@@ -84,7 +84,13 @@ export class OperateListener {
 		const eventTypeMap = playerEvents.get(eventType);
 		if (!eventTypeMap) return;
 		const removeIndex = eventTypeMap.findIndex((fobj) => fobj.fn === listener);
-		eventTypeMap.splice(removeIndex, 1);
+		if (removeIndex !== -1) {
+			eventTypeMap.splice(removeIndex, 1);
+			// 如果该事件类型下没有监听器了，清理关联的计时器
+			if (eventTypeMap.length === 0) {
+				this.clearTimersByEvent(playerId, eventType);
+			}
+		}
 	}
 
 	public removeAll(playerId: string, eventType?: OperateType) {
@@ -95,6 +101,8 @@ export class OperateListener {
 		} else {
 			this.evetnMap.delete(playerId);
 		}
+		// 清理关联的计时器
+		this.clearTimersByEvent(playerId, eventType);
 	}
 
 	public setGlobalTickCallback(
@@ -266,5 +274,25 @@ export class OperateListener {
 			}
 			this.activeTimers.delete(timerKey);
 		}
+	}
+
+	/**
+	 * 清理指定玩家和事件类型的所有计时器
+	 * @param playerId 玩家ID
+	 * @param eventType 事件类型（可选，不指定则清理该玩家的所有计时器）
+	 */
+	private clearTimersByEvent(playerId: string, eventType?: OperateType): void {
+		const timersToDelete: string[] = [];
+
+		this.activeTimers.forEach((timerData, timerKey) => {
+			const shouldDelete = timerData.playerId === playerId &&
+				(!eventType || timerData.eventType === eventType);
+
+			if (shouldDelete) {
+				timersToDelete.push(timerKey);
+			}
+		});
+
+		timersToDelete.forEach((timerKey) => this.clearTimer(timerKey));
 	}
 }
