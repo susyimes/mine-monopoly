@@ -17,12 +17,27 @@ export type ICommand<C extends ICommandMap, K extends keyof C> = {
  * @template K - 命令类型的键
  */
 export interface ICommandContext<C extends ICommandMap, K extends keyof C> {
-	/** 取消命令执行 */
-	cancel(): void;
+	/**
+	 * 取消命令执行
+	 * @param result - 命令取消后的返回值（必须提供）
+	 */
+	cancel(result: C[K]["result"]): void;
 	/** 设置命令执行结果 */
 	setResult(result: C[K]["result"]): void;
 	/** 命令执行结果（可选） */
 	result?: C[K]["result"];
+
+	/**
+	 * 跳过当前修饰器的触发次数消耗
+	 * 调用后，本次修饰器执行不会减少 remainingTriggers
+	 */
+	skip(): void;
+
+	/**
+	 * 自定义当前修饰器的触发次数消耗
+	 * @param count - 消耗的次数（必须为非负整数）
+	 */
+	consume(count: number): void;
 }
 
 /**

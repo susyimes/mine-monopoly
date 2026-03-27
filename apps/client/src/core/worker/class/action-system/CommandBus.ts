@@ -16,13 +16,33 @@ export class CommandBus<C extends ICommandMap> implements ICommandBus<C> {
 		let currentCmd: ICommand<C, K> = command;
 		let resultOverride: any = undefined;
 		let cancelled = false;
+		let cancelResult: any = undefined;
 
-		// 记录真正执行过的修饰器
+		// 记录修饰器执行状态
 		const executedModifierIds: string[] = [];
+		const skippedModifierIds = new Set<string>();
+		const customConsumptions = new Map<string, number>();
 
 		const ctx: ICommandContext<C, K> = {
-			cancel: () => (cancelled = true),
+			cancel: (result) => {
+				cancelled = true;
+				cancelResult = result;
+			},
 			setResult: (res) => (resultOverride = res),
+			skip: () => {
+				// 标记当前修饰器为跳过衰减
+				// 注意：需要在修饰器执行时设置当前修饰器 ID
+				const currentModId = (ctx as any).__currentModifierId;
+				if (currentModId) {
+					skippedModifierIds.add(currentModId);
+				}
+			},
+			consume: (count: number) => {
+				const currentModId = (ctx as any).__currentModifierId;
+				if (currentModId) {
+					customConsumptions.set(currentModId, count);
+				}
+			}
 		};
 
 		const beforeModifiers = this.modifierManager.getFor(command, "before");
@@ -30,13 +50,21 @@ export class CommandBus<C extends ICommandMap> implements ICommandBus<C> {
 
 		// ---------- BEFORE ----------
 		for (const m of beforeModifiers) {
+			// 设置当前修饰器 ID
+			(ctx as any).__currentModifierId = m.descriptor.id;
+
 			await m.fn(currentCmd, ctx);
 			executedModifierIds.push(m.descriptor.id); // 执行成功才推入
 
+			// 清除当前修饰器 ID
+			delete (ctx as any).__currentModifierId;
+
 			if (cancelled) {
-				// 中断：只扣除已经执行过的
-				this.modifierManager.decayAfterExecution(executedModifierIds);
-				return { ok: false, cancelled: true };
+				// 中断：只扣除已经执行过的（排除 skipped）
+				const idsToDecay = executedModifierIds.filter(id => !skippedModifierIds.has(id));
+				this.modifierManager.decayAfterExecution(idsToDecay, customConsumptions);
+				// 使用 cancel() 提供的返回值
+				return cancelResult;
 			}
 		}
 
@@ -58,13 +86,20 @@ export class CommandBus<C extends ICommandMap> implements ICommandBus<C> {
 
 		// ---------- AFTER ----------
 		for (const m of afterModifiers) {
+			// 设置当前修饰器 ID
+			(ctx as any).__currentModifierId = m.descriptor.id;
+
 			await m.fn(currentCmd, ctx);
 			executedModifierIds.push(m.descriptor.id); // 执行成功才推入
+
+			// 清除当前修饰器 ID
+			delete (ctx as any).__currentModifierId;
 		}
 
 		// ---------- DECAY ----------
-		// 统一结算所有真正执行过的修饰器
-		this.modifierManager.decayAfterExecution(executedModifierIds);
+		// 统一结算所有真正执行过的修饰器（排除 skipped）
+		const idsToDecay = executedModifierIds.filter(id => !skippedModifierIds.has(id));
+		this.modifierManager.decayAfterExecution(idsToDecay, customConsumptions);
 
 		// After 阶段也可能通过 setResult 修改最终返回值
 		if (resultOverride !== undefined) result = resultOverride;

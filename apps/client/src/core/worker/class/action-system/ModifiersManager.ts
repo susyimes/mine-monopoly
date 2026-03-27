@@ -82,7 +82,7 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 		return buffs;
 	}
 
-	public decayAfterExecution(ids: string[]): void {
+	public decayAfterExecution(ids: string[], customConsumptions?: Map<string, number>): void {
 		const idsToRemove: string[] = [];
 
 		for (const id of ids) {
@@ -94,12 +94,15 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 
 			const currentTriggers = realMod.descriptor.remainingTriggers;
 
-			// 3. 如果是无限次，跳过
-			if (currentTriggers === Infinity) continue;
+			// 3. 如果是无限次（-1 或 Infinity），跳过
+			if (currentTriggers === -1 || currentTriggers === Infinity) continue;
 
-			// 4. 扣除次数逻辑
+			// 4. 获取自定义消耗次数，默认为 1
+			const consumption = customConsumptions?.get(id) ?? 1;
+
+			// 5. 扣除次数逻辑
 			if (currentTriggers > 0) {
-				realMod.descriptor.remainingTriggers--;
+				realMod.descriptor.remainingTriggers -= consumption;
 
 				// 立即检查是否归零，归零则标记移除
 				if (realMod.descriptor.remainingTriggers <= 0) {
@@ -111,7 +114,7 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 			}
 		}
 
-		// 5. 统一执行移除
+		// 6. 统一执行移除
 		idsToRemove.forEach((id) => this.modifiers.delete(id));
 	}
 

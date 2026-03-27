@@ -121,6 +121,10 @@ export interface IModifierManager<C extends ICommandMap, K extends keyof C = key
 	/**
 	 * 在修饰器执行后衰减触发次数
 	 * @param ids - 已执行的修饰器 ID 列表
+	 * @param customConsumptions - 自定义消耗次数映射（可选）
 	 */
-	decayAfterExecution(ids: string[]): void;
+	decayAfterExecution(
+		ids: string[],
+		customConsumptions?: Map<string, number>
+	): void;
 }
