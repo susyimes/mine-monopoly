@@ -1,4 +1,4 @@
-import { Buff, ICommand, ICommandMap, IModifier, IModifierManager, ModifierTiming } from "@mine-monopoly/types";
+import { Buff, ICommand, ICommandMap, IModifier, IModifierManager, ModifierTiming, ConsumeResult } from "@mine-monopoly/types";
 import { clone, cloneDeep } from "lodash";
 
 export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C> implements IModifierManager<C> {
@@ -92,9 +92,14 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 			// 2. 如果找不到（可能在执行过程中已被移除），跳过
 			if (!realMod) continue;
 
+			// 3. 检查是否自动消耗，如果设置为 false 则跳过
+			if (realMod.descriptor.autoConsume === false) {
+				continue;
+			}
+
 			const currentTriggers = realMod.descriptor.remainingTriggers;
 
-			// 3. 如果是无限次（-1 或 Infinity），跳过
+			// 4. 如果是无限次（-1 或 Infinity），跳过
 			if (currentTriggers === -1 || currentTriggers === Infinity) continue;
 
 			// 4. 获取自定义消耗次数，默认为 1
@@ -116,6 +121,56 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 
 		// 6. 统一执行移除
 		idsToRemove.forEach((id) => this.modifiers.delete(id));
+	}
+
+	public consume(id: string, amount: number): ConsumeResult {
+		// 1. 参数验证
+		if (amount <= 0) {
+			return {
+				success: false,
+				remainingTriggers: null,
+				removed: false,
+				modifierId: id
+			};
+		}
+
+		// 2. 查找修饰器
+		const modifier = this.modifiers.get(id);
+		if (!modifier) {
+			return {
+				success: false,
+				remainingTriggers: null,
+				removed: false,
+				modifierId: id
+			};
+		}
+
+		// 3. 检查是否是无限次修饰器
+		const currentTriggers = modifier.descriptor.remainingTriggers;
+		if (currentTriggers === -1 || currentTriggers === Infinity) {
+			return {
+				success: true,
+				remainingTriggers: currentTriggers,
+				removed: false,
+				modifierId: id
+			};
+		}
+
+		// 4. 执行消耗
+		modifier.descriptor.remainingTriggers -= amount;
+		const removed = modifier.descriptor.remainingTriggers <= 0;
+
+		// 5. 如果归零则移除
+		if (removed) {
+			this.modifiers.delete(id);
+		}
+
+		return {
+			success: true,
+			remainingTriggers: modifier.descriptor.remainingTriggers,
+			removed,
+			modifierId: id
+		};
 	}
 
 	public clear(): void {

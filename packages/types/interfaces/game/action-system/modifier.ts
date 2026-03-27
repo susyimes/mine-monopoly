@@ -42,6 +42,8 @@ export interface ModifierDescriptor<C extends ICommandMap, K extends keyof C = k
 	remainingTriggers: number;
 	/** 优先级（可选，数值越大优先级越高） */
 	priority?: number;
+	/** 是否自动消耗次数（默认 true，设为 false 则需要手动调用 consume） */
+	autoConsume?: boolean;
 	/** 可序列化的元数据（用于 UI 展示） */
 	meta?: ModifierMeta;
 }
@@ -57,6 +59,20 @@ export interface IModifier<C extends ICommandMap, K extends keyof C = keyof C> {
 	descriptor: ModifierDescriptor<C, K>;
 	/** 修饰器执行函数 */
 	fn(command: ICommand<C, K>, context: ICommandContext<C, K>): Promise<void> | void;
+}
+
+/**
+ * 手动消耗修饰器次数的结果
+ */
+export interface ConsumeResult {
+	/** 是否成功执行消耗操作 */
+	success: boolean;
+	/** 消耗后的剩余次数（如果修饰器不存在则为 null） */
+	remainingTriggers: number | null;
+	/** 是否因此次消耗而移除了修饰器 */
+	removed: boolean;
+	/** 修饰器 ID */
+	modifierId: string;
 }
 
 /**
@@ -127,4 +143,12 @@ export interface IModifierManager<C extends ICommandMap, K extends keyof C = key
 		ids: string[],
 		customConsumptions?: Map<string, number>
 	): void;
+
+	/**
+	 * 手动消耗修饰器次数
+	 * @param id - 修饰器 ID
+	 * @param amount - 要消耗的次数（必须大于 0）
+	 * @returns 消耗结果
+	 */
+	consume(id: string, amount: number): ConsumeResult;
 }
