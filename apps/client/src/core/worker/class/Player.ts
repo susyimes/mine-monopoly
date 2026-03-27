@@ -280,11 +280,11 @@ export class Player implements IPlayer {
 	}
 
 	public async gain(money: number, tag?: MoneyTag, source?: IPlayer) {
-		await this.commandBus.execute({ type: "player.money.gain", payload: { money, source, tag } });
+		return await this.commandBus.execute({ type: "player.money.gain", payload: { money, source, tag } });
 	}
 
 	public async cost(money: number, tag?: MoneyTag, target?: IPlayer) {
-		await this.commandBus.execute({ type: "player.money.lose", payload: { money, target, tag } });
+		return await this.commandBus.execute({ type: "player.money.lose", payload: { money, target, tag } });
 	}
 
 	public async bankrupted(isBankrupted: boolean) {
