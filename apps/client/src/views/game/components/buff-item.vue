@@ -7,7 +7,7 @@ const props = defineProps<{ buff: Buff }>();
 
 // 转换 \n 为真实换行符
 const formattedDescription = computed(() => {
-	return props.buff.description.replace(/\\n/g, '\n');
+	return props.buff.description.replace(/\\n/g, "\n");
 });
 </script>
 
@@ -153,8 +153,8 @@ const formattedDescription = computed(() => {
 		justify-content: space-around;
 		align-items: center;
 		gap: 4px;
-		color: var(--color-text-secondary);
-		background: var(--color-bg-disable); // 灰色背景
+		background: var(--color-bg-light);
+		color: var(--color-primary);
 		padding: 2px 8px;
 		border-radius: 10px;
 
