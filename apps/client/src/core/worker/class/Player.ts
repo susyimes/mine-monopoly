@@ -12,7 +12,7 @@ import {
 	IModifierManager,
 	IPlayer,
 	IProperty,
-	MoneyTag,
+	MoneyTagType,
 	PlayerCommandMap,
 	PlayerInfo,
 	Role,
@@ -279,11 +279,11 @@ export class Player implements IPlayer {
 		await this.commandBus.execute({ type: "player.card.lose", payload: { cardId } });
 	}
 
-	public async gain(money: number, tag?: MoneyTag, source?: IPlayer) {
+	public async gain(money: number, tag?: MoneyTagType, source?: IPlayer) {
 		return await this.commandBus.execute({ type: "player.money.gain", payload: { money, source, tag } });
 	}
 
-	public async cost(money: number, tag?: MoneyTag, target?: IPlayer) {
+	public async cost(money: number, tag?: MoneyTagType, target?: IPlayer) {
 		return await this.commandBus.execute({ type: "player.money.lose", payload: { money, target, tag } });
 	}
 

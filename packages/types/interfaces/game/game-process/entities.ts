@@ -6,7 +6,7 @@ import { GameContext, IGamePhase } from "./events"; // 引用 events
 import { PlayerInfo, PropertyInfo, ChanceCardClientInfo, PropertyCustom } from "./infos"; // 引用 infos
 import { IGameProcess } from "./core"; // 引用 core
 import { UISchema } from "./ui";
-import { MoneyTag } from "./money-tag";
+import { MoneyTagType } from "./money-tag";
 
 /**
  * 玩家接口
@@ -128,7 +128,7 @@ export interface IPlayer {
 	 * @param target - 收取金钱的目标玩家（可选）
 	 * @returns 返回命令执行结果，包含实际花费的金钱数量、目标和标签
 	 */
-	cost: (money: number, tag?: MoneyTag, target?: IPlayer) => Promise<PlayerCommandMap['player.money.lose']['result']>;
+	cost: (money: number, tag?: MoneyTagType, target?: IPlayer) => Promise<PlayerCommandMap['player.money.lose']['result']>;
 
 	/**
 	 * 获得金钱
@@ -137,7 +137,7 @@ export interface IPlayer {
 	 * @param source - 金钱来源玩家（可选）
 	 * @returns 返回命令执行结果，包含实际获得的金钱数量、来源和标签
 	 */
-	gain: (money: number, tag?: MoneyTag, source?: IPlayer) => Promise<PlayerCommandMap['player.money.gain']['result']>;
+	gain: (money: number, tag?: MoneyTagType, source?: IPlayer) => Promise<PlayerCommandMap['player.money.gain']['result']>;
 
 	// ===== 游戏相关方法 =====
 

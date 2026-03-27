@@ -1,4 +1,4 @@
-import { IChanceCard, IPlayer, IProperty, MoneyTag } from "../game-process";
+import { IChanceCard, IPlayer, IProperty, MoneyTagType } from "../game-process";
 import { DiceResult, IDice } from "../util";
 import { ICommandMap } from "./command";
 
@@ -49,16 +49,16 @@ export interface PlayerCommandMap extends ICommandMap {
 	 * 玩家获得金钱
 	 */
 	"player.money.gain": {
-		payload: { money: number; source?: IPlayer; tag?: MoneyTag };
-		result: { money: number; source?: IPlayer; tag?: MoneyTag };
+		payload: { money: number; source?: IPlayer; tag?: MoneyTagType };
+		result: { money: number; source?: IPlayer; tag?: MoneyTagType };
 	};
 
 	/**
 	 * 玩家失去金钱
 	 */
 	"player.money.lose": {
-		payload: { money: number; target?: IPlayer; tag?: MoneyTag };
-		result: { money: number; target?: IPlayer; tag?: MoneyTag };
+		payload: { money: number; target?: IPlayer; tag?: MoneyTagType };
+		result: { money: number; target?: IPlayer; tag?: MoneyTagType };
 	};
 
 	// ===== 移动相关命令 =====
