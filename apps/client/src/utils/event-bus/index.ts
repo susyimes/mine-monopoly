@@ -34,7 +34,6 @@ class EventBus {
 	}
 
 	public emit(eventName: string, ...args: any[]) {
-		console.log("🚀 ~ EventBus ~ emit ~ eventName:", eventName)
 		const fnArr = this.eventMap.get(eventName);
 		if (fnArr) {
 			for (let index = 0; index < fnArr.length; index++) {

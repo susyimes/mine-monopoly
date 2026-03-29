@@ -93,7 +93,10 @@ export class ChanceCardTextureGenerator {
 			wrapper.style.height = `${14 * rootFontSize}px`;
 			wrapper.style.position = "relative";
 
-			// ⭐ 添加样式确保内容居中，无额外边距
+			// ⭐ 使用flex布局确保组件完全居中
+			wrapper.style.display = "flex";
+			wrapper.style.justifyContent = "center";
+			wrapper.style.alignItems = "center";
 			wrapper.style.margin = "0";
 			wrapper.style.padding = "0";
 			wrapper.style.overflow = "hidden";
