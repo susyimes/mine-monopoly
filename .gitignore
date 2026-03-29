@@ -139,8 +139,7 @@ map-cache
 CLAUDE.md
 docs/plans/
 docs/superpowers/
-.claude/settings.local.json
-.claude/skills/commit
+.claude/
 .worktrees/
 
 #d.ts
