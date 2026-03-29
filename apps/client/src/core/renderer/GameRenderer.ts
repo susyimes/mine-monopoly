@@ -844,13 +844,34 @@ export class GameRenderer {
 		}, 0); // 与位置动画同时进行
 
 		// ===== 阶段2：停留展示 =====
-		// ⭐ 停留时面向摄像机
-		timeline.to({}, {
-			duration: 0.6,  // ⭐ 延长停留时间到0.6秒
-			onStart: () => {
-				// 阶段2停留时，让卡片面向摄像机
-				pivot.lookAt(this.camera.position);
+		// ⭐ 停留时平滑转向摄像机
+		// 保存当前旋转状态
+		const currentQuaternion = pivot.quaternion.clone();
+
+		// 使用 lookAt 计算目标朝向
+		const dummyPivot = pivot.clone();
+		dummyPivot.position.copy(pivot.position);
+		dummyPivot.lookAt(this.camera.position);
+		const targetQuaternion = dummyPivot.quaternion.clone();
+
+		// 创建临时对象用于四元数插值
+		const rotationObj = { value: 0 };
+		const tempQuaternion = new THREE.Quaternion();
+
+		timeline.to(rotationObj, {
+			value: 1,
+			duration: 0.2,  // 旋转过渡时间（加快速度）
+			ease: "power2.inOut",
+			onUpdate: () => {
+				// 球面线性插值（slerp）实现平滑旋转
+				// 手动实现插值：先复制起始四元数，然后向目标插值
+				pivot.quaternion.copy(currentQuaternion).slerp(targetQuaternion, rotationObj.value);
 			}
+		});
+
+		// 停留一段时间（旋转完成后）
+		timeline.to({}, {
+			duration: 1,  // 停留时间
 		});
 
 		// ===== 阶段3：3D翻转 + 曲线飞向目标 =====
@@ -858,10 +879,20 @@ export class GameRenderer {
 			const targetPos = targetPositions[i];
 			const isLastTarget = i === targetPositions.length - 1;
 
-			// ⭐ 第一个目标开始时，重置pivot的旋转状态
+			// ⭐ 第一个目标时，添加pivot旋转回初始状态的过渡动画
 			if (i === 0) {
-				// 强制重置pivot为初始状态（X轴垂直于摄像机视线）
-				pivot.rotation.set(0, 0, 0);
+				const resetRotationObj = { value: 0 };
+				const resetQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
+
+				timeline.to(resetRotationObj, {
+					value: 1,
+					duration: 0.8,  // 与整个飞行动画同步，0.8秒
+					ease: "power2.inOut",  // 使用和飞行动画一样的缓动函数
+					onUpdate: () => {
+						// 从面向摄像机的状态过渡回初始状态
+						pivot.quaternion.copy(targetQuaternion).slerp(resetQuaternion, resetRotationObj.value);
+					}
+				}, `target${i}`); // 与位置动画完全同步
 			}
 
 			// ⭐ 为每个目标生成随机方向
@@ -869,7 +900,8 @@ export class GameRenderer {
 			const horizontalOffset = 3; // ⭐ 飞行时的水平偏移量（比出现时小一些）
 
 			// ⭐ 计算当前曲线的中间控制点
-			const currentPos = pivot.position.clone();
+			// 对于第一个目标，明确使用screenCenterPos作为起点，避免瞬移
+			const currentPos = (i === 0) ? screenCenterPos.clone() : pivot.position.clone();
 			const curveMidPoint = new THREE.Vector3(
 				(currentPos.x + targetPos.x) / 2 + Math.cos(randomAngle) * horizontalOffset,
 				Math.max(currentPos.y, targetPos.y) + 3, // ⭐ 向上弧度3个单位

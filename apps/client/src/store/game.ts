@@ -130,7 +130,9 @@ export const useGameData = defineStore("game-data", {
 			const eventBus = useEventBus();
 			const oldGameData = clone(this.$state);
 
-			this.$patch(newGamedata);
+			this.$patch((state) => {
+				Object.assign(state, newGamedata);
+			});
 
 			// 检查回合玩家是否变化
 			if (oldGameData.currentPlayerIdInRound !== newGamedata.currentPlayerIdInRound) {

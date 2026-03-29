@@ -154,6 +154,12 @@ self.addEventListener("message", (ev) => {
 			{
 				const { userId, operateType, data: _data } = data.data;
 				operationListener.emit(userId, operateType, _data);
+
+				// 特殊处理：如果是动画完成事件，检查并调用对应的处理器
+				if (operateType === OperateType.Animation && _data && typeof _data === "string") {
+					const animationId = _data;
+					gameProcess?.markAnimationComplete(animationId);
+				}
 			}
 			break;
 		case WorkerCommType.UserOffLine:
