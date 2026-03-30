@@ -123,6 +123,9 @@ export function useResourcePicker(options: ResourcePickerOptions) {
 			// Process selected file
 			if (autoSave) {
 				// Auto-save mode: Add resource to store immediately
+				// Store old resource ID for deletion after new resource is successfully added
+				const oldResourceId = resourceId.value;
+
 				let newResourceId: string;
 				let newResourceUrl: string;
 
@@ -136,6 +139,15 @@ export function useResourcePicker(options: ResourcePickerOptions) {
 					const newModel = resourceStore.models[resourceStore.models.length - 1];
 					newResourceId = newModel.id;
 					newResourceUrl = newModel.url;
+				}
+
+				// Remove old resource if it exists and is different from the new one
+				if (oldResourceId && oldResourceId !== newResourceId) {
+					if (type === "image") {
+						resourceStore.removeImage(oldResourceId);
+					} else {
+						resourceStore.removeModel(oldResourceId);
+					}
 				}
 
 				// Update resource ID and temporary URL

@@ -181,6 +181,8 @@ export const useMapDataStore = defineStore("MapData", {
 		editRole(role: Role) {
 			const index = this.roles.findIndex((s) => s.id === role.id);
 			if (index < 0) throw Error("找不到目标角色");
+			const old = this.roles[index];
+			if (old.imageId !== role.imageId) useResourceStore().removeImage(old.imageId);
 			Object.assign(this.roles[index], role);
 		},
 		findRoleById(id: string) {
