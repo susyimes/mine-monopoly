@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { addNewModel, convertToFpUrl, updateExistingModel } from "@src/utils/file";
+import { addNewModel, updateExistingModel } from "@src/utils/file";
 import { ModelPreviewerRenderer } from "@src/utils/three/ModelPreviewerRenderer";
-import { reactive, watch, ref, nextTick } from "vue"; // 引入 watch, nextTick
+import { ResourcePicker } from "@src/components/resource-picker";
+import { reactive, watch, nextTick } from "vue"; // 引入 watch, nextTick
 import { useResourceStore } from "@src/stores"; // 引入 store 获取回显数据
 import { message } from "ant-design-vue";
 
 interface FormState {
 	name: string;
-	fileUrl: string;
+	modelId: string;
+	tempFilePath?: string; // 临时存储选择的文件路径（编辑模式用）
 }
 
 // 接收一个可选的 editModelId，如果有值则是编辑模式
@@ -17,7 +19,7 @@ const props = defineProps<{
 
 const createModelFrom = reactive<FormState>({
 	name: "",
-	fileUrl: "",
+	modelId: "",
 });
 
 const visible = defineModel({ default: false });
@@ -32,7 +34,7 @@ watch(visible, async (isOpen) => {
 			const target = resourceStore.findModelById(props.editModelId);
 			if (target) {
 				createModelFrom.name = target.name;
-				createModelFrom.fileUrl = target.url;
+				createModelFrom.modelId = target.id;
 				// 等待 DOM 渲染后加载预览
 				await nextTick();
 				initPreviewer();
@@ -56,33 +58,61 @@ function initPreviewer() {
 	}
 }
 
+function handleResourceChange(resource: any) {
+	// 保存选择的文件路径（autoSave: false 模式）
+	if (resource && resource.url) {
+		createModelFrom.tempFilePath = resource.url;
+	}
+}
+
 async function handleConfirm() {
+	const resourceStore = useResourceStore();
+
 	if (props.editModelId) {
-		await updateExistingModel(props.editModelId, createModelFrom.name, createModelFrom.fileUrl);
+		// 编辑模式
+		if (createModelFrom.modelId !== props.editModelId || createModelFrom.tempFilePath) {
+			// 用户更换了模型文件（有 tempFilePath 说明是在 autoSave: false 模式下选择的文件）
+			if (createModelFrom.tempFilePath) {
+				// autoSave: false 模式：需要手动保存文件
+				await updateExistingModel(props.editModelId, createModelFrom.name, createModelFrom.tempFilePath);
+			} else {
+				// autoSave: true 模式（虽然不应该发生）：从 store 获取新模型
+				const newModel = resourceStore.findModelById(createModelFrom.modelId);
+				if (newModel) {
+					await updateExistingModel(props.editModelId, createModelFrom.name, newModel.url);
+					resourceStore.removeModel(createModelFrom.modelId);
+				}
+			}
+			createModelFrom.modelId = props.editModelId;
+		} else {
+			// 用户只更新了名称，没有更换模型
+			const oldModel = resourceStore.findModelById(props.editModelId);
+			if (oldModel) {
+				oldModel.name = createModelFrom.name;
+			}
+		}
+		message.success(`编辑模型 "${createModelFrom.name}" 成功`, 1);
 	} else {
-		await addNewModel(createModelFrom.fileUrl, createModelFrom.name);
+		// 新增模式
+		if (createModelFrom.tempFilePath) {
+			// autoSave: false 模式：需要手动保存
+			await addNewModel(createModelFrom.tempFilePath, createModelFrom.name);
+		} else {
+			// autoSave: true 模式：只需更新名称
+			const model = resourceStore.findModelById(createModelFrom.modelId);
+			if (model) {
+				model.name = createModelFrom.name;
+			}
+		}
 		message.success(`添加模型 "${createModelFrom.name}" 成功`, 1);
 	}
 	visible.value = false;
 }
 
-async function handleSelectFile() {
-	const res = await window.electronAPI.showOpenDialog({
-		filters: [{ name: "3D Model", extensions: ["gltf", "glb"] }],
-		properties: ["openFile"],
-	});
-
-	if (res.filePaths.length > 0) {
-		createModelFrom.fileUrl = convertToFpUrl(res.filePaths[0]);
-		console.log("🚀 ~ handleSelectFile ~ createModelFrom.fileUrl:", createModelFrom.fileUrl)
-		initPreviewer();
-		await modelPreviewer?.loadModel(createModelFrom.fileUrl, true);
-	}
-}
-
 function resetForm() {
 	createModelFrom.name = "";
-	createModelFrom.fileUrl = "";
+	createModelFrom.modelId = "";
+	createModelFrom.tempFilePath = undefined;
 }
 
 function handleClose() {
@@ -105,14 +135,19 @@ function handleClose() {
 				<a-input v-model:value="createModelFrom.name" />
 			</a-form-item>
 
-			<a-form-item label="模型地址" name="fileUrl" :rules="[{ required: true, message: '请选择模型' }]">
-				<span class="model-url" v-if="createModelFrom.fileUrl">
-					{{ createModelFrom.fileUrl }}
-				</span>
+			<a-form-item label="模型地址" name="modelId" :rules="[{ required: true, message: '请选择模型' }]">
+				<!-- 旧的模型预览容器（用于编辑模式） -->
 				<div id="form-preview-canvas-container" class="model-preview-canvas-container"></div>
-				<a-button @click="handleSelectFile" type="primary">
-					{{ props.editModelId ? "更换模型文件" : "选择模型" }}
-				</a-button>
+				<div style="color: #999; font-size: 12px; margin-bottom: 8px;">↑ 旧预览（编辑模式回显）</div>
+
+				<!-- 新的 ResourcePicker 组件 -->
+				<ResourcePicker
+					type="model"
+					v-model="createModelFrom.modelId"
+					:auto-save="!props.editModelId"
+					@change="handleResourceChange"
+				/>
+				<div style="color: #999; font-size: 12px; margin-top: 8px;">↑ 新预览（ResourcePicker）</div>
 			</a-form-item>
 
 			<a-form-item>
@@ -125,16 +160,6 @@ function handleClose() {
 </template>
 
 <style lang="scss" scoped>
-.model-url {
-	display: block;
-	margin-bottom: 10px;
-	padding: 5px;
-	border: 1px solid #ccc;
-	border-radius: 5px;
-	background-color: #f3f3f3;
-	word-break: break-all; /* 防止路径过长撑开 */
-	font-size: 12px;
-}
 .model-preview-canvas-container {
 	display: block;
 	margin-bottom: 10px;

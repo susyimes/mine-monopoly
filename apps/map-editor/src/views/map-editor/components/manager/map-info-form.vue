@@ -1,46 +1,31 @@
 <script setup lang="ts">
 import { GameMapInfo } from "@mine-monopoly/types";
-import { useMapDataStore, useResourceStore } from "@src/stores";
-import { addNewImage } from "@src/utils/file";
+import { ResourcePicker } from "@src/components/resource-picker";
+import { useMapDataStore } from "@src/stores";
 import { message } from "ant-design-vue";
 import { Rule } from "ant-design-vue/es/form";
-import { ref, reactive, onUpdated, watch } from "vue";
+import { reactive, watch } from "vue";
 
 const visible = defineModel({ default: false });
 
 const mapInfoForm = reactive<GameMapInfo>({ ...useMapDataStore().info });
-const coverImageUrl = ref("");
-const coverImagePreview = ref("");
 
 watch(
 	() => visible,
-	async () => {
-		if (!coverImageUrl.value) {
-			coverImagePreview.value = await getCoverImagePreviewUrl();
-		}
+	() => {
 		Object.assign(mapInfoForm, useMapDataStore().info);
 	},
 	{ immediate: true },
 );
 
-async function getCoverImagePreviewUrl() {
-	const imageResourceId = useMapDataStore().info.coverImageId;
-	const imageResource = useResourceStore().findImageById(imageResourceId);
-	if (!imageResource) return "";
-	return imageResource.url;
-}
-
 async function handleUpdateInfo() {
 	try {
-		if (coverImageUrl.value) {
-			const coverImageId = await addNewImage(coverImageUrl.value, "CoverImage");
-			useMapDataStore().setCoverImageId(coverImageId);
-		}
 		useMapDataStore().updateMapInfo({
 			name: mapInfoForm.name,
 			author: mapInfoForm.author,
 			version: mapInfoForm.version,
 			description: mapInfoForm.description,
+			coverImageId: mapInfoForm.coverImageId,
 		});
 		message.success(`更新地图信息成功`, 1);
 	} catch (e: any) {
@@ -49,19 +34,6 @@ async function handleUpdateInfo() {
 
 	handleClose();
 	visible.value = false;
-}
-
-async function handleAddCoverImage() {
-	const res = await window.electronAPI.showOpenDialog({
-		filters: [{ name: "地图封面", extensions: ["png", "jpg", "jpeg"] }],
-		properties: ["openFile"],
-	});
-
-	if (res.filePaths.length > 0) {
-		coverImageUrl.value = res.filePaths[0];
-		const content = await window.electronAPI.getImageBase64(coverImageUrl.value);
-		coverImagePreview.value = `data:image/png;base64,${content}`;
-	}
 }
 
 async function checkVersion(_rule: Rule, value: string) {
@@ -75,8 +47,7 @@ async function checkVersion(_rule: Rule, value: string) {
 }
 
 function handleClose() {
-	coverImageUrl.value = "";
-	coverImagePreview.value = "";
+	// ResourcePicker manages its own state
 }
 </script>
 
@@ -141,14 +112,10 @@ function handleClose() {
 
 				<div class="right-col">
 					<a-form-item label="地图封面" name="cover-image" class="cover-item">
-						<div class="cover-upload-box" @click="handleAddCoverImage">
-							<img v-if="coverImagePreview" :src="coverImagePreview" class="cover-preview" />
-							<div v-else class="placeholder">
-								<span class="icon">🖼️</span>
-								<span>点击设置封面</span>
-							</div>
-							<div class="hover-tip">点击更换</div>
-						</div>
+						<ResourcePicker
+							type="image"
+							v-model="mapInfoForm.coverImageId"
+						/>
 						<div class="tip-text">推荐比例 16:9</div>
 					</a-form-item>
 				</div>
@@ -235,61 +202,6 @@ function handleClose() {
 
 		.cover-item {
 			height: 100%;
-		}
-
-		.cover-upload-box {
-			width: 100%;
-			aspect-ratio: 16/9;
-			background-color: #f5f5f5;
-			border: 1px dashed #d9d9d9;
-			border-radius: 8px;
-			cursor: pointer;
-			position: relative;
-			overflow: hidden;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			transition: all 0.3s;
-
-			&:hover {
-				border-color: #1890ff;
-				.hover-tip {
-					opacity: 1;
-				}
-			}
-
-			.cover-preview {
-				width: 100%;
-				height: 100%;
-				object-fit: contain;
-				padding: 8px;
-				box-sizing: border-box;
-			}
-
-			.placeholder {
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				color: #999;
-				font-size: 13px;
-				.icon {
-					font-size: 24px;
-					margin-bottom: 8px;
-				}
-			}
-
-			.hover-tip {
-				position: absolute;
-				inset: 0;
-				background: rgba(0, 0, 0, 0.5);
-				color: white;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				opacity: 0;
-				transition: opacity 0.3s;
-				font-weight: bold;
-			}
 		}
 
 		.tip-text {

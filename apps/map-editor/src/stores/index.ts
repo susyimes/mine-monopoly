@@ -114,6 +114,8 @@ export const useMapDataStore = defineStore("MapData", {
 		editMapEvent(mapEvent: MapEvent) {
 			const index = this.mapEvents.findIndex((s) => s.id === mapEvent.id);
 			if (index < 0) throw Error("找不到目标地图事件");
+			const old = this.mapEvents[index];
+			if (old.iconId !== mapEvent.iconId) useResourceStore().removeImage(old.iconId);
 			Object.assign(this.mapEvents[index], mapEvent);
 		},
 		reomveMapEvent(id: string) {

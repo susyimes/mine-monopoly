@@ -6,21 +6,16 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
 import { ChanceCardInfo, TargetSelectType } from "@mine-monopoly/types";
-import { addNewImage, convertToFpUrl } from "@src/utils/file";
 import { Rule } from "ant-design-vue/es/form";
 import { ChanceCard } from "@mine-monopoly/ui";
+import { ResourcePicker } from "@src/components/resource-picker";
 
 const props = defineProps<{ chanceCard: ChanceCardInfo | undefined }>();
 const emits = defineEmits(["close"]);
 
-onMounted(async () => {
+onMounted(() => {
 	if (!props.chanceCard) return;
-	const imageResource = useResourceStore().findImageById(props.chanceCard.iconId);
-	if (!imageResource) {
-		message.error(`获取 ${props.chanceCard.name} 的icon资源失败`, 1);
-		return;
-	}
-	iconUrl.value = imageResource.url;
+	chanceCardForm.iconId = props.chanceCard.iconId;
 });
 
 const targetNameMap: Record<TargetSelectType, string> = {
@@ -52,8 +47,6 @@ function getInitForm() {
 	return initForm;
 }
 
-const iconUrl = ref("");
-
 const chanceCardForm = reactive<ChanceCardInfo>(props.chanceCard || getInitForm());
 
 watch(
@@ -68,16 +61,9 @@ watch(
 	{ immediate: true },
 );
 
-let isIconChange = false;
-
 async function handleAddChanceCard() {
 	try {
 		const mapDataStore = useMapDataStore();
-		if (isIconChange) {
-			if (chanceCardForm.iconId) useResourceStore().removeImage(chanceCardForm.iconId);
-			const iconId = await addNewImage(iconUrl.value, chanceCardForm.name);
-			chanceCardForm.iconId = iconId;
-		}
 		if (props.chanceCard) {
 			mapDataStore.editChanceCard(chanceCardForm);
 			message.success(`修改 "${chanceCardForm.name}" 成功`);
@@ -91,23 +77,13 @@ async function handleAddChanceCard() {
 	}
 }
 
-async function handleAddIcon() {
-	const res = await window.electronAPI.showOpenDialog({
-		filters: [{ name: "icon图片", extensions: ["png", "jpg", "jpeg", "gif"] }],
-		properties: ["openFile"],
-	});
-	if (res.filePaths.length > 0) {
-		iconUrl.value = convertToFpUrl(res.filePaths[0]); // 直接拿路径
-		isIconChange = true;
-	}
-}
-
 const chanceCardIconPreview = computed(() => {
-	return iconUrl.value;
+	const imageResource = useResourceStore().findImageById(chanceCardForm.iconId);
+	return imageResource?.url || "";
 });
 
 const iconRule = async (_rule: Rule, value: string) => {
-	if (!iconUrl.value) {
+	if (!chanceCardForm.iconId) {
 		return Promise.reject("请选择图片");
 	} else {
 		return Promise.resolve();
@@ -145,8 +121,11 @@ const iconRule = async (_rule: Rule, value: string) => {
 					<a-form-item label="颜色" name="color" :rules="[{ required: true, message: '请输入机会卡颜色' }]">
 						<input type="color" v-model="chanceCardForm.color" />
 					</a-form-item>
-					<a-form-item label="icon图片" name="iconUrl" :rules="[{ required: true, validator: iconRule }]">
-						<a-button size="small" @click="handleAddIcon">选择图片</a-button>
+					<a-form-item label="icon图片" name="iconId" :rules="[{ required: true, validator: iconRule }]">
+						<ResourcePicker
+							type="image"
+							v-model="chanceCardForm.iconId"
+						/>
 					</a-form-item>
 				</a-form>
 			</div>

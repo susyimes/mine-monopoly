@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useMapDataStore, useResourceStore } from "@src/stores";
-import { addNewImage, convertToFpUrl } from "@src/utils/file";
 import { RolePreviewerRenderer } from "@src/utils/three/RolePreviewerRenderer";
 import { message } from "ant-design-vue";
-import { ref, reactive, onMounted, onBeforeUnmount, computed } from "vue";
+import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import CodeEditor from "@src/components/code-editor/index.vue";
 import libContent from "./editor-lib.d.ts?raw";
 import templateText from "./template-text?raw";
 import { Role } from "@mine-monopoly/types";
+import { ResourcePicker } from "@src/components/resource-picker";
 
 const { role } = defineProps<{ role: Role | undefined }>();
 
@@ -22,14 +22,8 @@ onMounted(async () => {
 		roleForm.description = role.description;
 		roleForm.color = role.color;
 		roleForm.initCode = role.initCode;
-		const resource = useResourceStore().findImageById(role.imageId);
-		if (!resource) {
-			message.error("获取角色资源失败");
-			return;
-		}
-		// Store 里的 url 已经是 fp-file:// 格式
-		roleForm.fileUrl = resource.url;
-		await loadRole(resource.url);
+		roleForm.imageId = role.imageId;
+		await loadRole(role.imageId);
 	}
 });
 
@@ -38,7 +32,7 @@ interface FormState {
 	name: string;
 	description: string;
 	color: string;
-	fileUrl: string;
+	imageId: string;
 	initCode: string;
 }
 const roleForm = reactive<FormState>({
@@ -46,7 +40,7 @@ const roleForm = reactive<FormState>({
 	name: "",
 	description: "",
 	color: "#000000",
-	fileUrl: "",
+	imageId: "",
 	initCode: "",
 });
 
@@ -63,25 +57,12 @@ function handleSubmit() {
 async function handleEditRole() {
 	try {
 		if (!role) return;
-		const resource = useResourceStore().findImageById(role.imageId);
-		if (!resource) {
-			message.error("获取角色资源失败");
-			return;
-		}
-		let imageId = role.imageId;
-
-		// 比较 URL (都是 fp-file:// 格式)
-		if (roleForm.fileUrl !== resource.url) {
-			// addNewImage 内部会处理 fp-file 路径的读取和保存
-			imageId = await addNewImage(roleForm.fileUrl, roleForm.name);
-			useResourceStore().removeImage(role.imageId);
-		}
 		const _role = {
 			id: role.id,
 			name: roleForm.name,
 			description: roleForm.description,
 			color: roleForm.color,
-			imageId,
+			imageId: roleForm.imageId,
 			initCode: roleForm.initCode,
 		};
 		useMapDataStore().editRole(_role);
@@ -94,14 +75,12 @@ async function handleEditRole() {
 
 async function handleCreateRole() {
 	try {
-		// 保存图片
-		const imageId = await addNewImage(roleForm.fileUrl, roleForm.name);
 		const role = {
 			id: `role-${crypto.randomUUID()}`,
 			name: roleForm.name,
 			description: roleForm.description,
 			color: roleForm.color,
-			imageId,
+			imageId: roleForm.imageId,
 			initCode: roleForm.initCode,
 		};
 		useMapDataStore().addRole(role);
@@ -112,33 +91,33 @@ async function handleCreateRole() {
 	}
 }
 
-async function handleAddRole() {
-	const res = await window.electronAPI.showOpenDialog({
-		filters: [{ name: "纸片人", extensions: ["png", "webp"] }],
-		properties: ["openFile"],
-	});
-	if (res.filePaths.length > 0) {
-		// 核心修改：转换为 fp-file 协议 URL，实现统一和预览
-		roleForm.fileUrl = convertToFpUrl(res.filePaths[0]);
-		await loadRole(roleForm.fileUrl);
-	}
-}
-
-async function loadRole(fileUrl: string) {
+async function loadRole(imageId: string) {
 	if (!rolePreviewer) {
 		// 使用 ref 获取容器
 		if (canvasContainerRef.value) {
 			rolePreviewer = new RolePreviewerRenderer(canvasContainerRef.value);
 		}
 	}
-	await rolePreviewer?.loadRole(fileUrl);
+	const resource = useResourceStore().findImageById(imageId);
+	if (!resource) {
+		message.error("获取角色资源失败");
+		return;
+	}
+	await rolePreviewer?.loadRole(resource.url);
 }
 
 onBeforeUnmount(handleClose);
 
+// Watch for imageId changes to update preview
+watch(() => roleForm.imageId, async (newImageId) => {
+	if (newImageId) {
+		await loadRole(newImageId);
+	}
+});
+
 function handleClose() {
 	roleForm.name = "";
-	roleForm.fileUrl = "";
+	roleForm.imageId = "";
 	rolePreviewer?.destroy();
 	rolePreviewer = null;
 }
@@ -165,9 +144,17 @@ function handleClose() {
 						<input type="color" v-model="roleForm.color" />
 					</a-form-item>
 
-					<a-form-item label="角色预览" name="fileUrl" :rules="[{ required: true, message: '请选择角色图片' }]">
+					<a-form-item label="角色预览" name="imageId" :rules="[{ required: true, message: '请选择角色图片' }]">
+						<!-- 旧的角色预览容器（3D纸片人预览） -->
 						<div ref="canvasContainerRef" class="model-preview-canvas-container"></div>
-						<a-button @click="handleAddRole" size="small">选择纸片人图片</a-button>
+						<div style="color: #999; font-size: 12px; margin-bottom: 8px;">↑ 旧预览（3D纸片人）</div>
+
+						<!-- 新的 ResourcePicker 组件 -->
+						<ResourcePicker
+							type="image"
+							v-model="roleForm.imageId"
+						/>
+						<div style="color: #999; font-size: 12px; margin-top: 8px;">↑ 新预览（ResourcePicker）</div>
 					</a-form-item>
 				</a-form>
 			</div>

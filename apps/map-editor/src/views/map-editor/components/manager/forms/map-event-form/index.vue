@@ -3,10 +3,13 @@ import { MapEvent } from "@mine-monopoly/types/interfaces/game/item";
 import CodeEditor from "@src/components/code-editor/index.vue";
 import libContent from "./editor-lib.d.ts?raw";
 import templateText from "./template-text?raw";
-import { computed, reactive, ref, watch } from "vue";
+import { reactive, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
 import { MapEventType } from "@mine-monopoly/types";
+import { ResourcePicker } from "@src/components/resource-picker";
+import { addNewImage } from "@src/utils/file";
+import { cloneDeep } from "lodash";
 
 // 事件类型选项
 const eventTypeOptions = [
@@ -14,24 +17,12 @@ const eventTypeOptions = [
 	{ label: "经过事件", value: MapEventType.PassedEvent },
 	{ label: "普通事件", value: MapEventType.NormalEvents },
 ];
-import { addNewImage, convertToFpUrl } from "@src/utils/file";
-import { Rule } from "ant-design-vue/es/form";
-import { cloneDeep } from "lodash";
 
 const props = defineProps<{ mapEvent: MapEvent | undefined }>();
 const emits = defineEmits(["close"]);
 const resourceStore = useResourceStore();
 
-// 存储当前选中的图片路径（可能是 store 里的，也可能是新选的）
-const iconUrl = ref("");
-
-// 优化：实时计算预览 URL
-const mapEventIconPreview = computed(() => {
-	return iconUrl.value;
-});
-
-const mapEventForm = reactive<MapEvent>(getInitForm());
-let isIconChange = false;
+const mapEventForm = reactive<MapEvent & { tempFilePath?: string }>(getInitForm());
 
 // 初始化表单
 watch(
@@ -39,19 +30,10 @@ watch(
 	(newEvent) => {
 		if (newEvent) {
 			Object.assign(mapEventForm, cloneDeep(newEvent));
-			// 查找现有资源
-			const imageResource = resourceStore.findImageById(newEvent.iconId);
-			if (imageResource) {
-				iconUrl.value = imageResource.url;
-			} else {
-				iconUrl.value = "";
-			}
-			isIconChange = false;
 		} else {
 			Object.assign(mapEventForm, getInitForm());
-			iconUrl.value = "";
-			isIconChange = false;
 		}
+		mapEventForm.tempFilePath = undefined;
 	},
 	{ immediate: true },
 );
@@ -65,22 +47,39 @@ function getInitForm() {
 		effectCode: "",
 		iconId: "",
 		properties: [],
+		tempFilePath: undefined,
 	};
 	return initForm;
+}
+
+function handleResourceChange(resource: any) {
+	// 保存选择的文件路径（autoSave: false 模式）
+	if (resource && resource.url) {
+		mapEventForm.tempFilePath = resource.url;
+	}
 }
 
 async function handleAddMapEvent() {
 	try {
 		const mapDataStore = useMapDataStore();
-		if (isIconChange) {
-			if (mapEventForm.iconId) resourceStore.removeImage(mapEventForm.iconId);
-			const iconId = await addNewImage(iconUrl.value, mapEventForm.name);
-			mapEventForm.iconId = iconId;
-		}
+
 		if (props.mapEvent) {
+			// 编辑模式
+			if (mapEventForm.tempFilePath) {
+				// 用户更换了图标（autoSave: false 模式）
+				const newIconId = await addNewImage(mapEventForm.tempFilePath, mapEventForm.name);
+				mapEventForm.iconId = newIconId;
+			}
 			mapDataStore.editMapEvent(mapEventForm);
 			message.success(`修改 "${mapEventForm.name}" 成功`);
 		} else {
+			// 新增模式
+			if (mapEventForm.tempFilePath) {
+				// autoSave: false 模式（虽然不应该发生）
+				const newIconId = await addNewImage(mapEventForm.tempFilePath, mapEventForm.name);
+				mapEventForm.iconId = newIconId;
+			}
+			// ResourcePicker 已经添加了图片（autoSave: true 模式）
 			mapDataStore.addMapEvent(mapEventForm);
 			message.success(`添加 "${mapEventForm.name}" 成功`);
 		}
@@ -89,25 +88,6 @@ async function handleAddMapEvent() {
 		message.error(e.message, 1);
 	}
 }
-
-async function handleAddIcon() {
-	const res = await window.electronAPI.showOpenDialog({
-		filters: [{ name: "icon图片", extensions: ["png", "jpg", "jpeg", "gif"] }],
-		properties: ["openFile"],
-	});
-	if (res.filePaths.length > 0) {
-		iconUrl.value = convertToFpUrl(res.filePaths[0]); // 直接拿路径
-		isIconChange = true;
-	}
-}
-
-const iconRule = async (_rule: Rule, value: string) => {
-	if (!iconUrl.value) {
-		return Promise.reject("请选择图片");
-	} else {
-		return Promise.resolve();
-	}
-};
 </script>
 
 <template>
@@ -132,11 +112,13 @@ const iconRule = async (_rule: Rule, value: string) => {
 					<a-form-item label="事件触发类型" name="type" :rules="[{ required: true, message: '请选择事件触发类型' }]">
 						<a-select v-model:value="mapEventForm.type" :options="eventTypeOptions" />
 					</a-form-item>
-					<a-form-item label="icon图片" name="iconUrl" :rules="[{ required: true, validator: iconRule }]">
-						<template v-if="iconUrl">
-							<img class="icon-preview" :src="mapEventIconPreview" />
-						</template>
-						<a-button @click="handleAddIcon" size="small">选择图片</a-button>
+					<a-form-item label="icon图片" name="iconId" :rules="[{ required: true, message: '请选择图标图片' }]">
+						<ResourcePicker
+							type="image"
+							v-model="mapEventForm.iconId"
+							:auto-save="!props.mapEvent"
+							@change="handleResourceChange"
+						/>
 					</a-form-item>
 				</a-form>
 			</div>
@@ -193,25 +175,6 @@ const iconRule = async (_rule: Rule, value: string) => {
 		flex-direction: column;
 		padding: 0 10px;
 		gap: 10px;
-	}
-
-	.icon-url {
-		display: block;
-		word-break: break-all;
-		margin-bottom: 10px;
-		padding: 5px;
-		border: 1px solid #ccc;
-		border-radius: 5px;
-		background-color: #f3f3f3;
-	}
-	.icon-preview {
-		display: block;
-		margin-bottom: 10px;
-		border-radius: 10px;
-		width: 150px;
-		height: 150px;
-		border-radius: 5px;
-		background-color: #f3f3f3;
 	}
 }
 </style>
