@@ -1125,12 +1125,11 @@ export class GameRenderer {
 		useEventBus().on("player-money", async (playerId: string, oldMoney: number, newMoney: number) => {
 			this.createPopoverOnPlayerTop(playerId, moneyPopTip, { money: newMoney - oldMoney }, 2000);
 		});
-		useEventBus().on("property-level", async (propertyId: string) => {
-			this.updateBuilding(useGameData().getPropertyById(propertyId)!);
-		});
-		useEventBus().on("property-owner", async (propertyId: string) => {
-			this.updateBuilding(useGameData().getPropertyById(propertyId)!);
-		});
+		for (const key of ["level", "owner", "costList"]) {
+			useEventBus().on(`property-${key}`, async (propertyId: string) => {
+				this.updateBuilding(useGameData().getPropertyById(propertyId)!);
+			});
+		}
 
 		useEventBus().on("dice-roll", async (diceRes: DiceResult[]) => {
 			if (!this.diceManager) return;
