@@ -204,6 +204,18 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	// ===== 事件栈管理 =====
 
 	/**
+	 * 获取所有玩家 ID
+	 * @returns 玩家 ID 数组
+	 */
+	getAllPlayersId(): string[];
+
+	/**
+	 * 将异步函数推入事件栈顶端（下一个执行）
+	 * @param fn - 异步函数
+	 */
+	nextTick(fn: (ctx: GameContext, gameProcess: IGameProcess) => Promise<void> | void): void;
+
+	/**
 	 * 将游戏事件推入栈
 	 * @param gameEvent - 游戏事件
 	 */

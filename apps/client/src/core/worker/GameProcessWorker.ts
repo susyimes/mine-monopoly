@@ -1542,6 +1542,14 @@ export class GameProcess implements IGameProcess {
 		await this.gameRuntimeStack.run(context, this);
 	}
 
+	public getAllPlayersId(): string[] {
+		return Array.from(this.players.keys());
+	}
+
+	public nextTick(fn: (ctx: GameContext, gameProcess: IGameProcess) => Promise<void> | void): void {
+		this.gameRuntimeStack.push({ fn });
+	}
+
 	public pushEventToStack(...gameEvents: GameEvent<GameContext>[]) {
 		this.gameRuntimeStack.push(...gameEvents);
 	}
