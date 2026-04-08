@@ -23,6 +23,10 @@ const currentInstance = ref<CustomUI | null>(null);
 // 模式判断
 const isEditingTemplate = computed(() => !!currentTemplate.value);
 
+const sortedTemplates = computed(() =>
+	[...mapStore.uiTemplates].sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))
+);
+
 // 工具函数：生成UUID
 function generateUUID() {
 	if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
@@ -117,6 +121,12 @@ function handleDeleteInstance(id: string) {
 	closeEditor();
 }
 
+async function copyUiId(slug: string) {
+	const text = `$ui__${slug}`;
+	await navigator.clipboard.writeText(text);
+	message.success(`已复制: ${text}`);
+}
+
 function closeEditor() {
 	editorVisible.value = false;
 	currentTemplate.value = null;
@@ -148,13 +158,14 @@ function closeEditor() {
 				</div>
 
 				<div class="card-grid">
-					<div v-for="item in mapStore.uiTemplates" :key="item.id" class="schema-card">
+					<div v-for="item in sortedTemplates" :key="item.id" class="schema-card">
 						<div class="card-info">
 							<div class="card-name">{{ item.name }}</div>
 							<div class="card-slug">{{ item.slug }}</div>
 							<div class="card-id">ID: {{ item.id }}</div>
 						</div>
 						<div class="card-actions">
+							<a-button size="small" @click="copyUiId(item.slug)">复制UI标识</a-button>
 							<a-button size="small" @click="handleEditTemplate(item)">编辑</a-button>
 							<a-button size="small" danger @click="handleDeleteTemplate(item.id)">删除</a-button>
 						</div>
@@ -291,6 +302,7 @@ function closeEditor() {
 
 .card-actions {
 	display: flex;
+	flex-direction: column;
 	gap: 8px;
 }
 
