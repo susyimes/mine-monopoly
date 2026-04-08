@@ -1370,6 +1370,7 @@ export class GameProcess implements IGameProcess {
 					player.id,
 				)} 触发了地图事件: ${this.createGameLinkItem(GameLinkItem.ArrivedEvent, mapEvent.id)}`,
 			);
+			this.gameDataBroadcast();
 		}
 	}
 
