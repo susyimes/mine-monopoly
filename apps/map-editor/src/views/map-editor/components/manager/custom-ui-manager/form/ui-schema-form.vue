@@ -325,7 +325,7 @@ const removeNode = () => {
 								</a-col>
 							</a-row>
 
-							<template v-if="['text', 'button', 'span'].includes(selectedNode.type)">
+							<template v-if="['div', 'text', 'button', 'span'].includes(selectedNode.type)">
 								<a-row :gutter="12">
 									<a-col :span="12">
 										<a-form-item label="静态文本">

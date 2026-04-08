@@ -20,7 +20,7 @@ const emits = defineEmits(["select", "update:selectedKey"]);
 const maxSelect = computed(() => {
 	if (props.multiple === true) return 999;
 	if (props.multiple === false || props.multiple === undefined) return 1;
-	return typeof props.multiple === 'number' ? Math.max(1, props.multiple) : 1;
+	return typeof props.multiple === "number" ? Math.max(1, props.multiple) : 1;
 });
 
 const isMultipleMode = computed(() => maxSelect.value > 1);
@@ -64,13 +64,19 @@ function handleItemClick(item: any) {
 			v-for="item in itemList"
 			:key="item[keyName]"
 			@click="handleItemClick(item)"
-			:class="{ 'is-selected': isItemSelected(item[keyName]) }"
+			:class="{
+				'is-selected': isItemSelected(item[keyName]),
+				'has-display': !!item.display && typeof item.display !== 'string',
+			}"
 		>
 			<div v-if="isItemSelected(item[keyName])" class="selected">
 				<FontAwesomeIcon icon="check" />
 			</div>
 
-			<div v-if="item.display" class="item-display-html">
+			<div v-if="typeof item.display === 'string'" class="item-display-text">
+				{{ item.display }}
+			</div>
+			<div v-else-if="item.display" class="item-display-html">
 				<html-renderer :schema="item.display" :context="useGameData().$state" />
 			</div>
 
@@ -98,6 +104,7 @@ function handleItemClick(item: any) {
 		transition: all 0.3s ease-out;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 		overflow: hidden;
+		padding: 0.5rem;
 
 		// 鼠标悬停效果
 		&:hover {
@@ -105,10 +112,30 @@ function handleItemClick(item: any) {
 			transform: translateY(-2px);
 		}
 
+		// UISchema 显示模式：不显示边框和背景
+		&.has-display {
+			background-color: transparent;
+			border-color: transparent;
+			box-shadow: none;
+			padding: 0;
+
+			&:hover {
+				box-shadow: none;
+				transform: none;
+			}
+
+			&.is-selected {
+				border-color: transparent;
+				box-shadow: none;
+			}
+		}
+
 		// 选中状态
 		&.is-selected {
 			border-color: var(--color-primary); // 主题色边框
-			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--color-primary); // 增加主题色外圈
+			box-shadow:
+				0 4px 8px rgba(0, 0, 0, 0.1),
+				0 0 0 1px var(--color-primary); // 增加主题色外圈
 		}
 
 		// 选中图标角标

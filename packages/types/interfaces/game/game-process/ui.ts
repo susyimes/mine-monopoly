@@ -172,8 +172,8 @@ export interface SelectorItem {
 	/** 物品 ID */
 	id: string;
 
-	/** 显示 UI */
-	display: UISchema;
+	/** 显示 UI 或纯文本 */
+	display: UISchema | string;
 }
 
 /**
