@@ -12,6 +12,7 @@ export class ChanceCardTextureGenerator {
 	private static textureCache = new Map<string, THREE.CanvasTexture>();
 	private static renderContainer: HTMLDivElement | null = null;
 	private static MAX_CACHE_SIZE = 50;
+	private static iconCache = new Map<string, HTMLImageElement>();
 
 	/**
 	 * 生成机会卡纹理
@@ -163,6 +164,71 @@ export class ChanceCardTextureGenerator {
 	}
 
 	/**
+	 * 预加载所有图标图片到浏览器缓存
+	 * 后续渲染时 waitForImages 中的 img.complete 会直接为 true，消除超时等待
+	 */
+	static preloadIcons(iconUrls: string[]): Promise<void> {
+		const uniqueUrls = [...new Set(iconUrls.filter(Boolean))];
+		const promises = uniqueUrls.map(url => {
+			if (this.iconCache.has(url)) return Promise.resolve();
+			return new Promise<void>((resolve) => {
+				const img = new Image();
+				img.crossOrigin = "anonymous";
+				img.onload = () => {
+					this.iconCache.set(url, img);
+					resolve();
+				};
+				img.onerror = () => resolve();
+				img.src = url;
+			});
+		});
+		return Promise.all(promises).then(() => {});
+	}
+
+	/**
+	 * 并发预加载纹理，带进度回调
+	 * @param cards - 机会卡数据数组
+	 * @param concurrency - 最大并发数（默认4）
+	 * @param onProgress - 进度回调 (已完成数, 总数, 卡名)
+	 */
+	static async preloadTexturesConcurrent(
+		cards: Array<{ card: ChanceCardInfo; iconUrl: string }>,
+		concurrency: number = 4,
+		onProgress?: (completed: number, total: number, cardName: string) => void
+	): Promise<void> {
+		const total = cards.length;
+		let completed = 0;
+		let index = 0;
+
+		const self = this;
+
+		async function processNext(): Promise<void> {
+			while (index < cards.length) {
+				const currentIndex = index++;
+				const { card, iconUrl } = cards[currentIndex];
+
+				try {
+					await self.generateTexture(card, iconUrl);
+					console.log(`[ChanceCardTextureGenerator] 预加载进度: ${completed + 1}/${total} - ${card.name}`);
+				} catch (error) {
+					console.error(`[ChanceCardTextureGenerator] 预加载失败: ${card.name}`, error);
+				}
+
+				completed++;
+				onProgress?.(completed, total, card.name);
+			}
+		}
+
+		const workers = Array.from(
+			{ length: Math.min(concurrency, total) },
+			() => processNext()
+		);
+		await Promise.all(workers);
+
+		console.log(`[ChanceCardTextureGenerator] 预加载 ${total} 个纹理完成`);
+	}
+
+	/**
 	 * 清理纹理缓存
 	 */
 	static clearCache() {
@@ -170,35 +236,12 @@ export class ChanceCardTextureGenerator {
 			texture.dispose();
 		});
 		this.textureCache.clear();
+		this.iconCache.clear();
 
 		// 清理渲染容器
 		if (this.renderContainer && document.body.contains(this.renderContainer)) {
 			document.body.removeChild(this.renderContainer);
 			this.renderContainer = null;
 		}
-	}
-
-	/**
-	 * 预加载纹理（按顺序同步加载）
-	 */
-	static async preloadTextures(
-		cards: Array<{ card: ChanceCardInfo; iconUrl: string }>
-	): Promise<void> {
-		const total = cards.length;
-
-		// 按顺序同步加载
-		for (let i = 0; i < cards.length; i++) {
-			const { card, iconUrl } = cards[i];
-
-			try {
-				await this.generateTexture(card, iconUrl);
-				console.log(`[ChanceCardTextureGenerator] 预加载进度: ${i + 1}/${total} - ${card.name}`);
-			} catch (error) {
-				console.error(`[ChanceCardTextureGenerator] 预加载失败: ${card.name}`, error);
-				// 单个失败继续加载下一个
-			}
-		}
-
-		console.log(`[ChanceCardTextureGenerator] 预加载 ${total} 个纹理完成`);
 	}
 }

@@ -230,17 +230,16 @@ export class GameRenderer {
 		//加载玩家模型
 		await this.initPlayer();
 
-		loadingMask.text = "正在进行初始化加载：机会卡";
-		//加载机会卡
-		await this.initChanceCard();
-
-		//初始化灯光
-		this.initLight();
-
-		//设置OutlinePass
-		this.initOutlinePass();
-
-		this.initEventListener();
+		loadingMask.text = "正在进行初始化加载：机会卡、场景设置";
+		// 并发执行：机会卡预加载 与 灯光/OutlinePass/事件监听（它们不依赖机会卡纹理）
+		await Promise.all([
+			this.initChanceCard(),
+			Promise.resolve().then(() => {
+				this.initLight();
+				this.initOutlinePass();
+				this.initEventListener();
+			}),
+		]);
 
 		this.focusMe();
 
@@ -464,23 +463,20 @@ export class GameRenderer {
 
 			const total = preloadData.length;
 
-			// 按顺序同步加载，并实时更新进度
-			for (let i = 0; i < preloadData.length; i++) {
-				const { card, iconUrl } = preloadData[i];
+			// 1. 并发预加载所有图标（预热浏览器缓存，消除后续1s超时等待）
+			const allIconUrls = preloadData.map(d => d.iconUrl);
+			loadingMask.text = `正在预加载机会卡图标...`;
+			await ChanceCardTextureGenerator.preloadIcons(allIconUrls);
 
-				// 更新loading状态
-				loadingMask.text = `正在预加载机会卡 (${i + 1}/${total}): ${card.name}`;
-
-				try {
-					await ChanceCardTextureGenerator.generateTexture(card, iconUrl);
-					console.log(`[机会卡] 预加载进度: ${i + 1}/${total} - ${card.name}`);
-				} catch (error) {
-					console.error(`[机会卡] 预加载失败: ${card.name}`, error);
-					// 单个失败继续加载下一个
+			// 2. 并发生成纹理（4张同时处理）
+			await ChanceCardTextureGenerator.preloadTexturesConcurrent(
+				preloadData,
+				4,
+				(completed, total, cardName) => {
+					loadingMask.text = `正在预加载机会卡 (${completed}/${total}): ${cardName}`;
 				}
-			}
+			);
 
-			console.log(`[机会卡] 预加载完成，共 ${total} 个机会卡`);
 			loadingMask.text = "机会卡纹理预加载完成";
 		} catch (error) {
 			console.error("[机会卡] 预加载失败:", error);
