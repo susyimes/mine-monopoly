@@ -559,6 +559,11 @@ export class MapRenderer {
 		}
 	}
 
+	/** 检查是否按下了修饰键（Windows: Ctrl, macOS: Cmd） */
+	private isModKey(event: KeyboardEvent | MouseEvent): boolean {
+		return event.ctrlKey || event.metaKey;
+	}
+
 	private async handleKeyPress(event: KeyboardEvent) {
 		// 检查当前焦点是否在输入元素上，如果是则不处理快捷键
 		const target = event.target as HTMLElement;
@@ -570,20 +575,20 @@ export class MapRenderer {
 
 		// 如果焦点在输入元素上，除了 Ctrl+S (保存) 外，不处理其他快捷键
 		if (isInputFocused) {
-			if (event.ctrlKey && event.code === "KeyS") {
+			if (this.isModKey(event) && event.code === "KeyS") {
 				event.preventDefault();
 				await handleSaveProtoFile();
 			}
 			return;
 		}
 
-		if (event.ctrlKey && event.code === "KeyS") {
+		if (this.isModKey(event) && event.code === "KeyS") {
 			event.preventDefault();
 			await handleSaveProtoFile();
 		}
 
 		// Ctrl+Z 撤销删除
-		if (event.ctrlKey && event.code === "KeyZ") {
+		if (this.isModKey(event) && event.code === "KeyZ") {
 			event.preventDefault();
 			const store = useEditorStore();
 			if (store.canUndoDelete) {
@@ -614,7 +619,7 @@ export class MapRenderer {
 		}
 
 		// Ctrl+A 全选
-		if (event.ctrlKey && event.code === "KeyA") {
+		if (this.isModKey(event) && event.code === "KeyA") {
 			event.preventDefault();
 			// 通过事件总线触发全选，保持代码一致性
 			eventBus.emit("batch-select-all");

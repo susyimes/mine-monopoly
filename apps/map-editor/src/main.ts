@@ -97,7 +97,8 @@ library.add(
 );
 
 eventBus.on("renderer-ready", () => {
-	const lastTimeFilePath = localStorage.getItem("last-time-file-path");
+	const platformKey = `last-time-file-path-${navigator.platform}`;
+	const lastTimeFilePath = localStorage.getItem(platformKey);
 	if (lastTimeFilePath) loadMapDataFromPath(lastTimeFilePath);
 	eventBus.off("renderer-ready");
 });

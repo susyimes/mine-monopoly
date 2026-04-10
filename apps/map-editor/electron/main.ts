@@ -1,4 +1,4 @@
-import { app, ipcMain, BrowserWindow, dialog, OpenDialogOptions, SaveDialogOptions, protocol, net } from "electron";
+import { app, ipcMain, BrowserWindow, Menu, dialog, OpenDialogOptions, SaveDialogOptions, protocol, net } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { readFile, writeFile, copyFile, mkdir } from "fs/promises";
@@ -9,6 +9,8 @@ import { autoUpdater } from "electron-updater";
 import log from "electron-log";
 import { startHTTPMCPServer, type HTTPMCPServer } from "../src/mcp/http-server.js";
 import { setBridge, type IPCBridge } from "../src/mcp/bridge.js";
+
+const tempDir = path.join(app.getPath("userData"), "temp");
 
 protocol.registerSchemesAsPrivileged([
 	{
@@ -28,15 +30,17 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
 	app.quit();
 } else {
-	app.on("second-instance", (event, commandLine) => {
+	app.on("second-instance", (_event, commandLine, _workingDirectory) => {
 		if (win) {
 			if (win.isMinimized()) win.restore();
 			win.focus();
 
-			const filePath = getFileFromArgv(commandLine);
-			if (filePath) {
-				// 热启动：此时 Vue 肯定加载完了，直接发
-				win.webContents.send("open-map-file", filePath);
+			// macOS: 文件路径通过 open-file 事件传递，不从 commandLine 获取
+			if (process.platform !== "darwin") {
+				const filePath = getFileFromArgv(commandLine);
+				if (filePath) {
+					win.webContents.send("open-map-file", filePath);
+				}
 			}
 		}
 	});
@@ -75,9 +79,79 @@ function getFileFromArgv(argv: string[]) {
 	return null;
 }
 
-// 3. 冷启动检查 (Windows)
+// 3. 冷启动检查 (Windows: 通过 argv，macOS: 通过 open-file 事件)
 if (process.platform !== "darwin") {
 	fileToOpen = getFileFromArgv(process.argv);
+}
+
+// 4. macOS: 监听 open-file 事件（双击 .fpmap 文件时触发）
+app.on("open-file", (event, filePath) => {
+	event.preventDefault();
+	if (filePath.endsWith(".fpmap")) {
+		if (win && win.webContents) {
+			// 应用已就绪，直接发送给渲染进程
+			win.webContents.send("open-map-file", filePath);
+		} else {
+			// 应用未就绪，暂存等待 renderer-ready
+			fileToOpen = filePath;
+		}
+	}
+});
+
+function buildAppMenu() {
+	if (process.platform !== "darwin") return;
+
+	const template: Electron.MenuItemConstructorOptions[] = [
+		{
+			label: app.name,
+			submenu: [
+				{ role: "about" as any },
+				{ type: "separator" },
+				{ role: "services" as any, submenu: [] },
+				{ type: "separator" },
+				{ role: "hide" as any },
+				{ role: "hideOthers" as any },
+				{ role: "unhide" as any },
+				{ type: "separator" },
+				{ role: "quit" as any },
+			],
+		},
+		{
+			label: "Edit",
+			submenu: [
+				{ role: "undo" as any },
+				{ role: "redo" as any },
+				{ type: "separator" },
+				{ role: "cut" as any },
+				{ role: "copy" as any },
+				{ role: "paste" as any },
+				{ role: "selectAll" as any },
+			],
+		},
+		{
+			label: "View",
+			submenu: [
+				{ role: "toggleDevTools" as any },
+				{ type: "separator" },
+				{ role: "resetZoom" as any },
+				{ role: "zoomIn" as any },
+				{ role: "zoomOut" as any },
+				{ type: "separator" },
+				{ role: "togglefullscreen" as any },
+			],
+		},
+		{
+			label: "Window",
+			submenu: [
+				{ role: "minimize" as any },
+				{ role: "zoom" as any },
+				{ role: "close" as any },
+			],
+		},
+	];
+
+	const menu = Menu.buildFromTemplate(template);
+	Menu.setApplicationMenu(menu);
 }
 
 function createWindow() {
@@ -93,6 +167,9 @@ function createWindow() {
 			zoomFactor: 1.0,
 		},
 		frame: false,
+		...(process.platform === "darwin"
+			? { titleBarStyle: "hiddenInset" }
+			: {}),
 	});
 
 	win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
@@ -250,7 +327,7 @@ ipcMain.handle("write-file", async (event, targetPath: string, data: string) => 
 });
 
 ipcMain.handle("write-local-file", async (event, targetPath: string, data: Uint8Array) => {
-	const finalPath = path.isAbsolute(targetPath) ? targetPath : path.join(process.cwd(), targetPath);
+	const finalPath = path.isAbsolute(targetPath) ? targetPath : path.join(tempDir, targetPath);
 	const dir = path.dirname(finalPath);
 	await mkdir(dir, { recursive: true });
 	await writeFile(finalPath, data);
@@ -259,7 +336,7 @@ ipcMain.handle("write-local-file", async (event, targetPath: string, data: Uint8
 
 ipcMain.handle("copy-file", async (event, fromFilePath: string, toFilePathtoFilePath: string, newFileName: string) => {
 	if (!toFilePathtoFilePath) {
-		toFilePathtoFilePath = path.join(process.cwd(), "temp");
+		toFilePathtoFilePath = tempDir;
 		fs.mkdirSync(toFilePathtoFilePath, { recursive: true }); // 如果目录不存在则创建
 	}
 
@@ -273,7 +350,6 @@ ipcMain.handle("copy-file", async (event, fromFilePath: string, toFilePathtoFile
 
 // 复制 empty 资源到 temp 目录
 ipcMain.handle("copy-empty-resource", async (event, resourceType: "model" | "image") => {
-	const tempDir = path.join(process.cwd(), "temp");
 	fs.mkdirSync(tempDir, { recursive: true });
 
 	// 确定 empty 资源的文件名和扩展名
@@ -537,11 +613,9 @@ ipcMain.handle("mcp-call-tool", async (event, toolName: string, args: any) => {
 	});
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => { buildAppMenu(); createWindow(); });
 
 export async function cleanTempDir() {
-	const tempDir = path.join(process.cwd(), "temp");
-
 	try {
 		// 1. 检查目录是否存在
 		await fs.accessSync(tempDir);

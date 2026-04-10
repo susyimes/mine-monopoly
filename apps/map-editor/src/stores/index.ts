@@ -584,7 +584,7 @@ export const useEditorStore = defineStore("Editor", {
 		},
 		setCurrentFilePath(path: string) {
 			this.currentFilePath = path;
-			localStorage.setItem("last-time-file-path", path);
+			localStorage.setItem(`last-time-file-path-${navigator.platform}`, path);
 		},
 		setCameraMode(newMode: CameraMode) {
 			this.currentCameraMode = newMode;

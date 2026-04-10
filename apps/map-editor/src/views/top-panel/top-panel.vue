@@ -11,6 +11,7 @@ import MCPControlPanel from "@src/components/mcp/MCPControlPanel.vue";
 import { eventBus } from "@src/utils/event-bus";
 
 const editorStore = useEditorStore();
+const modLabel = navigator.platform.startsWith("Mac") ? "⌘" : "Ctrl";
 
 enum OperationType {
 	NEW = "new",
@@ -24,7 +25,7 @@ type MenuItem = { label: string; key: OperationType };
 const menus: MenuItem[] = [
 	{ label: "新建", key: OperationType.NEW },
 	{ label: "打开", key: OperationType.OPEN },
-	{ label: "保存 (ctrl+s)", key: OperationType.SAVE },
+	{ label: `保存 (${modLabel}+S)`, key: OperationType.SAVE },
 	{ label: "另存为", key: OperationType.SAVEAS },
 ];
 
@@ -92,7 +93,7 @@ function handleUndoDelete() {
 				size="small"
 				type="text"
 			>
-				<span>恢复删除 (Ctrl+Z)</span>
+				<span>恢复删除 ({{ modLabel }}+Z)</span>
 			</a-button>
 
 			<!-- 保存 -->
@@ -102,7 +103,7 @@ function handleUndoDelete() {
 				size="small"
 				type="text"
 			>
-				<span>保存 (ctrl+s)</span>
+				<span>保存 ({{ modLabel }}+S)</span>
 			</a-button>
 
 			<!-- 另存为 -->

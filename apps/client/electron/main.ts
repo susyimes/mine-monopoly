@@ -1,4 +1,4 @@
-import { app, ipcMain, BrowserWindow, dialog, OpenDialogOptions, SaveDialogOptions, protocol, net } from "electron";
+import { app, ipcMain, BrowserWindow, Menu, dialog, OpenDialogOptions, SaveDialogOptions, protocol, net } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -26,8 +26,8 @@ interface LogErrorData {
 	additionalData?: Record<string, any>;
 }
 
-// 日志目录：在可执行文件所在目录下（安装目录，可写）
-const logsDir = path.join(path.dirname(app.getPath("exe")), "logs");
+// 日志目录：在用户数据目录下（跨平台可写，兼容 macOS .app 包结构）
+const logsDir = path.join(app.getPath("userData"), "logs");
 
 // 增强的日志文件路径
 const mainLogPath = path.join(logsDir, "main.log");
@@ -185,6 +185,62 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 
 
 let win: BrowserWindow | null;
 
+function buildAppMenu() {
+	if (process.platform !== "darwin") return;
+
+	const template: Electron.MenuItemConstructorOptions[] = [
+		{
+			label: app.name,
+			submenu: [
+				{ role: "about" as any },
+				{ type: "separator" },
+				{ role: "services" as any, submenu: [] },
+				{ type: "separator" },
+				{ role: "hide" as any },
+				{ role: "hideOthers" as any },
+				{ role: "unhide" as any },
+				{ type: "separator" },
+				{ role: "quit" as any },
+			],
+		},
+		{
+			label: "Edit",
+			submenu: [
+				{ role: "undo" as any },
+				{ role: "redo" as any },
+				{ type: "separator" },
+				{ role: "cut" as any },
+				{ role: "copy" as any },
+				{ role: "paste" as any },
+				{ role: "selectAll" as any },
+			],
+		},
+		{
+			label: "View",
+			submenu: [
+				{ role: "toggleDevTools" as any },
+				{ type: "separator" },
+				{ role: "resetZoom" as any },
+				{ role: "zoomIn" as any },
+				{ role: "zoomOut" as any },
+				{ type: "separator" },
+				{ role: "togglefullscreen" as any },
+			],
+		},
+		{
+			label: "Window",
+			submenu: [
+				{ role: "minimize" as any },
+				{ role: "zoom" as any },
+				{ role: "close" as any },
+			],
+		},
+	];
+
+	const menu = Menu.buildFromTemplate(template);
+	Menu.setApplicationMenu(menu);
+}
+
 function createWindow() {
 	win = new BrowserWindow({
 		width: 1200,
@@ -203,6 +259,9 @@ function createWindow() {
 			autoplayPolicy: "no-user-gesture-required",
 		},
 		frame: false,
+		...(process.platform === "darwin"
+			? { titleBarStyle: "hiddenInset" }
+			: {}),
 	});
 
 	if (!isProduction) win.webContents.openDevTools();
@@ -271,6 +330,7 @@ app.whenReady().then(async () => {
 	});
 
 	await ensureLogsDir();
+	buildAppMenu();
 	createWindow();
 });
 
@@ -296,7 +356,7 @@ ipcMain.handle("window-is-maximized", () => {
 	return win ? win.isMaximized() : false;
 });
 
-const cacheDir = path.join(app.getAppPath(), "map-cache");
+const cacheDir = path.join(app.getPath("userData"), "map-cache");
 const indexFile = path.join(cacheDir, "index.json");
 type IndexData = Record<string, string>;
 

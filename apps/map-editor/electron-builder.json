@@ -1,23 +1,23 @@
 {
 	"appId": "com.fatpaper.minemonopoly.mapeditor",
 	"asar": true,
-	"productName": "MineMonopoly 地图编辑器",
+	"productName": "MineMonopoly Map Editor",
 	"publish": [
 		{
 			"provider": "generic",
-			"url": "http://localhost:81/static/updates/map-editor/win/"
+			"url": "http://localhost:81/static/updates/map-editor/"
 		}
 	],
 	"fileAssociations": [
-    {
-      "ext": ["fpmap"],
-      "name": "MineMonopoly Map File",
-      "description": "MineMonopoly 地图文件",
-      "icon": "build/fpmap.ico", 
-      "role": "Editor",
-      "isPackage": true
-    }
-  ],
+		{
+			"ext": ["fpmap"],
+			"name": "MineMonopoly Map File",
+			"description": "MineMonopoly Map File",
+			"icon": "build/fpmap.ico",
+			"role": "Editor",
+			"isPackage": true
+		}
+	],
 	"releaseInfo": {
 		"releaseNotesFile": "build/release-notes.md"
 	},
@@ -26,8 +26,29 @@
 	},
 	"files": ["dist/frontend", "dist-electron"],
 	"mac": {
-		"target": ["dmg"],
-		"artifactName": "${productName}-Mac-${version}-Installer.${ext}"
+		"target": ["dmg", "zip"],
+		"artifactName": "${productName}-Mac-${version}-Installer.${ext}",
+		"hardenedRuntime": true,
+		"entitlements": "build/entitlements.mac.plist",
+		"entitlementsInherit": "build/entitlements.mac.plist"
+	},
+	"dmg": {
+		"window": {
+			"width": 540,
+			"height": 380
+		},
+		"contents": [
+			{
+				"x": 144,
+				"y": 150
+			},
+			{
+				"x": 396,
+				"y": 150,
+				"type": "link",
+				"path": "/Applications"
+			}
+		]
 	},
 	"win": {
 		"target": [

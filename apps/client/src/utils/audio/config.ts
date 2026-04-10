@@ -13,13 +13,13 @@ export const audioConfig: AudioManagerConfig = {
 		// UI 音效
 		{
 			name: SoundName.BUTTON_CLICK,
-			src: ["/sfx/button-click.ogg"],
+			src: ["/sfx/button-click.ogg", "/sfx/button-click.mp3"],
 			type: SoundType.UI,
 			volume: 0.5,
 		},
 		{
 			name: SoundName.BUTTON_HOVER,
-			src: ["/sfx/button-hover.ogg"],
+			src: ["/sfx/button-hover.ogg", "/sfx/button-hover.mp3"],
 			type: SoundType.UI,
 			volume: 0.3,
 		},
