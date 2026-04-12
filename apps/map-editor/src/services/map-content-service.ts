@@ -13,6 +13,7 @@ import { AddChanceCardSchema, UpdateChanceCardSchema, RemoveChanceCardSchema } f
 import { AddRoleSchema, UpdateRoleSchema, RemoveRoleSchema } from "./validators/role-validators";
 import { AddMapEventSchema, UpdateMapEventSchema, RemoveMapEventSchema } from "./validators/map-event-validators";
 import { AddPhaseSchema, RemovePhaseSchema, UpdatePhaseSchema, type PhaseType } from "./validators/game-phase-validators";
+import { GamePhaseMark } from "@mine-monopoly/types";
 import { UpdateExtraLibsSchema } from "./validators/extra-libs-validators";
 import { AddPropertySchema, UpdatePropertySchema, RemovePropertySchema, type PropertyData, type UpdatePropertyInput } from "./validators/property-validators";
 import type { ChanceCard } from "./validators/chance-card-validators";
@@ -476,7 +477,7 @@ export class MapContentService {
 		// 3. Update fields
 		if (validated.name !== undefined) phase.name = validated.name;
 		if (validated.description !== undefined) phase.description = validated.description;
-		if (validated.mark !== undefined) phase.mark = validated.mark;
+		if (validated.mark !== undefined) phase.mark = GamePhaseMark[validated.mark as keyof typeof GamePhaseMark];
 		if (validated.initEventCode !== undefined) phase.initEventCode = validated.initEventCode;
 
 		// 4. Send event notification
