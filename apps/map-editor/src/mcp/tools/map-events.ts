@@ -8,7 +8,34 @@
 
 import { invokeTool } from "../bridge.js";
 import { successResult, errorResult } from "../utils.js";
+import { z } from "zod";
 import type { MapEvent } from "@src/services/validators/map-event-validators";
+
+/**
+ * Zod schemas for MCP tool registration
+ */
+const AddMapEventToolSchema = z.object({
+	name: z.string().describe("地图事件名称"),
+	type: z.string().describe("地图事件类型"),
+	description: z.string().optional().describe("地图事件描述"),
+	iconId: z.string().optional().describe("图标ID"),
+	effectCode: z.string().optional().describe("效果代码"),
+});
+
+const UpdateMapEventToolSchema = z.object({
+	id: z.string().describe("地图事件ID"),
+	name: z.string().describe("地图事件名称"),
+	type: z.string().describe("地图事件类型"),
+	description: z.string().optional().describe("地图事件描述"),
+	iconId: z.string().optional().describe("图标ID"),
+	effectCode: z.string().optional().describe("效果代码"),
+});
+
+const RemoveMapEventToolSchema = z.object({
+	eventId: z.string().describe("地图事件ID"),
+});
+
+const ListMapEventsToolSchema = z.object({});
 
 /**
  * Add a new map event
@@ -65,56 +92,25 @@ export const mapEventTools = [
 	{
 		name: "add_map_event",
 		description: "添加新地图事件。参数：name（名称）, type（类型）, description?（描述，可选）, iconId?（图标ID，可选）, effectCode?（效果代码，可选）",
-		inputSchema: {
-			type: "object",
-			properties: {
-				name: { type: "string", description: "地图事件名称" },
-				type: { type: "string", description: "地图事件类型" },
-				description: { type: "string", description: "地图事件描述" },
-				iconId: { type: "string", description: "图标ID" },
-				effectCode: { type: "string", description: "效果代码" }
-			},
-			required: ["name", "type"]
-		},
+		inputSchema: AddMapEventToolSchema,
 		handler: addMapEvent
 	},
 	{
 		name: "update_map_event",
 		description: "更新地图事件。参数：id（事件ID）, name, type, description?, iconId?, effectCode?",
-		inputSchema: {
-			type: "object",
-			properties: {
-				id: { type: "string", description: "地图事件ID" },
-				name: { type: "string", description: "地图事件名称" },
-				type: { type: "string", description: "地图事件类型" },
-				description: { type: "string", description: "地图事件描述" },
-				iconId: { type: "string", description: "图标ID" },
-				effectCode: { type: "string", description: "效果代码" }
-			},
-			required: ["id", "name", "type"]
-		},
+		inputSchema: UpdateMapEventToolSchema,
 		handler: updateMapEvent
 	},
 	{
 		name: "remove_map_event",
 		description: "删除地图事件。参数：eventId（事件ID）",
-		inputSchema: {
-			type: "object",
-			properties: {
-				eventId: { type: "string", description: "地图事件ID" }
-			},
-			required: ["eventId"]
-		},
+		inputSchema: RemoveMapEventToolSchema,
 		handler: removeMapEvent
 	},
 	{
 		name: "list_map_events",
 		description: "获取当前地图中所有地图事件的列表。返回所有地图事件的完整信息，包括 ID、名称、类型、描述、图标ID和效果代码。",
-		inputSchema: {
-			type: "object",
-			properties: {},
-			required: []
-		},
+		inputSchema: ListMapEventsToolSchema,
 		handler: listMapEvents
 	}
 ];

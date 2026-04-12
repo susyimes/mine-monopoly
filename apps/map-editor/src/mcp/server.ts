@@ -15,6 +15,7 @@ import { mapEventTools } from "./tools/map-events.js";
 import { roleTools } from "./tools/roles.js";
 import { gamePhaseTools } from "./tools/game-phases.js";
 import { extraLibsTools } from "./tools/extra-libs.js";
+import { typeLibsTools } from "./tools/type-libs.js";
 import { resourceTools } from "./tools/resources.js";
 import { systemTools } from "./tools/system.js";
 
@@ -22,6 +23,11 @@ import { systemTools } from "./tools/system.js";
  * Convert Zod schema to JSON Schema format for MCP
  */
 export function zodToJsonSchema(zodSchema: any): any {
+	// If already a plain JSON Schema object, return as-is
+	if (zodSchema && zodSchema.type === "object" && "properties" in zodSchema && !zodSchema._def) {
+		return zodSchema;
+	}
+
 	// This is a simplified conversion. In production, you might use zod-to-json-schema
 	const shapeDef = zodSchema._def?.shape;
 
@@ -102,6 +108,7 @@ const allTools = [
 	...roleTools,
 	...gamePhaseTools,
 	...extraLibsTools,
+	...typeLibsTools,
 	...resourceTools,
 	...systemTools,
 ];

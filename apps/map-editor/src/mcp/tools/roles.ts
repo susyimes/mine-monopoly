@@ -8,7 +8,34 @@
 
 import { invokeTool } from "../bridge.js";
 import { successResult, errorResult } from "../utils.js";
+import { z } from "zod";
 import type { Role } from "@src/services/validators/role-validators";
+
+/**
+ * Zod schemas for MCP tool registration
+ */
+const AddRoleToolSchema = z.object({
+	name: z.string().describe("角色名称"),
+	description: z.string().optional().describe("角色描述"),
+	color: z.string().optional().describe("角色颜色"),
+	initCode: z.string().optional().describe("初始化代码"),
+	imageId: z.string().optional().describe("图片ID"),
+});
+
+const UpdateRoleToolSchema = z.object({
+	roleId: z.string().describe("角色ID"),
+	name: z.string().optional().describe("角色名称"),
+	description: z.string().optional().describe("角色描述"),
+	color: z.string().optional().describe("角色颜色"),
+	initCode: z.string().optional().describe("初始化代码"),
+	imageId: z.string().optional().describe("图片ID"),
+});
+
+const RemoveRoleToolSchema = z.object({
+	roleId: z.string().describe("角色ID"),
+});
+
+const ListRolesToolSchema = z.object({});
 
 /**
  * Add a new role
@@ -65,56 +92,25 @@ export const roleTools = [
 	{
 		name: "add_role",
 		description: "添加新角色。参数：name（名称）, description?（描述，可选）, color?（颜色，可选）, initCode?（初始化代码，可选）, imageId?（图片ID，可选）",
-		inputSchema: {
-			type: "object",
-			properties: {
-				name: { type: "string", description: "角色名称" },
-				description: { type: "string", description: "角色描述" },
-				color: { type: "string", description: "角色颜色" },
-				initCode: { type: "string", description: "初始化代码" },
-				imageId: { type: "string", description: "图片ID" }
-			},
-			required: ["name"]
-		},
+		inputSchema: AddRoleToolSchema,
 		handler: addRole
 	},
 	{
 		name: "update_role",
 		description: "更新角色。参数：roleId（角色ID）, name?, description?, color?, initCode?, imageId?",
-		inputSchema: {
-			type: "object",
-			properties: {
-				roleId: { type: "string", description: "角色ID" },
-				name: { type: "string", description: "角色名称" },
-				description: { type: "string", description: "角色描述" },
-				color: { type: "string", description: "角色颜色" },
-				initCode: { type: "string", description: "初始化代码" },
-				imageId: { type: "string", description: "图片ID" }
-			},
-			required: ["roleId"]
-		},
+		inputSchema: UpdateRoleToolSchema,
 		handler: updateRole
 	},
 	{
 		name: "remove_role",
 		description: "删除角色。参数：roleId（角色ID）",
-		inputSchema: {
-			type: "object",
-			properties: {
-				roleId: { type: "string", description: "角色ID" }
-			},
-			required: ["roleId"]
-		},
+		inputSchema: RemoveRoleToolSchema,
 		handler: removeRole
 	},
 	{
 		name: "list_roles",
 		description: "获取当前地图中所有角色的列表。返回所有角色的完整信息，包括 ID、名称、描述、颜色、初始化代码和图片ID。",
-		inputSchema: {
-			type: "object",
-			properties: {},
-			required: []
-		},
+		inputSchema: ListRolesToolSchema,
 		handler: listRoles
 	}
 ];

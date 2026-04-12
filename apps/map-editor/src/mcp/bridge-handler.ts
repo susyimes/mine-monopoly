@@ -36,6 +36,7 @@ type MCPToolName =
 	// Extra libs tools
 	| "get_extra_libs"
 	| "update_extra_libs"
+	| "get_all_type_libs"
 	// Resource tools
 	| "list_models"
 	| "list_images"
@@ -212,6 +213,12 @@ export async function handleToolInvocation(toolName: MCPToolName, args: any): Pr
 			case "update_extra_libs": {
 				await mapContentService.updateExtraLibs(args.code);
 				result = { success: true };
+				break;
+			}
+
+			case "get_all_type_libs": {
+				const serviceResult = await mapContentService.getAllTypeLibs();
+				result = toPlain(serviceResult);
 				break;
 			}
 

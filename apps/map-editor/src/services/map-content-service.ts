@@ -547,6 +547,41 @@ export class MapContentService {
 	}
 
 	/**
+	 * Get all type libraries available to the code editor
+	 * @returns extraLibs (user-defined code) and uiTemplateTypes (generated declarations)
+	 */
+	async getAllTypeLibs(): Promise<{ extraLibs: string; uiTemplateTypes: string }> {
+		const mapDataStore = useMapDataStore();
+		const extraLibs = mapDataStore.extraLibs || "";
+		const uiTemplates = mapDataStore.uiTemplates || [];
+
+		let uiTemplateTypes = "";
+		if (uiTemplates.length > 0) {
+			const declarations = uiTemplates
+				.map(
+					(ui) => `
+    /**
+     * **组件名称**: ${ui.name}
+     * **slug**: ${ui.slug}
+     * * ID: \`${ui.id}\`
+     */
+    const $ui__${ui.slug}: UISchema;
+  `,
+				)
+				.join("\n");
+
+			uiTemplateTypes = `
+    declare global {
+      ${declarations}
+    }
+    export {};
+  `;
+		}
+
+		return { extraLibs, uiTemplateTypes };
+	}
+
+	/**
 	 * Update extra libraries code
 	 * @param code - The new code
 	 */

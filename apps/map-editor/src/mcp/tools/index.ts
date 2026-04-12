@@ -18,4 +18,5 @@ export { roleTools } from "./roles.js";
 export { mapEventTools } from "./map-events.js";
 export { gamePhaseTools } from "./game-phases.js";
 export { extraLibsTools } from "./extra-libs.js";
+export { typeLibsTools } from "./type-libs.js";
 export { resourceTools } from "./resources.js";

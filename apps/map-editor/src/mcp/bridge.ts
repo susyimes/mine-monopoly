@@ -31,6 +31,7 @@ export type MCPToolName =
 	// Extra libs tools
 	| "get_extra_libs"
 	| "update_extra_libs"
+	| "get_all_type_libs"
 	// Resource tools
 	| "list_models"
 	| "list_images"
