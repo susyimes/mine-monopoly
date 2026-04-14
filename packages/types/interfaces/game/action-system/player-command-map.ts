@@ -58,7 +58,7 @@ export interface PlayerCommandMap extends ICommandMap {
 	 */
 	"player.money.lose": {
 		payload: { money: number; target?: IPlayer; tag?: MoneyTagType };
-		result: { money: number; target?: IPlayer; tag?: MoneyTagType };
+		result: { money: number; target?: IPlayer; tag?: MoneyTagType; success: boolean; actualCost: number; remainingMoney: number };
 	};
 
 	// ===== 移动相关命令 =====

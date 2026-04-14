@@ -743,7 +743,7 @@ await player.gain(200, MoneyTag.SYSTEM, otherPlayer);
 花费金钱。
 
 ```typescript
-cost(money: number, tag?: MoneyTag, target?: IPlayer): Promise<void>
+cost(money: number, tag?: MoneyTag, target?: IPlayer): Promise<{ money: number; target?: IPlayer; tag?: MoneyTag; success: boolean; actualCost: number; remainingMoney: number }>
 ```
 
 **参数:**
@@ -751,18 +751,24 @@ cost(money: number, tag?: MoneyTag, target?: IPlayer): Promise<void>
 - `tag`: 金钱流动标签（可选，用于标识花费途径）
 - `target`: 收取金钱的目标玩家（可选）
 
+**返回值:**
+- `success`: 是否全额扣款成功（玩家余额 >= 请求金额）
+- `actualCost`: 实际扣除的金额（钱不够时扣光所有钱）
+- `remainingMoney`: 扣款后的余额
+
 **示例:**
 ```typescript
 // 基础用法
-await player.cost(100);
-await player.cost(50, otherPlayer);
+const res = await player.cost(100);
+// res.success === true, res.actualCost === 100, res.remainingMoney === 900
 
-// 使用标签
-await player.cost(100, MoneyTag.SYSTEM);
-await player.cost(100, 'property_purchase');
+// 钱不够时
+const res2 = await poorPlayer.cost(500);
+// res2.success === false, res2.actualCost === 200, res2.remainingMoney === 0
 
-// 组合使用
-await player.cost(100, MoneyTag.SYSTEM, otherPlayer);
+// 金钱转移时使用 actualCost
+const costRes = await payer.cost(100, MoneyTag.PROPERTY, owner);
+await owner.gain(costRes.actualCost, MoneyTag.PROPERTY, payer);
 ```
 
 ---
@@ -1584,7 +1590,7 @@ decayAfterExecution(ids: string[]): void
 | `player.card.gain` | `{ card: IChanceCard }` | `{ card: IChanceCard }` |
 | `player.card.lose` | `{ cardId: string }` | `{ cardId: string }` |
 | `player.money.gain` | `{ money: number; source?: IPlayer }` | `{ money: number; source?: IPlayer }` |
-| `player.money.lose` | `{ money: number; target?: IPlayer }` | `{ money: number; target?: IPlayer }` |
+| `player.money.lose` | `{ money: number; target?: IPlayer; tag?: MoneyTag }` | `{ money: number; target?: IPlayer; tag?: MoneyTag; success: boolean; actualCost: number; remainingMoney: number }` |
 | `player.stop` | `{ stop: number }` | `{ stop: number }` |
 | `player.walk` | `{ steps: number }` | `{ steps: number }` |
 | `player.tp` | `{ positionIndex: number }` | `{ positionIndex: number }` |

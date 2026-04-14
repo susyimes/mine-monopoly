@@ -168,9 +168,17 @@ export class Player implements IPlayer {
 
 		this.commandBus.setHandler("player.money.lose", (payload) => {
 			const { money } = payload;
-			this.money -= money > 0 ? money : 0;
+			const moneyToLose = money > 0 ? money : 0;
+			const success = this.money >= moneyToLose;
+			const actualCost = success ? moneyToLose : this.money;
+			this.money -= actualCost;
 			if (this.money <= 0) this.setBankrupted(true);
-			return payload;
+			return {
+				...payload,
+				success,
+				actualCost,
+				remainingMoney: this.money,
+			};
 		});
 
 		this.commandBus.setHandler("player.stop", (payload) => {

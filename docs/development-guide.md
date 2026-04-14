@@ -82,7 +82,7 @@
 - `CARD` - 机会卡效果
 - `PROPERTY` - 地产相关
 
-`Player.cost()` 和 `Player.gain()` 方法返回命令执行结果，包含 MoneyTag 信息。
+`Player.cost()` 返回 `{ money, target?, tag?, success, actualCost, remainingMoney }`，其中 `actualCost` 是实际扣除金额（钱不够时扣光所有钱，`success` 为 false）。涉及金钱转移时应用 `actualCost` 而非原始金额。`Player.gain()` 返回 `{ money, source?, tag? }`。
 
 ### MCP 服务
 
