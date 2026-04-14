@@ -1632,6 +1632,5 @@ decayAfterExecution(ids: string[]): void
 | `player.round.start` | `{ player: IPlayer }` | 玩家回合开始 |
 | `player.round.end` | `{ player: IPlayer }` | 玩家回合结束 |
 | `player.arrived` | `{ positionIndex: number; player: IPlayer }` | 玩家到达某位置 |
-| `player.passed` | `{ passedMapItemsId: string[]; player: IPlayer }` | 玩家经过某位置 |
 
 ---

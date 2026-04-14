@@ -1,6 +1,7 @@
 import { IChanceCard, IPlayer, IProperty, MoneyTagType } from "../game-process";
 import { DiceResult, IDice } from "../util";
 import { ICommandMap } from "./command";
+import { MapItem } from "../item";
 
 /**
  * 玩家命令映射
@@ -75,7 +76,7 @@ export interface PlayerCommandMap extends ICommandMap {
 	 * 玩家行走指定步数
 	 */
 	"player.walk": {
-		payload: { steps: number };
+		payload: { steps: number; passed?: PassedMapItem[] };
 		result: { steps: number };
 	};
 
@@ -146,4 +147,16 @@ export interface PlayerCommandMap extends ICommandMap {
 		payload: { diceId: string };
 		result: { removeDice: IDice | undefined };
 	};
+}
+
+/**
+ * 玩家经过的地图项信息
+ */
+export interface PassedMapItem {
+	/** 地图项 ID */
+	mapItemId: string;
+	/** 经过的顺序（0-based） */
+	index: number;
+	/** 地图项详情 */
+	mapItem?: MapItem;
 }

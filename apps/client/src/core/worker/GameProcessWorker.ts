@@ -704,6 +704,8 @@ export class GameProcess implements IGameProcess {
 				const totalSteps = Math.abs(steps);
 
 				let currentStep = 0;
+				const passedItems: { mapItemId: string; index: number; mapItem?: MapItem }[] = [];
+				let passedIndex = 0;
 
 				// 分段走路：每段检查是否有事件格，遇到事件格时触发事件后继续
 				while (currentStep < totalSteps) {
@@ -742,6 +744,12 @@ export class GameProcess implements IGameProcess {
 					const currentMapItemId = this.mapData.mapIndex[currentIndex];
 
 					if (this.checkMapItemHasPassedEvent(currentMapItemId)) {
+						// 收集经过信息
+						passedItems.push({
+							mapItemId: currentMapItemId,
+							index: passedIndex++,
+							mapItem: this.mapItems.get(currentMapItemId),
+						});
 						// 触发经过事件
 						try {
 							await this.handlePlayerPassedEvents(player, [currentMapItemId]);
@@ -756,6 +764,9 @@ export class GameProcess implements IGameProcess {
 				const finalIndex = this.normalizeIndex(sourceIndex + steps, total);
 				player.setPositionIndex(finalIndex);
 				this.gameDataBroadcast();
+
+				// 填充经过信息供 after 修饰器使用
+				payload.passed = passedItems;
 
 				return payload;
 			});

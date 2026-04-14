@@ -206,9 +206,6 @@ export type GameRuntimeEvent = {
 
 	/** 玩家到达某位置 */
 	"player.arrived": { positionIndex: number; player: IPlayer };
-
-	/** 玩家经过某位置 */
-	"player.passed": { passedMapItemsId: string[]; player: IPlayer };
 } & Record<string, any>;
 
 /**
