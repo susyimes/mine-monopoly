@@ -177,6 +177,7 @@ function getCategory(toolName: string): string {
 	if (toolName.includes("model") || toolName.includes("image") || toolName.includes("resource")) return "资源管理";
 	if (toolName.includes("map_item")) return "地图项";
 	if (toolName.includes("property")) return "地皮";
+	if (toolName.includes("game_setting")) return "游戏参数";
 	if (toolName.includes("link") || toolName.includes("unlink")) return "地块事件"; // link/unlink 是事件相关功能
 	return "其他";
 }

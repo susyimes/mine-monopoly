@@ -6,6 +6,7 @@ export function useMonacoTypeLibs(monacoInstance: Ref<typeof monaco | null>) {
 		staticTypes?: string;
 		extraLibs?: string;
 		uiTemplates?: any[];
+		gameSettingForm?: any[];
 	}) {
 		if (!monacoInstance.value) return;
 
@@ -51,6 +52,31 @@ export function useMonacoTypeLibs(monacoInstance: Ref<typeof monaco | null>) {
     export {};
   `,
 				filePath: "file:///ui-templates.d.ts",
+			});
+		}
+
+		// 4. 动态游戏设置类型
+		if (options.gameSettingForm && options.gameSettingForm.length > 0) {
+			const declarations = options.gameSettingForm
+				.map((setting: any) => {
+					const valueType = setting.type === 'number-input'
+						? 'number'
+						: 'string | number';
+					return `    /** ${setting.label} */
+    ${setting.key}: { label: string; value: ${valueType}; displayValue: ${valueType} };`;
+				})
+				.join("\n");
+
+			libs.push({
+				content: `
+    declare global {
+      interface GameSetting {
+        ${declarations}
+      }
+    }
+    export {};
+  `,
+				filePath: "file:///game-settings.d.ts",
 			});
 		}
 

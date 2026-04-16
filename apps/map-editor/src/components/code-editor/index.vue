@@ -115,6 +115,7 @@ onMounted(async () => {
 		staticTypes: props.staticTypes,
 		extraLibs: mapDataStore.extraLibs || '',
 		uiTemplates: mapDataStore.uiTemplates || [],
+		gameSettingForm: mapDataStore.gameSettingForm || [],
 	});
 	}
 

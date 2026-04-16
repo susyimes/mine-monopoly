@@ -50,6 +50,11 @@ type MCPToolName =
 	| "add_property"
 	| "update_property"
 	| "remove_property"
+	// Game setting tools
+	| "list_game_settings"
+	| "add_game_setting"
+	| "update_game_setting"
+	| "remove_game_setting"
 	// System tools
 	| "check_mcp_connection";
 
@@ -287,6 +292,30 @@ export async function handleToolInvocation(toolName: MCPToolName, args: any): Pr
 
 			case "remove_property": {
 				await mapContentService.removeProperty(args.mapItemId);
+				result = { success: true };
+				break;
+			}
+
+			// Game Setting Tools
+			case "list_game_settings": {
+				result = toPlain(mapDataStore.gameSettingForm);
+				break;
+			}
+
+			case "add_game_setting": {
+				const serviceResult = await mapContentService.addGameSetting(args);
+				result = toPlain(serviceResult);
+				break;
+			}
+
+			case "update_game_setting": {
+				const serviceResult = await mapContentService.updateGameSetting(args);
+				result = toPlain(serviceResult);
+				break;
+			}
+
+			case "remove_game_setting": {
+				await mapContentService.removeGameSetting(args.settingId);
 				result = { success: true };
 				break;
 			}

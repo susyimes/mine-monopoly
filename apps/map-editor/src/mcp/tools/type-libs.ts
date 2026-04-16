@@ -31,7 +31,7 @@ export const typeLibsTools = [
 	{
 		name: "get_all_type_libs",
 		description:
-			"获取代码编辑器中所有可用的额外类型库。返回 extraLibs（用户自定义的辅助函数、类型和常量）和 uiTemplateTypes（UI模板生成的类型声明，如 $ui__template-slug: UISchema）。使用此工具了解编写 effectCode 时可用的额外类型信息。",
+			"获取代码编辑器中所有可用的额外类型库。返回 extraLibs（用户自定义的辅助函数、类型和常量）、uiTemplateTypes（UI模板生成的类型声明，如 $ui__template-slug: UISchema）和 gameSettingTypes（游戏设置表单生成的类型声明，如 GameSetting.initMoney）。使用此工具了解编写 effectCode 时可用的额外类型信息。",
 		inputSchema: GetAllTypeLibsSchema,
 		handler: getAllTypeLibs,
 	},

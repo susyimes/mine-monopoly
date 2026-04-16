@@ -19,6 +19,7 @@ import { AddPropertySchema, UpdatePropertySchema, RemovePropertySchema, type Pro
 import type { ChanceCard } from "./validators/chance-card-validators";
 import type { Role } from "./validators/role-validators";
 import type { MapEvent } from "./validators/map-event-validators";
+import type { FormSchema } from "@mine-monopoly/types";
 
 /**
  * Map Content Service class
@@ -592,10 +593,11 @@ export class MapContentService {
 	 * Get all type libraries available to the code editor
 	 * @returns extraLibs (user-defined code) and uiTemplateTypes (generated declarations)
 	 */
-	async getAllTypeLibs(): Promise<{ extraLibs: string; uiTemplateTypes: string }> {
+	async getAllTypeLibs(): Promise<{ extraLibs: string; uiTemplateTypes: string; gameSettingTypes: string }> {
 		const mapDataStore = useMapDataStore();
 		const extraLibs = mapDataStore.extraLibs || "";
 		const uiTemplates = mapDataStore.uiTemplates || [];
+		const gameSettingForm = mapDataStore.gameSettingForm || [];
 
 		let uiTemplateTypes = "";
 		if (uiTemplates.length > 0) {
@@ -620,7 +622,29 @@ export class MapContentService {
   `;
 		}
 
-		return { extraLibs, uiTemplateTypes };
+		let gameSettingTypes = "";
+		if (gameSettingForm.length > 0) {
+			const declarations = gameSettingForm
+				.map((setting) => {
+					const valueType = setting.type === 'number-input'
+						? 'number'
+						: 'string | number';
+					return `    /** ${setting.label} */
+    ${setting.key}: { label: string; value: ${valueType}; displayValue: ${valueType} };`;
+				})
+				.join("\n");
+
+			gameSettingTypes = `
+    declare global {
+      interface GameSetting {
+        ${declarations}
+      }
+    }
+    export {};
+  `;
+		}
+
+		return { extraLibs, uiTemplateTypes, gameSettingTypes };
 	}
 
 	/**
@@ -776,6 +800,109 @@ export class MapContentService {
 			success: true,
 			message: `删除地产成功`,
 			details: { mapItemId: validated.mapItemId }
+		});
+	}
+
+	/**
+	 * Game Setting Operations
+	 */
+
+	/**
+	 * List all game settings
+	 * @returns All game setting form fields
+	 */
+	listGameSettings(): FormSchema[] {
+		const mapDataStore = useMapDataStore();
+		return mapDataStore.gameSettingForm;
+	}
+
+	/**
+	 * Add a new game setting field
+	 * @param data - Game setting data without id
+	 * @returns The created game setting with generated id
+	 */
+	async addGameSetting(data: Omit<FormSchema, "id">): Promise<FormSchema> {
+		const mapDataStore = useMapDataStore();
+
+		const newSetting: FormSchema = {
+			id: generateShortId('gs'),
+			key: data.key,
+			type: data.type,
+			label: data.label,
+			defaultValue: data.defaultValue,
+			min: data.min,
+			max: data.max,
+			placeholder: data.placeholder,
+			options: data.options,
+		};
+
+		const updated = [...mapDataStore.gameSettingForm, newSetting];
+		mapDataStore.updateGameSettingFrom(updated);
+
+		eventBus.emit("mcp-operation", {
+			operation: "add_game_setting",
+			success: true,
+			message: `添加游戏参数成功: ${newSetting.label}`,
+			details: { id: newSetting.id, key: newSetting.key }
+		});
+
+		return newSetting;
+	}
+
+	/**
+	 * Update an existing game setting field
+	 * @param data - Game setting data with id
+	 * @returns The updated game setting
+	 */
+	async updateGameSetting(data: { id: string } & Partial<Omit<FormSchema, "id">>): Promise<FormSchema> {
+		const mapDataStore = useMapDataStore();
+		const existing = mapDataStore.gameSettingForm.find(s => s.id === data.id);
+		if (!existing) {
+			throw new Error(`游戏参数不存在: ${data.id}`);
+		}
+
+		const updated = { ...existing };
+		if (data.key !== undefined) updated.key = data.key;
+		if (data.type !== undefined) updated.type = data.type;
+		if (data.label !== undefined) updated.label = data.label;
+		if (data.defaultValue !== undefined) updated.defaultValue = data.defaultValue;
+		if (data.min !== undefined) updated.min = data.min;
+		if (data.max !== undefined) updated.max = data.max;
+		if (data.placeholder !== undefined) updated.placeholder = data.placeholder;
+		if (data.options !== undefined) updated.options = data.options;
+
+		const list = mapDataStore.gameSettingForm.map(s => s.id === data.id ? updated : s);
+		mapDataStore.updateGameSettingFrom(list);
+
+		eventBus.emit("mcp-operation", {
+			operation: "update_game_setting",
+			success: true,
+			message: `更新游戏参数成功: ${updated.label}`,
+			details: { id: updated.id, key: updated.key }
+		});
+
+		return updated;
+	}
+
+	/**
+	 * Remove a game setting field
+	 * @param settingId - The ID of the game setting to remove
+	 */
+	async removeGameSetting(settingId: string): Promise<void> {
+		const mapDataStore = useMapDataStore();
+		const existing = mapDataStore.gameSettingForm.find(s => s.id === settingId);
+		if (!existing) {
+			throw new Error(`游戏参数不存在: ${settingId}`);
+		}
+
+		const list = mapDataStore.gameSettingForm.filter(s => s.id !== settingId);
+		mapDataStore.updateGameSettingFrom(list);
+
+		eventBus.emit("mcp-operation", {
+			operation: "remove_game_setting",
+			success: true,
+			message: `删除游戏参数成功`,
+			details: { id: settingId }
 		});
 	}
 }

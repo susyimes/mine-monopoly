@@ -20,6 +20,7 @@ import { resourceTools } from "./tools/resources.js";
 import { mapItemTools } from "./tools/map-items.js";
 import { propertyTools } from "./tools/properties.js";
 import { systemTools } from "./tools/system.js";
+import { gameSettingTools } from "./tools/game-settings.js";
 
 /**
  * Convert Zod schema to JSON Schema format for MCP
@@ -116,6 +117,7 @@ const allTools = [
 	...mapItemTools,
 	...propertyTools,
 	...systemTools,
+	...gameSettingTools,
 ];
 
 /**
