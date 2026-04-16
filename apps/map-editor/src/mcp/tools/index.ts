@@ -22,3 +22,5 @@ export { typeLibsTools } from "./type-libs.js";
 export { resourceTools } from "./resources.js";
 export { mapItemTools } from "./map-items.js";
 export { propertyTools } from "./properties.js";
+export { uiTemplateTools } from "./ui-templates.js";
+export { customUITools } from "./custom-uis.js";

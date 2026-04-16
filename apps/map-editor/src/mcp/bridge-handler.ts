@@ -55,6 +55,18 @@ type MCPToolName =
 	| "add_game_setting"
 	| "update_game_setting"
 	| "remove_game_setting"
+	// UI Template tools
+	| "create_ui_template"
+	| "update_ui_template"
+	| "remove_ui_template"
+	| "get_ui_template"
+	| "list_ui_templates"
+	// Custom UI tools
+	| "create_custom_ui"
+	| "update_custom_ui"
+	| "remove_custom_ui"
+	| "get_custom_ui"
+	| "list_custom_uis"
 	// System tools
 	| "check_mcp_connection";
 
@@ -317,6 +329,68 @@ export async function handleToolInvocation(toolName: MCPToolName, args: any): Pr
 			case "remove_game_setting": {
 				await mapContentService.removeGameSetting(args.settingId);
 				result = { success: true };
+				break;
+			}
+
+			// UI Template Tools
+			case "create_ui_template": {
+				const serviceResult = await mapContentService.createUITemplate(args);
+				result = toPlain(serviceResult);
+				break;
+			}
+
+			case "update_ui_template": {
+				const serviceResult = await mapContentService.updateUITemplate(args);
+				result = toPlain(serviceResult);
+				break;
+			}
+
+			case "remove_ui_template": {
+				await mapContentService.removeUITemplate(args.templateId);
+				result = { success: true };
+				break;
+			}
+
+			case "get_ui_template": {
+				const template = mapDataStore.uiTemplates.find(t => t.id === args.templateId);
+				if (!template) throw new Error(`UITemplate 不存在: ${args.templateId}`);
+				result = toPlain(template);
+				break;
+			}
+
+			case "list_ui_templates": {
+				result = toPlain(mapDataStore.uiTemplates);
+				break;
+			}
+
+			// Custom UI Tools
+			case "create_custom_ui": {
+				const serviceResult = await mapContentService.createCustomUI(args);
+				result = toPlain(serviceResult);
+				break;
+			}
+
+			case "update_custom_ui": {
+				const serviceResult = await mapContentService.updateCustomUI(args);
+				result = toPlain(serviceResult);
+				break;
+			}
+
+			case "remove_custom_ui": {
+				await mapContentService.removeCustomUI(args.instanceId);
+				result = { success: true };
+				break;
+			}
+
+			case "get_custom_ui": {
+				const instance = mapDataStore.customUIs.find(ui => ui.id === args.instanceId);
+				if (!instance) throw new Error(`CustomUI 不存在: ${args.instanceId}`);
+				result = toPlain(instance);
+				break;
+			}
+
+			case "list_custom_uis": {
+				result = toPlain(mapDataStore.customUIs);
 				break;
 			}
 

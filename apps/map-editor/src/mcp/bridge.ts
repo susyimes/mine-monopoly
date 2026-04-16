@@ -45,6 +45,18 @@ export type MCPToolName =
 	| "add_property"
 	| "update_property"
 	| "remove_property"
+	// UI Template tools
+	| "create_ui_template"
+	| "update_ui_template"
+	| "remove_ui_template"
+	| "get_ui_template"
+	| "list_ui_templates"
+	// Custom UI tools
+	| "create_custom_ui"
+	| "update_custom_ui"
+	| "remove_custom_ui"
+	| "get_custom_ui"
+	| "list_custom_uis"
 	// System tools
 	| "check_mcp_connection";
 

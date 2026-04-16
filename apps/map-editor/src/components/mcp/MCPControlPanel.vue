@@ -178,6 +178,8 @@ function getCategory(toolName: string): string {
 	if (toolName.includes("map_item")) return "地图项";
 	if (toolName.includes("property")) return "地皮";
 	if (toolName.includes("game_setting")) return "游戏参数";
+	if (toolName.includes("ui_template")) return "UI模板";
+	if (toolName.includes("custom_ui")) return "自定义UI";
 	if (toolName.includes("link") || toolName.includes("unlink")) return "地块事件"; // link/unlink 是事件相关功能
 	return "其他";
 }

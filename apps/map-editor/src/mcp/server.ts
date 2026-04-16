@@ -21,6 +21,8 @@ import { mapItemTools } from "./tools/map-items.js";
 import { propertyTools } from "./tools/properties.js";
 import { systemTools } from "./tools/system.js";
 import { gameSettingTools } from "./tools/game-settings.js";
+import { uiTemplateTools } from "./tools/ui-templates.js";
+import { customUITools } from "./tools/custom-uis.js";
 
 /**
  * Convert Zod schema to JSON Schema format for MCP
@@ -118,6 +120,8 @@ const allTools = [
 	...propertyTools,
 	...systemTools,
 	...gameSettingTools,
+	...uiTemplateTools,
+	...customUITools,
 ];
 
 /**

@@ -905,6 +905,196 @@ export class MapContentService {
 			details: { id: settingId }
 		});
 	}
+
+	/**
+	 * UITemplate Operations
+	 */
+
+	/**
+	 * Create a new UI template
+	 */
+	async createUITemplate(data: { name: string; slug: string; template: any }): Promise<any> {
+		const mapDataStore = useMapDataStore();
+
+		// Check slug uniqueness
+		if (mapDataStore.uiTemplates.some(t => t.slug === data.slug)) {
+			throw new Error(`模板别名已存在: ${data.slug}`);
+		}
+
+		const newTemplate = {
+			id: generateShortId('tmpl'),
+			name: data.name,
+			slug: data.slug,
+			template: data.template,
+		};
+
+		mapDataStore.saveUITemplate(newTemplate as any);
+
+		eventBus.emit("mcp-operation", {
+			operation: "create_ui_template",
+			success: true,
+			message: `创建 UI 模板成功: ${newTemplate.name}`,
+			details: { id: newTemplate.id, name: newTemplate.name, slug: newTemplate.slug }
+		});
+
+		return newTemplate;
+	}
+
+	/**
+	 * Update an existing UI template
+	 */
+	async updateUITemplate(data: { id: string; name?: string; slug?: string; template?: any }): Promise<any> {
+		const mapDataStore = useMapDataStore();
+		const existing = mapDataStore.uiTemplates.find(t => t.id === data.id);
+		if (!existing) {
+			throw new Error(`UITemplate 不存在: ${data.id}`);
+		}
+
+		// Check slug uniqueness if changing
+		if (data.slug && data.slug !== existing.slug) {
+			if (mapDataStore.uiTemplates.some(t => t.slug === data.slug)) {
+				throw new Error(`模板别名已存在: ${data.slug}`);
+			}
+		}
+
+		const updated = { ...existing };
+		if (data.name !== undefined) updated.name = data.name;
+		if (data.slug !== undefined) updated.slug = data.slug;
+		if (data.template !== undefined) updated.template = data.template;
+
+		mapDataStore.saveUITemplate(updated as any);
+
+		eventBus.emit("mcp-operation", {
+			operation: "update_ui_template",
+			success: true,
+			message: `更新 UI 模板成功: ${updated.name}`,
+			details: { id: updated.id, name: updated.name }
+		});
+
+		return updated;
+	}
+
+	/**
+	 * Remove a UI template (reject if referenced by CustomUI)
+	 */
+	async removeUITemplate(templateId: string): Promise<void> {
+		const mapDataStore = useMapDataStore();
+		const existing = mapDataStore.uiTemplates.find(t => t.id === templateId);
+		if (!existing) {
+			throw new Error(`UITemplate 不存在: ${templateId}`);
+		}
+
+		// Check if any CustomUI instance references this template
+		const isUsed = mapDataStore.customUIs.some(ui => ui.uiSchema === templateId);
+		if (isUsed) {
+			throw new Error(`无法删除：该模板正被 CustomUI 实例引用，请先删除相关实例`);
+		}
+
+		mapDataStore.removeUITemplate(templateId);
+
+		eventBus.emit("mcp-operation", {
+			operation: "remove_ui_template",
+			success: true,
+			message: `删除 UI 模板成功`,
+			details: { id: templateId, name: existing.name }
+		});
+	}
+
+	/**
+	 * CustomUI Operations
+	 */
+
+	/**
+	 * Create a new CustomUI instance
+	 */
+	async createCustomUI(data: { name: string; uiSchema: string; layout: { x: number; y: number; width: number; height: number } }): Promise<any> {
+		const mapDataStore = useMapDataStore();
+
+		// Validate uiSchema references an existing template
+		const template = mapDataStore.uiTemplates.find(t => t.id === data.uiSchema);
+		if (!template) {
+			throw new Error(`UITemplate 不存在: ${data.uiSchema}`);
+		}
+
+		const newInstance = {
+			id: generateShortId('custom-ui'),
+			name: data.name,
+			uiSchema: data.uiSchema,
+			layout: data.layout,
+		};
+
+		mapDataStore.saveCustomUI(newInstance as any);
+
+		eventBus.emit("mcp-operation", {
+			operation: "create_custom_ui",
+			success: true,
+			message: `创建 CustomUI 实例成功: ${newInstance.name}`,
+			details: { id: newInstance.id, name: newInstance.name, templateId: data.uiSchema }
+		});
+
+		return newInstance;
+	}
+
+	/**
+	 * Update an existing CustomUI instance
+	 */
+	async updateCustomUI(data: { id: string; name?: string; uiSchema?: string; layout?: Partial<{ x: number; y: number; width: number; height: number }> }): Promise<any> {
+		const mapDataStore = useMapDataStore();
+		const existing = mapDataStore.customUIs.find(ui => ui.id === data.id);
+		if (!existing) {
+			throw new Error(`CustomUI 不存在: ${data.id}`);
+		}
+
+		// Validate uiSchema references an existing template
+		if (data.uiSchema !== undefined) {
+			const template = mapDataStore.uiTemplates.find(t => t.id === data.uiSchema);
+			if (!template) {
+				throw new Error(`UITemplate 不存在: ${data.uiSchema}`);
+			}
+		}
+
+		const updated = { ...existing };
+		if (data.name !== undefined) updated.name = data.name;
+		if (data.uiSchema !== undefined) updated.uiSchema = data.uiSchema;
+		if (data.layout !== undefined) {
+			updated.layout = { ...updated.layout };
+			if (data.layout.x !== undefined) updated.layout.x = data.layout.x;
+			if (data.layout.y !== undefined) updated.layout.y = data.layout.y;
+			if (data.layout.width !== undefined) updated.layout.width = data.layout.width;
+			if (data.layout.height !== undefined) updated.layout.height = data.layout.height;
+		}
+
+		mapDataStore.saveCustomUI(updated as any);
+
+		eventBus.emit("mcp-operation", {
+			operation: "update_custom_ui",
+			success: true,
+			message: `更新 CustomUI 实例成功: ${updated.name}`,
+			details: { id: updated.id, name: updated.name }
+		});
+
+		return updated;
+	}
+
+	/**
+	 * Remove a CustomUI instance
+	 */
+	async removeCustomUI(instanceId: string): Promise<void> {
+		const mapDataStore = useMapDataStore();
+		const existing = mapDataStore.customUIs.find(ui => ui.id === instanceId);
+		if (!existing) {
+			throw new Error(`CustomUI 不存在: ${instanceId}`);
+		}
+
+		mapDataStore.removeCustomUI(instanceId);
+
+		eventBus.emit("mcp-operation", {
+			operation: "remove_custom_ui",
+			success: true,
+			message: `删除 CustomUI 实例成功`,
+			details: { id: instanceId, name: existing.name }
+		});
+	}
 }
 
 /**
