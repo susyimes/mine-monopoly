@@ -6,7 +6,8 @@
 	"license": "MIT",
 	"scripts": {
 		"dev": "nodemon --exec tsx ./app.ts",
-		"start": "tsc && node dist/monopoly-server/app.js"
+		"build": "tsc",
+		"start": "tsc && node dist/app.js"
 	},
 	"dependencies": {
 		"body-parser": "^1.20.1",
