@@ -17,40 +17,39 @@ RUN pnpm install --frozen-lockfile
 COPY packages/env/ ./packages/env/
 RUN pnpm --filter @mine-monopoly/env build
 
+# Copy remaining source code
+COPY packages/types/ ./packages/types/
+COPY apps/server/ ./apps/server/
+
+# Create standalone deployment with all dependencies properly resolved
+# (including transitive deps of workspace packages like dotenv from @mine-monopoly/env)
+RUN pnpm --filter @mine-monopoly/server deploy --legacy /app/deploy
+
+# Bundle server with esbuild into a single file
+# --packages=external: keep npm dependencies external (loaded from node_modules)
+# This preserves CJS/ESM interop for packages like typeorm and dotenv
+RUN npm install -g esbuild && \
+    npx esbuild /app/deploy/app.ts \
+  --bundle --platform=node --format=esm \
+  --packages=external \
+  --outfile=/app/deploy/server.js
+
 # ==================== Runtime Stage ====================
 FROM node:20-alpine
-
-RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
-
-# tsx: run TypeScript directly, avoids ESM .js extension issues with Node16 moduleResolution
-RUN npm install -g tsx
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy workspace configuration (pnpm needs this for symlink resolution)
-COPY package.json pnpm-workspace.yaml ./
+# Copy deployed node_modules (self-contained, all deps properly resolved)
+COPY --from=builder /app/deploy/node_modules ./node_modules
 
-# Copy @mine-monopoly/env (compiled dist + package.json)
-COPY packages/env/package.json ./packages/env/
-COPY --from=builder /app/packages/env/dist/ ./packages/env/dist/
+# Copy bundled output
+COPY --from=builder /app/deploy/server.js ./server.js
 
-# Copy @mine-monopoly/types (raw source, consumed directly)
-COPY packages/types/package.json ./packages/types/
-COPY packages/types/ ./packages/types/
+# Copy public files (static assets: avatars, game maps, logs)
+COPY --from=builder /app/apps/server/public ./public
 
-# Copy server source + public files
-COPY apps/server/package.json ./apps/server/
-COPY apps/server/ ./apps/server/
+EXPOSE 8081 8082
 
-# Copy node_modules from builder (preserves pnpm symlinks)
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/server/node_modules ./apps/server/node_modules
-
-# API port + PeerJS/ICE port
-EXPOSE 8803 82
-
-WORKDIR /app/apps/server
-
-CMD ["tsx", "app.ts"]
+CMD ["node", "server.js"]
