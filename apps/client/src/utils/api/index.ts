@@ -4,9 +4,24 @@ import { FPMessage } from "@mine-monopoly/ui";
 import { clearAuthAndRedirect } from "@src/utils/auth";
 import type { ApiResponse } from "@mine-monopoly/types";
 
+// 获取 API 基础 URL
+const getApiBaseUrl = () => {
+	const protocol = env("PROTOCOL");
+	const domain = env("FATPAPER_DOMAIN");
+	const prefix = env("API_BASE_PREFIX", "");
+	const port = env<number>("SERVER_PORT");
+
+	// 如果有前缀，使用路径模式（不需要端口）
+	if (prefix) {
+		return `${protocol}://${domain}${prefix}`;
+	}
+	// 否则使用端口模式
+	return `${protocol}://${domain}:${port}`;
+};
+
 const apiClient = axios.create({
-  baseURL: `${env("PROTOCOL")}://${env("FATPAPER_DOMAIN")}:${env<number>("SERVER_PORT")}`,
-  timeout: 15000,
+	baseURL: getApiBaseUrl(),
+	timeout: 15000,
 });
 
 // Symbol 标记：用于标记已在拦截器中处理过的错误
