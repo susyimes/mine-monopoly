@@ -1,5 +1,5 @@
 import { useLoading } from "@src/store";
-import { __ICE_SERVER_PATH__, __ICE_SERVER_PORT__, __PROTOCOL__ } from "@src/../global.config";
+import { __ICE_SERVER_PATH__, __ICE_USE_PREFIX__, __FATPAPER_HOST__ } from "@src/../global.config";
 import Peer, { DataConnection } from "peerjs";
 
 export class PeerClient {
@@ -38,16 +38,15 @@ export class PeerClient {
 	public static async create(host: string, port: number, iceServers: RTCIceServer[]) {
 		//向服务器和获取自己的peerId
 		const peer = await new Promise<Peer>((resolve, reject) => {
-			const isHTTP = __PROTOCOL__ === "http";
 			const peer = new Peer(
-				isHTTP
-					? { host, port }
-					: {
-							host,
-							path: `/${__ICE_SERVER_PATH__}`,
+				__ICE_USE_PREFIX__
+					? {
+							host: __FATPAPER_HOST__,
+							path: __ICE_SERVER_PATH__,
 							secure: true,
 							config: { iceServers },
-					  }
+						}
+					: { host, port }
 			);
 			peer.addListener("open", (id) => {
 				console.log("ice服务器连接成功, ID:", id);

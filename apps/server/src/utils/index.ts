@@ -108,7 +108,7 @@ export function decryptPassword(enc: string): string {
 	const decrypted = crypto.privateDecrypt(
 		{
 			key: privateKey,
-			padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+			padding: crypto.constants.RSA_PKCS1_PADDING,
 		},
 		buffer
 	);

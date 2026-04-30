@@ -7,7 +7,7 @@ import { __PROTOCOL__ } from "@src/../global.config";
 const props = defineProps<{ chatMessage: ChatMessage }>();
 const { user, type, content } = props.chatMessage;
 const avatarSrc = computed(() => {
-	return user.avatar ? `${__PROTOCOL__}://${user.avatar}` : "";
+	return user.avatar || "";
 });
 
 const color = user.color;

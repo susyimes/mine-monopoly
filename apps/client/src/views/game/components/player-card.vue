@@ -18,7 +18,7 @@ const displayNumber = ref(0);
 const _userInfo = computed(() => props.player.user);
 const _isBankrupted = computed(() => props.player.isBankrupted);
 const avatarSrc = computed(() => {
-	return _userInfo.value.avatar ? `${__PROTOCOL__}://${_userInfo.value.avatar}` : "";
+	return _userInfo.value.avatar || "";
 });
 
 watch(

@@ -75,7 +75,7 @@ async function getUserInfoToRoomList() {
 					const userInfoStore = useUserInfo();
 					userInfoStore.$patch({ userId, useraccount, username, avatar, color });
 					await setTimeOutAsync(1500);
-					if (loginCodeRenderer) await loginCodeRenderer.showImage(`${__PROTOCOL__}://${avatar}`);
+					if (loginCodeRenderer) await loginCodeRenderer.showImage(avatar);
 					await setTimeOutAsync(2000, toRoomList);
 					return;
 				} catch (e: any) {

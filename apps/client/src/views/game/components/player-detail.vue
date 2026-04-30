@@ -19,7 +19,7 @@ const playersPropertyies = computed(() => {
 });
 
 const avatarSrc = computed(() => {
-	return props.player.user.avatar ? `${__PROTOCOL__}://${props.player.user.avatar}` : "";
+	return props.player.user.avatar || "";
 });
 
 const chanceCardVisible = computed(() => {

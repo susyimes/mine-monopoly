@@ -32,7 +32,7 @@ export async function emitRoomHeart(roomId: string): Promise<void> {
 export function deleteRoom(roomId: string) {
 	// 使用 sendBeacon 在页面卸�载时清理房间 - 不使用 apiClient
 	const protocol = env("PROTOCOL");
-	const domain = env("FATPAPER_DOMAIN");
+	const domain = env("MONOPOLY_DOMAIN");
 	const prefix = env("API_BASE_PREFIX", "");
 	const port = env<number>("SERVER_PORT");
 

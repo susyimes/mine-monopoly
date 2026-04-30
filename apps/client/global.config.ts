@@ -4,10 +4,12 @@ import { env } from "@mine-monopoly/env";
 export const __USERSERVERHOST__ = `http://localhost:${env<number>("SERVER_PORT")}`;
 
 const prefix = env("API_BASE_PREFIX", "");
-const domain = env("FATPAPER_DOMAIN");
+const domain = env("MONOPOLY_DOMAIN");
 const protocol = env("PROTOCOL");
 const port = env<number>("SERVER_PORT");
 const adminPort = env<number>("MONOPOLY_ADMIN_PORT");
+const icePrefix = env("ICE_BASE_PREFIX", "") || prefix;
+const adminPrefix = env("ADMIN_BASE_PREFIX", "") || prefix;
 
 // 根据前缀配置生成服务器地址
 export const __MONOPOLYSERVERHOST__ = prefix
@@ -19,16 +21,21 @@ export const __MONOPOLYSERVER__ = prefix
 	? `${protocol}://${domain}${prefix}`
 	: `${protocol}://${domain}:${port}`;
 
-// ICE 服务路径：用于 PeerJS 的 path 参数
-// 如果有前缀，path 为前缀；否则使用默认的 /peerjs
-export const __ICE_SERVER_PATH__ = prefix || "/peerjs";
+// ICE 服务配置
+// 有前缀时：使用域名 + 前缀作为 PeerJS path（配合 nginx 反代）
+// 无前缀时：使用端口模式，path 为默认的 /peerjs
+export const __ICE_SERVER_PATH__ = icePrefix || "/peerjs";
+export const __ICE_SERVER_HOST__ = icePrefix
+	? `${protocol}://${domain}`
+	: `${protocol}://${domain}`;
+export const __ICE_USE_PREFIX__ = !!icePrefix;
 
 // Admin 服务地址
-export const __MONOPOLY_ADMIN__ = prefix
-	? `${protocol}://${domain}${prefix}`
+export const __MONOPOLY_ADMIN__ = adminPrefix
+	? `${protocol}://${domain}${adminPrefix}`
 	: `${protocol}://${domain}:${adminPort}`;
 
-export const __FATPAPER_HOST__ = env("FATPAPER_DOMAIN");
+export const __FATPAPER_HOST__ = env("MONOPOLY_DOMAIN");
 export const __PROTOCOL__ = env("PROTOCOL");
 
 // 腾讯云配置（可选）

@@ -7,8 +7,8 @@ services:
     container_name: monopoly-server
     restart: unless-stopped
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"  # 主服务器
-      - "${ICE_SERVER_PORT}:${ICE_SERVER_PORT}"  # ICE 服务器
+      - "${SERVER_PORT:-8081}:${SERVER_PORT:-8081}"  # 主服务器
+      - "${ICE_SERVER_PORT:-8082}:${ICE_SERVER_PORT:-8082}"  # ICE 服务器
     env_file:
       - .env
     volumes:
@@ -22,10 +22,10 @@ services:
     container_name: monopoly-coturn
     restart: unless-stopped
     ports:
-      - "${STUN_PORT}:3478"     # STUN
-      - "${STUN_PORT}:3478/udp" # STUN UDP
-      - "${TURN_PORT}:5349"     # TURN TLS
-      - "${TURN_PORT}:5349/udp" # TURN TLS UDP
+      - "${STUN_PORT:-3478}:3478"     # STUN
+      - "${STUN_PORT:-3478}:3478/udp" # STUN UDP
+      - "${TURN_PORT:-5349}:5349"     # TURN TLS
+      - "${TURN_PORT:-5349}:5349/udp" # TURN TLS UDP
     volumes:
       - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
     env_file:

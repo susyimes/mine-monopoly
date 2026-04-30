@@ -2,7 +2,6 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { getDracoLoader } from "@src/utils/three/draco";
 import { Model } from "@src/interfaces/game";
-import { __PROTOCOL__ } from "@src/../global.config";
 
 export const loadHouseModels = async (houseModels: {
 	lv0: Model;
@@ -20,7 +19,7 @@ export const loadHouseModels = async (houseModels: {
 
 		const promise = new Promise<{ name: string; glft: GLTF }>((resolve, reject) => {
 			gltfLoader.load(
-				`${__PROTOCOL__}://${model.fileUrl}`,
+				model.fileUrl,
 				(glft: GLTF) => {
 					glft.userData = { name: `house_${name}` };
 					resolve({ name: `house_${name}`, glft: glft });

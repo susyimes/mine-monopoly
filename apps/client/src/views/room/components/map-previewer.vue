@@ -6,9 +6,7 @@ import { env } from "@mine-monopoly/env";
 const { map } = defineProps<{ map: GameMapInDb }>();
 
 const coverImageUrl = computed(() => {
-	const url = map.coverUrl;
-	if (url.startsWith("http") || url.startsWith("blob")) return map.coverUrl;
-	else return `${env("PROTOCOL")}://${map.coverUrl}`;
+	return map.coverUrl;
 });
 </script>
 

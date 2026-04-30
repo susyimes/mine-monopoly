@@ -1,7 +1,7 @@
 import Peer, { DataConnection } from "peerjs";
 import { ClientSocketMessage, SocketMessage, SocketMsgType, UserInRoomInfo } from "@mine-monopoly/types";
 import { deleteRoom, emitRoomHeart } from "@src/utils/api/room-router";
-import { __ICE_SERVER_PATH__, __PROTOCOL__ } from "@src/../global.config";
+import { __ICE_SERVER_PATH__, __ICE_USE_PREFIX__, __FATPAPER_HOST__ } from "@src/../global.config";
 import { handleClientSocketMessage } from "./client-message-handlers";
 import { Room } from "./Room";
 
@@ -204,16 +204,15 @@ export class MonopolyHost {
 
 	public static async create(roomId: string, host: string, port: number, heartContinuationTimeMs: number, iceServers: RTCIceServer[]) {
 		const peer = await new Promise<Peer>((resolve) => {
-			const isHTTP = __PROTOCOL__ === "http";
 			const peer = new Peer(
-				isHTTP
-					? { host, port }
-					: {
-							host,
-							path: `/${__ICE_SERVER_PATH__}`,
+				__ICE_USE_PREFIX__
+					? {
+							host: __FATPAPER_HOST__,
+							path: __ICE_SERVER_PATH__,
 							secure: true,
 							config: { iceServers },
-						},
+						}
+					: { host, port }
 			);
 			peer.on("open", () => {
 				console.info("MonopolyHost开启成功");

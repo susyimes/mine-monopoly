@@ -40,7 +40,7 @@ if (envResult.error) {
 }
 
 // 调试：如果 .env 已加载则记录日志（仅开发环境）
-if (process.env.NODE_ENV !== "production" && (envResult.parsed || process.env.FATPAPER_DOMAIN)) {
+if (process.env.NODE_ENV !== "production" && (envResult.parsed || process.env.MONOPOLY_DOMAIN)) {
 	console.log(`[env] Loaded .env file from: ${envPath}`);
 }
 

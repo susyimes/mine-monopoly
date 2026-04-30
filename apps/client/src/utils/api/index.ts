@@ -7,7 +7,7 @@ import type { ApiResponse } from "@mine-monopoly/types";
 // 获取 API 基础 URL
 const getApiBaseUrl = () => {
 	const protocol = env("PROTOCOL");
-	const domain = env("FATPAPER_DOMAIN");
+	const domain = env("MONOPOLY_DOMAIN");
 	const prefix = env("API_BASE_PREFIX", "");
 	const port = env<number>("SERVER_PORT");
 

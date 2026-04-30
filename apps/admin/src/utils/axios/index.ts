@@ -4,7 +4,7 @@ import { message } from "ant-design-vue";
 import { env } from "@mine-monopoly/env";
 
 export const _axios = axios.create({
-	baseURL: `${env("PROTOCOL")}://${env("FATPAPER_DOMAIN")}:${env<number>("SERVER_PORT")}`,
+	baseURL: `${env("PROTOCOL")}://${env("MONOPOLY_DOMAIN")}:${env<number>("SERVER_PORT")}`,
 });
 
 _axios.defaults.headers.common["Authorization"] = localStorage.getItem("token");

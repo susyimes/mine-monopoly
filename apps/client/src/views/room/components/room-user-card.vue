@@ -15,7 +15,7 @@ const emits = defineEmits(["role-select"]);
 const user = computed(() => props.user);
 const lightColor = computed(() => (user.value ? lightenColor(user.value.color, 15) : "#ffffff"));
 const avatarSrc = computed(() => {
-	return user.value && (user.value.avatar ? `${__PROTOCOL__}://${user.value.avatar}` : "");
+	return user.value?.avatar || "";
 });
 
 const isMe = computed(() => (user.value ? user.value.userId === useUserInfo().userId : false));

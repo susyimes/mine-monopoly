@@ -96,7 +96,7 @@ const handleRegister = async () => {
 			formData.append("avatar", avatarFile.value);
 			formData.append("useraccount", registerForm.useraccount);
 			formData.append("username", registerForm.username);
-			formData.append("password", epassword.toString());
+			formData.append("password", epassword as string);
 			formData.append("color", registerForm.color);
 			try {
 				if (await apiRegister(formData)) {

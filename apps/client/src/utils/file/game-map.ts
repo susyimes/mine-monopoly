@@ -11,7 +11,7 @@ export async function getGameMap(gameMapInfo: GameMapInDb) {
 	if (isPC() || isMobile()) {
 		let mapCache = await window.mapCacheLoader.load(gameMapInfo.id, gameMapInfo.hash);
 		if (!mapCache) {
-			const response = await fetch(`${import.meta.env.VITE_PROTOCOL}://${gameMapInfo.mapUrl}`);
+			const response = await fetch(gameMapInfo.mapUrl);
 			const arrayBuffer = await response.arrayBuffer();
 			await window.mapCacheLoader.save(gameMapInfo.id, gameMapInfo.hash, arrayBuffer);
 			mapCache = arrayBuffer;
@@ -19,7 +19,7 @@ export async function getGameMap(gameMapInfo: GameMapInDb) {
 		const mapData = await loadFromProto(new Uint8Array(mapCache));
 		return mapData;
 	} else {
-		const response = await fetch(`${import.meta.env.VITE_PROTOCOL}://${gameMapInfo.mapUrl}`);
+		const response = await fetch(gameMapInfo.mapUrl);
 		const arrayBuffer = await response.arrayBuffer();
 		const mapData = await loadFromProto(new Uint8Array(arrayBuffer));
 		return mapData;
