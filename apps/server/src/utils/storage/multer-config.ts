@@ -25,12 +25,12 @@ export function createMulter(config: MulterFieldConfig): Multer {
 }
 
 export const avatarMulter = createMulter({
-	dest: "public/temp/avatars",
+	dest: "public/temp",
 	allowedExtensions: [".png", ".jpg", ".jpeg"],
 	maxSize: 2 * 1024 * 1024,
 });
 
 export const gameMapMulter = createMulter({
-	dest: "public/gameMap",
+	dest: "public/temp",
 	allowedExtensions: [".png", ".jpg", ".jpeg", ".fpmap"],
 });

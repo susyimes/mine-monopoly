@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { env } from "@mine-monopoly/env";
 import {
 	createGameMap,
 	deleteGameMap,
@@ -52,8 +53,8 @@ gameMapRouter.post(
 
 			const storage = getStorage();
 			const [mapUrl, coverUrl] = await storage.uploadMany([
-				{ filePath: gameMap.filePath, name: gameMap.fileName, targetPath: "monopoly/game-map" },
-				{ filePath: coverImage.filePath, name: coverImage.fileName, targetPath: "monopoly/game-map" },
+				{ filePath: gameMap.filePath, name: gameMap.fileName, targetPath: env("GAME_MAP_STORAGE_PATH", "monopoly/game-map") },
+				{ filePath: coverImage.filePath, name: coverImage.fileName, targetPath: env("GAME_MAP_STORAGE_PATH", "monopoly/game-map") },
 			]);
 
 			const map = await createGameMap({
@@ -117,8 +118,8 @@ gameMapRouter.post(
 
 			const storage = getStorage();
 			const [mapUrl, coverUrl] = await storage.uploadMany([
-				{ filePath: gameMap.filePath, name: gameMap.fileName, targetPath: "monopoly/game-map" },
-				{ filePath: coverImage.filePath, name: coverImage.fileName, targetPath: "monopoly/game-map" },
+				{ filePath: gameMap.filePath, name: gameMap.fileName, targetPath: env("GAME_MAP_STORAGE_PATH", "monopoly/game-map") },
+				{ filePath: coverImage.filePath, name: coverImage.fileName, targetPath: env("GAME_MAP_STORAGE_PATH", "monopoly/game-map") },
 			]);
 
 			const map = await updateGameMap({
@@ -225,8 +226,9 @@ gameMapRouter.delete("/delete", async (req, res, next) => {
 		const gameMap = await deleteGameMap(id.toString());
 		if (!gameMap) throw new Error("地图不存在");
 
-		const coverKey = `monopoly/game-map/${getFileNameInPath(gameMap.coverUrl)}`;
-		const mapKey = `monopoly/game-map/${getFileNameInPath(gameMap.mapUrl)}`;
+		const gameMapPath = env("GAME_MAP_STORAGE_PATH", "monopoly/game-map");
+		const coverKey = `${gameMapPath}/${getFileNameInPath(gameMap.coverUrl)}`;
+		const mapKey = `${gameMapPath}/${getFileNameInPath(gameMap.mapUrl)}`;
 		await getStorage().delete([coverKey, mapKey]);
 
 		const resMsg: ResInterface = {

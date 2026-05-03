@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { env } from "@mine-monopoly/env";
 import { roleValidation } from "#src/utils/role-validation";
 import { ResInterface } from "#src/interfaces/res";
 import { verToken } from "#src/utils/token";
@@ -189,7 +190,7 @@ routerUser.post("/register", avatarMulter.single("avatar"), async (req, res) => 
 		const avatarUrl = await getStorage().upload({
 			filePath,
 			name: fileName,
-			targetPath: "user/avatars",
+			targetPath: env("AVATAR_STORAGE_PATH", "user/avatars"),
 		});
 		const user = await createUser(useraccount, username, password, avatarUrl, color || undefined);
 		const resContent: ResInterface = {
