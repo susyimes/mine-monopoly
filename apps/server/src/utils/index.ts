@@ -1,7 +1,7 @@
 import { MapItem } from "#src/interfaces/bace";
 import Vibrant from "node-vibrant";
 import crypto from "crypto";
-import { privateKey } from "#src/utils/rsakey";
+import { encryptionKey } from "#src/utils/rsakey";
 
 export function getItemTypesFromMapItems(mapItems: MapItem[]) {
 	const itemTypesIdSet = new Set<string>();
@@ -105,12 +105,11 @@ export async function getImageMainColor(filename: string) {
 
 export function decryptPassword(enc: string): string {
 	const buffer = Buffer.from(enc, "base64");
-	const decrypted = crypto.privateDecrypt(
-		{
-			key: privateKey,
-			padding: crypto.constants.RSA_PKCS1_PADDING,
-		},
-		buffer
-	);
+	const iv = buffer.subarray(0, 12);
+	const authTag = buffer.subarray(buffer.length - 16);
+	const ciphertext = buffer.subarray(12, buffer.length - 16);
+	const decipher = crypto.createDecipheriv("aes-256-gcm", Buffer.from(encryptionKey, "hex"), iv);
+	decipher.setAuthTag(authTag);
+	const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
 	return decrypted.toString("utf8");
 }

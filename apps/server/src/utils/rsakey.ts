@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
 export const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
-	modulusLength: 2048, // 密钥长度，通常使用2048位或更多
+	modulusLength: 2048,
 	publicKeyEncoding: {
 		type: "spki",
 		format: "pem",
@@ -11,3 +11,5 @@ export const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
 		format: "pem",
 	},
 });
+
+export const encryptionKey = crypto.randomBytes(32).toString("hex");

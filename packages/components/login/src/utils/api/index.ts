@@ -7,11 +7,11 @@ export const getUserInfo = async () => {
 	return res.data as { id: string; username: string; avatar: string; color: string };
 };
 
-export const getPublicKey = async () => {
-	const res = await _axios.get("/user/public-key");
-	const publicKey = (res.data as string) || "";
-	localStorage.setItem("public-key", publicKey);
-	return publicKey;
+export const getEncryptionKey = async () => {
+	const res = await _axios.get("/user/encryption-key");
+	const key = (res.data as string) || "";
+	localStorage.setItem("encryption-key", key);
+	return key;
 };
 
 export const apiLogin = async (useraccount: string, password: string) => {

@@ -1,21 +1,27 @@
-import JSEncrypt from "jsencrypt";
-import { getPublicKey } from "@src/utils/api/auth";
+import { getEncryptionKey } from "@src/utils/api/auth";
 
-export function shuffleArray<T>(arr: T[]) {
-	return arr.sort(function () {
-		return 0.5 - Math.random();
-	});
-}
-
-async function encryptWithPublicKey(password: string, publicKey: string) {
-	const encrypt = new JSEncrypt();
-	encrypt.setPublicKey(publicKey);
-	const encrypted = encrypt.encrypt(password);
-	return encrypted;
+async function encryptWithKey(password: string, key: string): Promise<string> {
+	const iv = crypto.getRandomValues(new Uint8Array(12));
+	const cryptoKey = await crypto.subtle.importKey(
+		"raw",
+		new Uint8Array(key.match(/.{1,2}/g)!.map(b => parseInt(b, 16))),
+		{ name: "AES-GCM" },
+		false,
+		["encrypt"],
+	);
+	const encrypted = await crypto.subtle.encrypt(
+		{ name: "AES-GCM", iv },
+		cryptoKey,
+		new TextEncoder().encode(password),
+	);
+	const result = new Uint8Array(iv.length + encrypted.byteLength);
+	result.set(iv);
+	result.set(new Uint8Array(encrypted), iv.length);
+	return btoa(String.fromCharCode(...result));
 }
 
 export async function getEncryption(str: string) {
-	let publicKey = localStorage.getItem("public-key");
-	if (!publicKey) publicKey = await getPublicKey();
-	return encryptWithPublicKey(str, publicKey);
+	let key = localStorage.getItem("encryption-key");
+	if (!key) key = await getEncryptionKey();
+	return encryptWithKey(str, key);
 }

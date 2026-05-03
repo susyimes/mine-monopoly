@@ -21,6 +21,7 @@ async function bootstrap() {
 
 		const app = express();
 
+		app.set("trust proxy", true);
 		app.use(cors());
 
 		app.use("/static", express.static("public"));

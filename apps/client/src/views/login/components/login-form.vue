@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { apiLogin, apiRegister, getPublicKey } from "@src/utils/api/auth";
+import { apiLogin, apiRegister, getEncryptionKey } from "@src/utils/api/auth";
 import { ref, reactive, onBeforeMount } from "vue";
 import { FPMessage } from "@mine-monopoly/ui";
 import { getEncryption } from "@src/utils/encryption";
@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import AvatarCropper from "./AvatarCropper.vue";
 
 onBeforeMount(() => {
-	getPublicKey();
+	getEncryptionKey();
 });
 
 const isLoading = ref(false);

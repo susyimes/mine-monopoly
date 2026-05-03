@@ -14,11 +14,11 @@ export const getUserInfo = async () => {
 	return response.data;
 };
 
-export const getPublicKey = async () => {
-	const response = await apiClient.get<ApiResponse<string>>("/user/public-key");
-	const publicKey = response.data;
-	localStorage.setItem("public-key", publicKey);
-	return publicKey;
+export const getEncryptionKey = async () => {
+	const response = await apiClient.get<ApiResponse<string>>("/user/encryption-key");
+	const key = response.data;
+	localStorage.setItem("encryption-key", key);
+	return key;
 };
 
 export const apiLogin = async (useraccount: string, password: string) => {

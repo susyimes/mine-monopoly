@@ -3,7 +3,7 @@ import { env } from "@mine-monopoly/env";
 import { roleValidation } from "#src/utils/role-validation";
 import { ResInterface } from "#src/interfaces/res";
 import { verToken } from "#src/utils/token";
-import { privateKey, publicKey } from "#src/utils/rsakey";
+import { privateKey, publicKey, encryptionKey } from "#src/utils/rsakey";
 import { createUser, deleteUser, getUserById, getUserList, userLogin } from "#src/db/api/user";
 import { setToken } from "#src/utils/token";
 import { getStorage, avatarMulter, validateAndRename } from "#src/utils/storage";
@@ -101,10 +101,10 @@ routerUser.get("/info", async (req, res, next) => {
 	}
 });
 
-routerUser.get("/public-key", async (req, res, next) => {
+routerUser.get("/encryption-key", async (req, res, next) => {
 	const resMsg: ResInterface = {
 		status: 200,
-		data: publicKey,
+		data: encryptionKey,
 	};
 	res.status(200).json(resMsg);
 });

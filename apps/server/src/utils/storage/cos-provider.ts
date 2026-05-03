@@ -37,7 +37,8 @@ export class CosStorageProvider implements StorageProvider {
 				cb,
 			),
 		);
-		return data.Location;
+		const location = data.Location.startsWith("http") ? data.Location : `https://${data.Location}`;
+		return location;
 	}
 
 	async uploadMany(inputs: UploadInput[]): Promise<UploadResult[]> {
@@ -55,7 +56,10 @@ export class CosStorageProvider implements StorageProvider {
 				cb,
 			),
 		);
-		return data.files.map((f) => f.data.Location);
+		return data.files.map((f) => {
+			const location = f.data.Location;
+			return location.startsWith("http") ? location : `https://${location}`;
+		});
 	}
 
 	async delete(keys: string[]): Promise<void> {

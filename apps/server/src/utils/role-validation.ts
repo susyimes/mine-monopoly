@@ -9,6 +9,7 @@ const AllowPath = {
 	Ignore: [
 		"/upload/avatar",
 		"/user/public-key",
+		"/user/encryption-key",
 		"/user/register",
 		"/user/login",
 		"/user/get-code-state",

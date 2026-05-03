@@ -193,9 +193,6 @@ importers:
       howler:
         specifier: ^2.2.4
         version: 2.2.4
-      jsencrypt:
-        specifier: ^3.3.2
-        version: 3.5.4
       peerjs:
         specifier: ^1.5.4
         version: 1.5.5
@@ -358,9 +355,6 @@ importers:
       '@mine-monopoly/ui':
         specifier: workspace:*
         version: link:../ui
-      jsencrypt:
-        specifier: ^3.3.2
-        version: 3.5.4
 
   packages/components/ui: {}
 
