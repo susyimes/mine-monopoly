@@ -16,7 +16,7 @@ const currentPageIndex = ref<string[]>([currentRoutePath.value]);
 onBeforeMount(async () => {
 	const token = localStorage.getItem("token");
 	if (token) {
-		const { isAdmin: _isAdmin } = await isAdmin();
+		const { isAdmin: _isAdmin } = (await isAdmin()).data;
 		if (!_isAdmin) {
 			message.error("该账号不是管理员账号！请重新登录");
 			router.replace("/login");
