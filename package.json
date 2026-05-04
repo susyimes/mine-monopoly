@@ -8,6 +8,7 @@
 		"dev-client": "pnpm --filter @mine-monopoly/client run dev",
 		"dev-server": "pnpm --filter @mine-monopoly/server run dev",
 		"dev-editor": "pnpm --filter @mine-monopoly/map-editor run dev",
+		"dev-admin": "pnpm --filter @mine-monopoly/admin run dev",
 		"build-client:mac": "pnpm --filter @mine-monopoly/client run build -- --mac",
 		"build-client:win": "pnpm --filter @mine-monopoly/client run build -- --win",
 		"build-editor:mac": "pnpm --filter @mine-monopoly/map-editor run build -- --mac",
