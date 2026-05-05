@@ -2,6 +2,7 @@
 import { ref, reactive, onBeforeMount } from "vue";
 import router from "@/router";
 import { apiLogin } from "@/utils/api/auth";
+import { isAdmin } from "@/utils/api/user";
 import { getEncryptionKey } from "@/utils/auth";
 import { message } from "ant-design-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -27,6 +28,12 @@ async function handleLogin() {
 		const token = await apiLogin(loginForm.useraccount, loginForm.password);
 		if (token) {
 			localStorage.setItem("token", token);
+			const { isAdmin: _isAdmin } = await isAdmin();
+			if (!_isAdmin) {
+				localStorage.removeItem("token");
+				message.error("该账号不是管理员账号");
+				return;
+			}
 			router.push({ name: "main" });
 		}
 	} finally {
@@ -38,7 +45,7 @@ async function handleLogin() {
 <template>
 	<div class="login-page">
 		<div class="login-card">
-			<h1 class="login-title">FatPaper Monopoly</h1>
+			<h1 class="login-title">Mine Monopoly</h1>
 			<p class="login-subtitle">管理后台</p>
 			<form class="login-form" @submit.prevent="handleLogin">
 				<div class="form-item">
