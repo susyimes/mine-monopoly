@@ -6,7 +6,6 @@ import { dataToProtoBuffer, loadFromProto, ProtoFileType } from "@mine-monopoly/
 import { onMounted, reactive, ref, watch } from "vue";
 import { calculateFileHash, readMapFile, uint8ArrayToFile, uint8ArrayToObjectURL } from "@/utils/file";
 import { Rule } from "ant-design-vue/es/form";
-import { env } from "@mine-monopoly/env";
 
 const { gameMap } = defineProps<{ gameMap: GameMapInDb | undefined }>();
 const formRef = ref<FormInstance>();
@@ -23,7 +22,7 @@ onMounted(() => {
 	if (!gameMap) return;
 	formValue.name = gameMap.name;
 	formValue.version = gameMap.version;
-	coverImagePreview.value = `${env("PROTOCOL")}://${gameMap.coverUrl}`;
+	coverImagePreview.value = gameMap.coverUrl;
 });
 
 const gameMapfileList = ref<UploadProps["fileList"]>([]);

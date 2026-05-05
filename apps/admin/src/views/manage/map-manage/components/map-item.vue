@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { deleteGameMap, setGameMapUse } from "@/utils/api/game-map";
 import { GameMapInDb } from "@mine-monopoly/types";
-import { computed, ref } from "vue";
-import { env } from "@mine-monopoly/env";
+import { ref } from "vue";
 
 const props = defineProps<{ mapInfo: GameMapInDb }>();
 const emit = defineEmits(["deleted", "edit"]);
-const coverUrl = computed(() => `${env("PROTOCOL")}://${props.mapInfo.coverUrl}`);
 const switchLoading = ref(false);
 
 async function handleGameMapUseSwitch(use: boolean) {
@@ -71,7 +69,7 @@ async function handleDelete() {
 			un-checked-children="地图禁用中"
 		/>
 		<span class="version-text">v{{ props.mapInfo.version }}</span>
-		<img class="cover-image" :src="coverUrl" alt="" />
+		<img class="cover-image" :src="mapInfo.coverUrl" alt="" />
 	</a-card>
 </template>
 
