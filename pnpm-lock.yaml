@@ -148,9 +148,6 @@ importers:
         specifier: ^0.50.0
         version: 0.50.0
     devDependencies:
-      '@mine-monopoly/login':
-        specifier: workspace:*
-        version: link:../../packages/components/login
       '@mine-monopoly/types':
         specifier: workspace:*
         version: link:../../packages/types

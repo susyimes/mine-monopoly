@@ -6,6 +6,7 @@
 
 declare global {
   const __ENV_VARS__: Record<string, string | undefined>;
+  const __RUNTIME_ENV__: Record<string, string | undefined>;
 }
 
 /**
@@ -17,7 +18,9 @@ declare global {
  */
 export function env<T = string>(key: string, defaultValue?: T): T {
   const upperKey = key.toUpperCase();
-  const value = typeof __ENV_VARS__ !== 'undefined' ? __ENV_VARS__[upperKey] : undefined;
+  const value = typeof __RUNTIME_ENV__ !== 'undefined'
+    ? __RUNTIME_ENV__[upperKey]
+    : typeof __ENV_VARS__ !== 'undefined' ? __ENV_VARS__[upperKey] : undefined;
 
   if (value === undefined || value === '') {
     if (defaultValue !== undefined) {

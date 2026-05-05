@@ -70,6 +70,26 @@ async function bootstrap() {
 		}, () => {
 			serverLog(`${chalk.bold.bgGreen(` ICE服务启动成功 ${iceServerPort}端口`)}`);
 		});
+
+		const adminPort = env<number>("MONOPOLY_ADMIN_PORT");
+		const adminApp = express();
+		adminApp.use(express.static("admin-dist"));
+		// Inject runtime env vars for admin frontend
+		adminApp.get("/env.js", (req, res) => {
+			res.type("application/javascript");
+			res.send("window.__RUNTIME_ENV__=" + JSON.stringify({
+				PROTOCOL: process.env.PROTOCOL,
+				MONOPOLY_DOMAIN: process.env.MONOPOLY_DOMAIN,
+				SERVER_PORT: process.env.SERVER_PORT,
+			}) + ";");
+		});
+
+		adminApp.get("*", (req, res) => {
+			res.sendFile("admin-dist/index.html", { root: process.cwd() });
+		});
+		adminApp.listen(adminPort, () => {
+			serverLog(`${chalk.bold.bgGreen(` Admin服务启动成功 ${adminPort}端口`)}`);
+		});
 	} catch (e: any) {
 		serverLog(`${chalk.bold.bgRed(` 服务器出错: `)}`, "error");
 		console.log(e);

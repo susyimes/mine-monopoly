@@ -34,6 +34,15 @@ RUN npm install -g esbuild && \
   --packages=external \
   --outfile=/app/deploy/server.js
 
+# Build admin frontend (separate install to avoid pulling in client-only deps into server deploy)
+COPY packages/utils/package.json ./packages/utils/
+COPY apps/admin/package.json ./apps/admin/
+RUN pnpm install --frozen-lockfile
+
+COPY packages/utils/ ./packages/utils/
+COPY apps/admin/ ./apps/admin/
+RUN pnpm --filter @mine-monopoly/admin build
+
 # ==================== Runtime Stage ====================
 FROM node:20-alpine
 
@@ -49,6 +58,9 @@ COPY --from=builder /app/deploy/server.js ./server.js
 
 # Copy public files (static assets: avatars, game maps, logs)
 COPY --from=builder /app/apps/server/public ./public
+
+# Copy admin frontend build output
+COPY --from=builder /app/apps/admin/dist ./admin-dist
 
 EXPOSE 8081 8082
 

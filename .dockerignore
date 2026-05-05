@@ -3,12 +3,10 @@
 
 # Client apps (not needed for server build)
 apps/client
-apps/admin
 apps/map-editor
 
 # Packages not needed by server
 packages/components
-packages/utils
 
 # Build artifacts
 **/dist
