@@ -477,6 +477,12 @@ export class Room {
 			data: undefined,
 		});
 		this.isStarted = true;
+
+		// 上报游戏开始状态和地图信息到服务端
+		const mapId = this.mapInfo?.from === "server" ? this.mapInfo.data : null;
+		const mapName = mapId ? useMapData().name : null;
+		setRoomStarted(this.getRoomId(), true, mapId, mapName);
+
 		this.gameProcessWorker = new GameProcessWorker();
 		this.gameProcessWorker.addEventListener("message", (ev) => {
 			const msg: WorkerCommMsg = ev.data;

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, BeforeInsert } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, BeforeInsert, CreateDateColumn, Index } from "typeorm";
 import { AppDataSource } from "#src/db/dbConnecter";
 
 let hasAdmin = false;
@@ -31,6 +31,10 @@ export class User {
 
 	@Column({ type: "boolean", nullable: false, default: false })
 	isAdmin: boolean;
+
+	@Index()
+	@CreateDateColumn({ name: "create_time", nullable: true })
+	createTime: Date;
 
 	@BeforeInsert()
 	async setAdminStatus() {

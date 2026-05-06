@@ -34,6 +34,17 @@ import {
 	faPerson,
 	faTowerBroadcast,
 	faSpinner,
+	faUsers,
+	faCircleDot,
+	faUserShield,
+	faGamepad,
+	faCalendarDay,
+	faClock,
+	faDoorOpen,
+	faLockOpen,
+	faLock,
+	faPlay,
+	faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 
 /* add icons to the library */
@@ -59,7 +70,18 @@ library.add(
 	faRightFromBracket,
 	faPerson,
 	faTowerBroadcast,
-	faSpinner
+	faSpinner,
+	faUsers,
+	faCircleDot,
+	faUserShield,
+	faGamepad,
+	faCalendarDay,
+	faClock,
+	faDoorOpen,
+	faLockOpen,
+	faLock,
+	faPlay,
+	faChevronRight
 );
 
 const app = createApp(App);

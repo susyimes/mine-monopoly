@@ -15,6 +15,8 @@ type RoomMapItem = {
 	lastHeartTime: number;
 	isPrivate: boolean;
 	isStarted: boolean;
+	mapId: string | null;
+	mapName: string | null;
 };
 
 export const roomRouter = Router();
@@ -26,7 +28,7 @@ setInterval(() => {
 	Array.from(roomMap.entries()).forEach((room) => {
 		if (room[1].deleteTime < Date.now()) {
 			const roomItem = room[1];
-			createRecord(roomItem.roomId, Date.now() - roomItem.createTime);
+			createRecord(roomItem.roomId, Date.now() - roomItem.createTime, roomItem.mapId, roomItem.mapName);
 			roomMap.delete(room[0]);
 		}
 	});
@@ -77,6 +79,8 @@ roomRouter.get("/join", async (req, res, next) => {
 				lastHeartTime: Date.now(),
 				isPrivate: true,
 				isStarted: false,
+				mapId: null,
+				mapName: null,
 			});
 			const resMsg: ResInterface = {
 				status: 200,
@@ -198,10 +202,19 @@ roomRouter.post("/set-private", async (req, res, next) => {
 });
 
 roomRouter.post("/set-started", async (req, res, next) => {
-	const { roomId, isStarted } = req.body as { roomId: string; isStarted: boolean };
+	const { roomId, isStarted, mapId, mapName } = req.body as {
+		roomId: string;
+		isStarted: boolean;
+		mapId?: string | null;
+		mapName?: string | null;
+	};
 	const room = roomMap.get(roomId);
 	if (room) {
 		room.isStarted = isStarted;
+		if (isStarted) {
+			room.mapId = mapId ?? null;
+			room.mapName = mapName ?? null;
+		}
 		res.status(200).json(<ResInterface>{
 			status: 200,
 		});

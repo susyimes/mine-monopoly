@@ -58,10 +58,17 @@ export async function setRoomPrivate(roomId: string, isPrivate: boolean) {
 	return response;
 }
 
-export async function setRoomStarted(roomId: string, isStarted: boolean) {
+export async function setRoomStarted(
+	roomId: string,
+	isStarted: boolean,
+	mapId?: string | null,
+	mapName?: string | null,
+) {
 	const response = await apiClient.post<{ roomId: string; isStarted: boolean }>("/room-router/set-started", {
 		roomId,
 		isStarted,
+		mapId,
+		mapName,
 	});
 	return response;
 }

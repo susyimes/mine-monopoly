@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, PrimaryColumn, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
 
 @Entity()
 export class GameRecord {
@@ -11,6 +11,13 @@ export class GameRecord {
 	@Column({ type: "int", nullable: false })
 	duration: number;
 
+	@Column({ type: "varchar", nullable: true })
+	mapId: string | null;
+
+	@Column({ type: "varchar", nullable: true })
+	mapName: string | null;
+
+	@Index()
 	@CreateDateColumn({
 		name: "create_time",
 		nullable: true,

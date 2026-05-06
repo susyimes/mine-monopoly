@@ -35,7 +35,7 @@ const props = defineProps<{ room: RoomMapItem }>();
 	border-radius: 8px;
 	padding: 20px;
 	box-sizing: border-box;
-	box-shadow: var(--el-box-shadow-light);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	height: max-content;
 	background-color: #fff;
 

@@ -148,3 +148,6 @@ docs/superpowers/
 #d.ts
 apps/map-editor/components.d.ts
 **/editor-lib.d.ts
+
+.gitnexus
+AGENTS.md

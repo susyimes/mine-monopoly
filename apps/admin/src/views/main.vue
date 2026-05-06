@@ -52,7 +52,7 @@ function handleLogout() {
 				</a-menu-item>
 			</a-menu>
 		</a-layout-sider>
-		<a-layout-content>
+		<a-layout-content class="content-area">
 			<router-view></router-view>
 		</a-layout-content>
 	</a-layout>
@@ -100,6 +100,11 @@ function handleLogout() {
 				background-color: #ff4d4f;
 			}
 		}
+	}
+
+	.content-area {
+		overflow-y: auto;
+		height: 100%;
 	}
 
 	.menu-item {
