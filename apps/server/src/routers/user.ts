@@ -8,7 +8,7 @@ import { createUser, deleteUser, getUserById, getUserList, updateUser, userLogin
 import { AppDataSource } from "#src/db/dbConnecter";
 import { User } from "#src/db/entities/User";
 import { setToken, setRefreshToken, verToken as verifyToken } from "#src/utils/token";
-import { getStorage, avatarMulter, validateAndRename } from "#src/utils/storage";
+import { avatarMulter, withFileCleanup, cleanupTempFiles } from "#src/utils/storage";
 import { randomString } from "#src/utils";
 
 export const routerUser = Router();
@@ -260,6 +260,7 @@ routerUser.post("/register", avatarMulter.single("avatar"), async (req, res) => 
 	const { useraccount, username, password, color } = req.body;
 
 	if (!(useraccount && username && password && color)) {
+		await cleanupTempFiles([req.file]);
 		const resContent: ResInterface = {
 			status: 400,
 			msg: "请求参数错误",
@@ -269,28 +270,19 @@ routerUser.post("/register", avatarMulter.single("avatar"), async (req, res) => 
 	}
 
 	try {
-		const { fileName, filePath } = await validateAndRename(
-			randomString(16),
-			req.file,
-			[".png", ".jpg", ".jpeg"],
+		const user = await withFileCleanup(
+			{
+				files: [{ file: req.file, targetPath: env("AVATAR_STORAGE_PATH", "user/avatars"), exts: [".png", ".jpg", ".jpeg"] }],
+				name: randomString(16),
+			},
+			async (urls) => {
+				return await createUser(useraccount, username, password, urls[0], color || undefined);
+			},
 		);
-		const avatarUrl = await getStorage().upload({
-			filePath,
-			name: fileName,
-			targetPath: env("AVATAR_STORAGE_PATH", "user/avatars"),
-		});
-		const user = await createUser(useraccount, username, password, avatarUrl, color || undefined);
-		const resContent: ResInterface = {
-			status: 200,
-			msg: "注册成功",
-			data: user,
-		};
+		const resContent: ResInterface = { status: 200, msg: "注册成功", data: user };
 		res.status(200).json(resContent);
 	} catch (e: any) {
-		const resContent: ResInterface = {
-			status: 500,
-			msg: e.message || "服务器处理错误",
-		};
+		const resContent: ResInterface = { status: 500, msg: e.message || "服务器处理错误" };
 		res.status(500).json(resContent);
 	}
 });

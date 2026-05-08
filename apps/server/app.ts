@@ -101,6 +101,7 @@ async function bootstrap() {
 				SERVER_PORT: process.env.SERVER_PORT || '',
 				ADMIN_BASE_PREFIX: process.env.ADMIN_BASE_PREFIX || '',
 				API_BASE_PREFIX: process.env.API_BASE_PREFIX || '',
+				MAP_ENCRYPT_KEY: process.env.MAP_ENCRYPT_KEY || '',
 			}) + ";");
 		});
 

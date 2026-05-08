@@ -9,7 +9,7 @@ import {
 	updateGameMap,
 } from "#src/db/api/game-map";
 import { ResInterface } from "#src/interfaces/res";
-import { getStorage, gameMapMulter, validateAndRename } from "#src/utils/storage";
+import { getStorage, gameMapMulter, withFileCleanup, cleanupTempFiles } from "#src/utils/storage";
 import { getFileNameInPath, randomString } from "#src/utils";
 
 export const gameMapRouter = Router();
@@ -38,6 +38,7 @@ gameMapRouter.post(
 		const { name, author, version, hash, description } = req.body;
 
 		if (!(name && author && version && hash)) {
+			await cleanupTempFiles(Object.values(files).flatMap(f => f));
 			const resContent: ResInterface = {
 				status: 400,
 				msg: "请求参数错误",
@@ -47,37 +48,32 @@ gameMapRouter.post(
 		}
 
 		try {
-			const newFileName = randomString(16);
-			const coverImage = await validateAndRename(newFileName, files["cover-image"][0], [".png", ".jpg", ".jpeg"]);
-			const gameMap = await validateAndRename(newFileName, files["game-map"][0], [".fpmap", ".mmmap"]);
-
-			const storage = getStorage();
-			const [mapUrl, coverUrl] = await storage.uploadMany([
-				{ filePath: gameMap.filePath, name: gameMap.fileName, targetPath: env("GAME_MAP_STORAGE_PATH", "monopoly/game-map") },
-				{ filePath: coverImage.filePath, name: coverImage.fileName, targetPath: env("GAME_MAP_STORAGE_PATH", "monopoly/game-map") },
-			]);
-
-			const map = await createGameMap({
-				name,
-				author,
-				version,
-				description: description || "",
-				hash,
-				mapUrl,
-				coverUrl,
-				inuse: false,
-			});
-			const resContent: ResInterface = {
-				status: 200,
-				msg: "添加地图成功",
-				data: map,
-			};
+			const mapPath = env("GAME_MAP_STORAGE_PATH", "monopoly/game-map");
+			const map = await withFileCleanup(
+				{
+					files: [
+						{ file: files["cover-image"][0], targetPath: mapPath, exts: [".png", ".jpg", ".jpeg"] },
+						{ file: files["game-map"][0], targetPath: mapPath, exts: [".fpmap", ".mmmap"] },
+					],
+					name: randomString(16),
+				},
+				async (urls) => {
+					return await createGameMap({
+						name,
+						author,
+						version,
+						description: description || "",
+						hash,
+						coverUrl: urls[0],
+						mapUrl: urls[1],
+						inuse: false,
+					});
+				},
+			);
+			const resContent: ResInterface = { status: 200, msg: "添加地图成功", data: map };
 			res.status(200).json(resContent);
 		} catch (e: any) {
-			const resContent: ResInterface = {
-				status: 500,
-				msg: e.message || "服务器处理错误",
-			};
+			const resContent: ResInterface = { status: 500, msg: e.message || "服务器处理错误" };
 			res.status(500).json(resContent);
 		}
 	}
@@ -103,6 +99,7 @@ gameMapRouter.post(
 		const { id, author, name, version, hash, description } = req.body;
 
 		if (!(id && author && name && version && hash)) {
+			await cleanupTempFiles(Object.values(files).flatMap(f => f));
 			const resContent: ResInterface = {
 				status: 400,
 				msg: "请求参数错误",
@@ -112,38 +109,33 @@ gameMapRouter.post(
 		}
 
 		try {
-			const newFileName = randomString(16);
-			const coverImage = await validateAndRename(newFileName, files["cover-image"][0], [".png", ".jpg", ".jpeg"]);
-			const gameMap = await validateAndRename(newFileName, files["game-map"][0], [".fpmap", ".mmmap"]);
-
-			const storage = getStorage();
-			const [mapUrl, coverUrl] = await storage.uploadMany([
-				{ filePath: gameMap.filePath, name: gameMap.fileName, targetPath: env("GAME_MAP_STORAGE_PATH", "monopoly/game-map") },
-				{ filePath: coverImage.filePath, name: coverImage.fileName, targetPath: env("GAME_MAP_STORAGE_PATH", "monopoly/game-map") },
-			]);
-
-			const map = await updateGameMap({
-				id,
-				name,
-				author,
-				version,
-				description: description || "",
-				hash,
-				mapUrl,
-				coverUrl,
-				inuse: false,
-			});
-			const resContent: ResInterface = {
-				status: 200,
-				msg: "更新地图成功",
-				data: map,
-			};
+			const mapPath = env("GAME_MAP_STORAGE_PATH", "monopoly/game-map");
+			const map = await withFileCleanup(
+				{
+					files: [
+						{ file: files["cover-image"][0], targetPath: mapPath, exts: [".png", ".jpg", ".jpeg"] },
+						{ file: files["game-map"][0], targetPath: mapPath, exts: [".fpmap", ".mmmap"] },
+					],
+					name: randomString(16),
+				},
+				async (urls) => {
+					return await updateGameMap({
+						id,
+						name,
+						author,
+						version,
+						description: description || "",
+						hash,
+						coverUrl: urls[0],
+						mapUrl: urls[1],
+						inuse: false,
+					});
+				},
+			);
+			const resContent: ResInterface = { status: 200, msg: "更新地图成功", data: map };
 			res.status(200).json(resContent);
 		} catch (e: any) {
-			const resContent: ResInterface = {
-				status: 500,
-				msg: e.message || "服务器处理错误",
-			};
+			const resContent: ResInterface = { status: 500, msg: e.message || "服务器处理错误" };
 			res.status(500).json(resContent);
 		}
 	}
