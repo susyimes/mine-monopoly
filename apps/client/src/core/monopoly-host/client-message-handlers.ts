@@ -107,9 +107,28 @@ const handleOperation: ClientMessageHandler<SocketMsgType.Operation> = (conn, ms
 	host.getRoom().emitOperation(clientId, operateType, data);
 };
 const handleLeaveRoom: ClientMessageHandler<SocketMsgType.LeaveRoom> = (conn, msg, host, clientId) => {
-	if (host.getRoom().leave(clientId)) {
-		//没人了
-		host.destory();
+	const room = host.getRoom();
+	const isOwnerLeaving = room.getOwnerId() === clientId;
+	const isGameStarted = room.isStarted;
+
+	if (isOwnerLeaving && isGameStarted) {
+		// 房主在游戏中退出：向其他玩家发送 LeaveRoom 让他们正常退出，然后销毁
+		const userList = room.getUserList();
+		for (const user of userList) {
+			if (user.userId !== clientId) {
+				room.sendToClientById(user.userId, SocketMsgType.LeaveRoom, undefined, {
+					type: "error",
+					content: "房主已退出，游戏即将解散",
+				});
+			}
+		}
+		setTimeout(() => {
+			host.destory();
+		}, 500);
+	} else {
+		if (room.leave(clientId)) {
+			host.destory();
+		}
 	}
 	conn.close();
 	host.deleteClient(clientId);

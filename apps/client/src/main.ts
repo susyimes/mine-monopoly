@@ -92,6 +92,8 @@ import {
 	faCheck,
 	faGaugeHigh,
 	faCrosshairs,
+	faRobot,
+	faRightFromBracket,
 } from "@fortawesome/free-solid-svg-icons";
 import { useDeviceStatus, useSettig } from "@src/store";
 import { isFullScreen as _isFullScreen, isLandscape as _isLandscape, isMobileDevice } from "@src/utils";
@@ -156,7 +158,9 @@ library.add(
 	faUpload,
 	faCheck,
 	faGaugeHigh,
-	faCrosshairs
+	faCrosshairs,
+	faRobot,
+	faRightFromBracket
 );
 const pinia = createPinia();
 

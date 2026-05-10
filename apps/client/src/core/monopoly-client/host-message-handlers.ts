@@ -186,10 +186,13 @@ const handleJoinRoomReply: ServerMessageHandler<SocketMsgType.JoinRoom> = (msg) 
 };
 
 const handleLeaveRoomReply: ServerMessageHandler<SocketMsgType.LeaveRoom> = (msg, client) => {
-	FPMessage({ type: "success", message: "退出房间" });
+	if (!msg.msg) {
+		FPMessage({ type: "success", message: "退出房间" });
+	}
 	useRoomInfo().$reset();
 	useChat().$reset();
 	useGameLog().$reset();
+	useGameData().$reset();
 	client.destory();
 	router.replace({ name: "room-router" });
 };
@@ -199,6 +202,7 @@ const handleKickOutReply: ServerMessageHandler<SocketMsgType.KickOut> = (msg, cl
 	useRoomInfo().$reset();
 	useChat().$reset();
 	useGameLog().$reset();
+	useGameData().$reset();
 	client.destory();
 	router.replace({ name: "room-router" });
 };

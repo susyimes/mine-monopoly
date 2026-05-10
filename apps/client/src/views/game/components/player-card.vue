@@ -51,6 +51,9 @@ watch(
 			<div v-if="player.isOffline" class="disconnect-marker">
 				<FontAwesomeIcon icon="link-slash" />
 			</div>
+			<div v-if="player.isAI" class="ai-marker">
+				<FontAwesomeIcon icon="robot" />
+			</div>
 			<img v-if="avatarSrc" :src="avatarSrc" />
 			<FontAwesomeIcon v-else :style="{ color: _userInfo.color }" icon="gamepad" />
 		</div>
@@ -146,6 +149,17 @@ watch(
 			position: absolute;
 			left: 0;
 			top: 0;
+		}
+
+		& > .ai-marker {
+			font-size: 1.5rem;
+			width: $avatar_size;
+			height: $avatar_size;
+			color: var(--color-third, #6c5ce7);
+			background-color: rgba(255, 255, 255, 0.5);
+			position: absolute;
+			left: 0;
+			bottom: 0;
 		}
 
 		& > img {

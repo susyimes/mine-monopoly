@@ -13,10 +13,10 @@ import {
 	Fragment,
 } from "vue";
 import { GameRenderer } from "@src/core/renderer/GameRenderer";
-import { useLoading, useRoomInfo, useUtil } from "@src/store";
+import { useLoading, useUtil } from "@src/store";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import router from "@src/router/index";
-import { MonopolyClient, useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
+import { MonopolyClient, useMonopolyClient, destoryMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 import Dices from "./components/dices.vue";
 import ChanceCardContainer from "./components/chance-card-container.vue";
 import CountdownTimer from "./components/countdown-timer.vue";
@@ -77,6 +77,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
 	if (gameRenderer) gameRenderer.destroy();
 	gameRenderer = null;
+	destoryMonopolyClient();
 });
 
 function getUiTemplateById(id: string) {

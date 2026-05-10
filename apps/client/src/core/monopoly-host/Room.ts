@@ -67,6 +67,10 @@ export class Room {
 		};
 	}
 
+	public getOwnerId(): string {
+		return this.ownerId;
+	}
+
 	public getUserList(): UserInRoom[] {
 		return Array.from(this.userList.values());
 	}

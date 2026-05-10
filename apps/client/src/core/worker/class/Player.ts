@@ -271,6 +271,7 @@ export class Player implements IPlayer {
 			stop: this.isStop,
 			isBankrupted: this.isBankrupted,
 			isOffline: this.isOffline,
+			isAI: this.isAI,
 			infoDisplay: this.infoDisplay,
 			exportData: this.exportData,
 		};

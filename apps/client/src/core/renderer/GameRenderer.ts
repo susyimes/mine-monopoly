@@ -1254,6 +1254,35 @@ export class GameRenderer {
 		useEventBus().removeAll();
 		this.commonWatchers.forEach((f) => f());
 		this.diceManager && this.diceManager.dispose();
+		// 释放 THREE.js 场景资源
+		this.scene.traverse((object) => {
+			if (object instanceof THREE.Mesh) {
+				object.geometry?.dispose();
+				if (Array.isArray(object.material)) {
+					object.material.forEach((m) => m.dispose());
+				} else {
+					object.material?.dispose();
+				}
+			}
+		});
+		this.scene.clear();
+
+		// 释放 WebGL 渲染器
+		this.renderer.dispose();
+		this.renderer.renderLists.dispose();
+
+		// EffectComposer 没有 dispose()，手动清理 render target
+		this.composer.renderTarget1.dispose();
+		this.composer.renderTarget2.dispose();
+		this.composer.passes = [];
+
+		// 轨道控制器
+		this.controls.dispose();
+
+		// CSS2DRenderer DOM 清理
+		if (this.popElementRenderer.domElement?.parentElement) {
+			this.popElementRenderer.domElement.parentElement.removeChild(this.popElementRenderer.domElement);
+		}
 	}
 
 	/**

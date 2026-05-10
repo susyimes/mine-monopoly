@@ -67,6 +67,8 @@ export interface PlayerInfo {
 
 	/** 是否离线 */
 	isOffline: boolean;
+	/** 是否为 AI 托管 */
+	isAI: boolean;
 
 	/** 玩家信息展示 UI Schema */
 	infoDisplay: UISchema;

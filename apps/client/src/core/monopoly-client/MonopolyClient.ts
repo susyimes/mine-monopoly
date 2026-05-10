@@ -1,5 +1,6 @@
 import { FPMessage } from "@mine-monopoly/ui";
 import { useChat, useGameLog, useLoading, useRoomInfo, useUserInfo, useUtil } from "@src/store";
+import { useGameData } from "@src/store/game";
 import { emitHostPeerId, joinRoomApi } from "@src/utils/api/room-router";
 import { PeerClient } from "./PeerClient";
 import { DataConnection } from "peerjs";
@@ -184,8 +185,7 @@ export class MonopolyClient {
 						type: "error",
 						message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
 						onClosed: () => {
-							router.replace("room-router");
-							this.destory();
+							this.handleDisconnect();
 						},
 					});
 				}
@@ -198,8 +198,7 @@ export class MonopolyClient {
 						type: "error",
 						message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
 						onClosed: () => {
-							router.replace("room-router");
-							this.destory();
+							this.handleDisconnect();
 						},
 					});
 				}
@@ -216,12 +215,12 @@ export class MonopolyClient {
 
 	private handleNoHeart = debounce(
 		() => {
+			this.isOnline = false;
 			FPMessage({
 				type: "error",
 				message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
 				onClosed: () => {
-					router.replace("room-router");
-					this.destory();
+					this.handleDisconnect();
 				},
 			});
 		},
@@ -232,6 +231,15 @@ export class MonopolyClient {
 	public initHeartBeat() {
 		// 在首次发送心跳时初始化心跳超时定时器
 		this.handleNoHeartTimer = this.handleNoHeart;
+	}
+
+	private handleDisconnect() {
+		useGameData().$reset();
+		useRoomInfo().$reset();
+		useChat().$reset();
+		useGameLog().$reset();
+		router.replace({ name: "room-router" });
+		this.destory();
 	}
 
 	public sendRoomChatMessage(message: string, roomId: string) {
