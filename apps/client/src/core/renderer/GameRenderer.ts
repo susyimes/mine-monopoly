@@ -462,13 +462,21 @@ export class GameRenderer {
 			});
 
 			const total = preloadData.length;
+			const t0 = performance.now();
+
+			// 0. 确保字体加载完成，避免渲染时重复等待字体解析
+			await document.fonts.ready;
+			console.log(`[机会卡性能] fonts.ready: ${performance.now() - t0}ms`);
 
 			// 1. 并发预加载所有图标（预热浏览器缓存，消除后续1s超时等待）
 			const allIconUrls = preloadData.map(d => d.iconUrl);
 			loadingMask.text = `正在预加载机会卡图标...`;
+			const t1 = performance.now();
 			await ChanceCardTextureGenerator.preloadIcons(allIconUrls);
+			console.log(`[机会卡性能] preloadIcons (${allIconUrls.length}张): ${performance.now() - t1}ms`);
 
 			// 2. 并发生成纹理（4张同时处理）
+			const t2 = performance.now();
 			await ChanceCardTextureGenerator.preloadTexturesConcurrent(
 				preloadData,
 				4,
@@ -476,6 +484,8 @@ export class GameRenderer {
 					loadingMask.text = `正在预加载机会卡 (${completed}/${total}): ${cardName}`;
 				}
 			);
+			console.log(`[机会卡性能] preloadTextures (${total}张): ${performance.now() - t2}ms`);
+			console.log(`[机会卡性能] 总耗时: ${performance.now() - t0}ms`);
 
 			loadingMask.text = "机会卡纹理预加载完成";
 		} catch (error) {

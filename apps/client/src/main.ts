@@ -4,7 +4,22 @@ import "@src/assets/layer.scss";
 import "@src/assets/style.scss";
 import "@src/assets/ui.scss";
 import "@src/assets/font/font.css";
+import contentFontUrl from "./assets/font/ContentFont.woff2?url";
+import contentFontAllUrl from "./assets/font/ContentFont-all.woff2?url";
+import { isPC } from "./utils/platform";
 import App from "./App.vue";
+
+// 根据平台动态加载 ContentFont：Electron 使用 ContentFont-all，网页使用 ContentFont
+const fontStyle = document.createElement("style");
+fontStyle.textContent = `
+	@font-face {
+		font-family: "ContentFont";
+		src: url("${isPC() ? contentFontAllUrl : contentFontUrl}") format("woff2");
+		font-style: normal;
+		font-weight: normal;
+	}
+`;
+document.head.appendChild(fontStyle);
 import router from "./router";
 import { createPinia } from "pinia";
 import { AXIOS_HANDLED_ERROR } from "@src/utils/api";

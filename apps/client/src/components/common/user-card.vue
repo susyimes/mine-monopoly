@@ -82,4 +82,3 @@ const avatarSrc = computed(() => {
 	}
 }
 </style>
-@src/global.config

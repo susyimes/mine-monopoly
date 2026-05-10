@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toRaw, computed } from "vue";
+import { toRaw, computed, useSlots } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import HtmlRenderer from "../ui-renderer/ui-renderer.vue";
 import { useGameData } from "@src/store/game";
@@ -13,6 +13,8 @@ interface Prop {
 }
 
 const props = defineProps<Prop>();
+
+const slots = useSlots();
 
 const emits = defineEmits(["select", "update:selectedKey"]);
 
@@ -66,7 +68,7 @@ function handleItemClick(item: any) {
 			@click="handleItemClick(item)"
 			:class="{
 				'is-selected': isItemSelected(item[keyName]),
-				'has-display': !!item.display && typeof item.display !== 'string',
+				'show-border': (!item.display && !!slots.item) || (!!item.display && typeof item.display !== 'string'),
 			}"
 		>
 			<div v-if="isItemSelected(item[keyName])" class="selected">
@@ -113,7 +115,7 @@ function handleItemClick(item: any) {
 		}
 
 		// UISchema 显示模式：不显示边框和背景
-		&.has-display {
+		&.show-border {
 			background-color: transparent;
 			border-color: transparent;
 			box-shadow: none;

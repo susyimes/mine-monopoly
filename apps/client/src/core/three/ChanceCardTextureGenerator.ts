@@ -31,7 +31,9 @@ export class ChanceCardTextureGenerator {
 		try {
 			// 1. 创建并挂载Vue组件
 			const container = this.ensureRenderContainer();
+			const tRender = performance.now();
 			const canvas = await this.renderComponentToCanvas(container, card, iconUrl);
+			console.log(`[机会卡性能] renderToCanvas (${card.name}): ${(performance.now() - tRender).toFixed(1)}ms`);
 
 			// 2. 创建Three.js纹理
 			const texture = new THREE.CanvasTexture(canvas);
@@ -109,10 +111,10 @@ export class ChanceCardTextureGenerator {
 			wrapper.style.overflow = "hidden";
 			wrapper.style.boxSizing = "border-box";
 
-			// 隐藏内部滚动条（html-to-image 会正确渲染滚动条）
-			const scrollbarStyle = document.createElement("style");
-			scrollbarStyle.textContent = "* { scrollbar-width: none !important; } *::-webkit-scrollbar { display: none !important; }";
-			wrapper.appendChild(scrollbarStyle);
+			// 使用子集字体渲染，避免全量字体导致 html-to-image 过慢
+			const overrideStyle = document.createElement("style");
+			overrideStyle.textContent = "* { scrollbar-width: none !important; font-family: 'ContentFontLite' !important; } *::-webkit-scrollbar { display: none !important; }";
+			wrapper.appendChild(overrideStyle);
 
 			container.appendChild(wrapper);
 
@@ -146,8 +148,10 @@ export class ChanceCardTextureGenerator {
 					});
 
 					// 4. 使用 html-to-image 转换为Canvas
+					const tToCanvas = performance.now();
 					const canvas = await toCanvas(wrapper, {
 						backgroundColor: null,
+						skipFonts: true,
 						pixelRatio: 2,
 						canvasWidth: wrapper.clientWidth,
 						canvasHeight: wrapper.clientHeight,
@@ -156,6 +160,7 @@ export class ChanceCardTextureGenerator {
 							transformOrigin: "top left",
 						},
 					});
+					console.log(`[机会卡性能]   html-to-image toCanvas: ${(performance.now() - tToCanvas).toFixed(1)}ms`);
 
 					resolve(canvas);
 				} catch (error) {
