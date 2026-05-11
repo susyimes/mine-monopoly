@@ -61,6 +61,9 @@ onMounted(async () => {
 
 		const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
 		const container = document.getElementsByClassName("game-page")[0] as HTMLDivElement;
+		if (!canvas || !container) {
+			throw new Error("游戏画布元素未找到");
+		}
 		const mapData = JSON.parse(JSON.stringify(mapDataStore.$state)) as GameMap;
 		console.log("🚀 ~ mapData:", mapData);
 		gameRenderer = new GameRenderer(canvas, container, mapData);

@@ -5,12 +5,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { __PROTOCOL__ } from "@src/../global.config";
 
 const props = defineProps<{ chatMessage: ChatMessage }>();
-const { user, type, content } = props.chatMessage;
+const { user, type, content } = props.chatMessage ?? ({} as ChatMessage);
 const avatarSrc = computed(() => {
-	return user.avatar || "";
+	return user?.avatar || "";
 });
 
-const color = user.color;
+const color = user?.color;
 onMounted(() => {
 	console.log("🚀 ~ onMounted ~ onMounted:");
 });

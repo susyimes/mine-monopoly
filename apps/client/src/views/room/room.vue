@@ -46,7 +46,7 @@ const currentMap = computed(() => roomInfoStore.mapInfo);
 const tempMapSelectedId = ref<string[]>(roomInfoStore.mapId ? [roomInfoStore.mapId] : []);
 
 function handleChangeMap() {
-	if (socketClient && tempMapSelectedId.value[0] !== currentMap.value?.id) {
+	if (socketClient && tempMapSelectedId.value.length > 0 && tempMapSelectedId.value[0] !== currentMap.value?.id) {
 		useLoading().showLoading("地图传输中...");
 		socketClient.changeGameMap({ from: "server", data: tempMapSelectedId.value[0] });
 	}
@@ -132,15 +132,20 @@ function handleGameStart() {
 }
 
 async function handleSelectMap() {
-	useLoading().showLoading("地图列表加载中...");
-	const { gameMapList } = await getGameMapList(1, 1000);
-	mapList.value = gameMapList;
-	mapSelectorVisible.value = true;
-	useLoading().hideLoading();
+	try {
+		useLoading().showLoading("地图列表加载中...");
+		const { gameMapList } = await getGameMapList(1, 1000);
+		mapList.value = gameMapList;
+		mapSelectorVisible.value = true;
+	} catch {
+		FPMessage({ type: "error", message: "加载地图列表失败" });
+	} finally {
+		useLoading().hideLoading();
+	}
 }
 
 async function handleUploadMap() {
-	const file = await new Promise<ArrayBuffer>((resolve) => {
+	const file = await new Promise<ArrayBuffer | null>((resolve) => {
 		const input = document.createElement("input");
 		input.type = "file";
 		input.accept = ".fpmap,.mmmap";
@@ -151,6 +156,7 @@ async function handleUploadMap() {
 				resolve(content);
 			}
 		};
+		input.addEventListener("cancel", () => resolve(null));
 		input.click();
 	});
 	if (!file) return;
@@ -234,7 +240,7 @@ async function handleUploadMap() {
 					:key="player.userId"
 					:user="player"
 				/>
-				<roomUserCard v-for="i in 6 - playerList.length" :key="i" :user="undefined" />
+				<roomUserCard v-for="i in Math.max(0, 6 - playerList.length)" :key="i" :user="undefined" />
 			</div>
 		</div>
 	</div>

@@ -2,14 +2,38 @@ import router from "@src/router";
 import { useUserInfo, useRoomInfo } from "@src/store";
 import { destoryMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 
+function safeLocalStorageGet(key: string): string | null {
+	try {
+		return localStorage.getItem(key);
+	} catch {
+		return null;
+	}
+}
+
+function safeLocalStorageSet(key: string, value: string): void {
+	try {
+		localStorage.setItem(key, value);
+	} catch {
+		console.error(`Failed to set localStorage key: ${key}`);
+	}
+}
+
+function safeLocalStorageRemove(key: string): void {
+	try {
+		localStorage.removeItem(key);
+	} catch {
+		// ignore
+	}
+}
+
 /**
  * 清除所有认证信息并重定向到登录页
  */
 export function clearAuthAndRedirect() {
   // 清除 localStorage
-  localStorage.removeItem("token");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("user");
+  safeLocalStorageRemove("token");
+  safeLocalStorageRemove("refreshToken");
+  safeLocalStorageRemove("user");
 
   // 清除 Pinia store 状态
   const userInfoStore = useUserInfo();
@@ -25,13 +49,13 @@ export function clearAuthAndRedirect() {
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem("token", token);
+  safeLocalStorageSet("token", token);
 }
 
 export function setRefreshToken(token: string): void {
-  localStorage.setItem("refreshToken", token);
+  safeLocalStorageSet("refreshToken", token);
 }
 
 export function getRefreshToken(): string | null {
-  return localStorage.getItem("refreshToken");
+  return safeLocalStorageGet("refreshToken");
 }
