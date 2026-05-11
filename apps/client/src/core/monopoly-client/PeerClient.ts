@@ -11,6 +11,7 @@ export class PeerClient {
 	}
 
 	public async linkToHost(hostId: string) {
+		if (!hostId) throw new Error("无效的主机ID");
 		if (this.conn) {
 			this.conn.close();
 			this.conn = null;

@@ -109,8 +109,8 @@ export class MonopolyClient {
 				useLoading().showLoading("连接主机中...");
 				await this.linkToGameHost(hostPeerId);
 			}
-		} catch (e) {
-			FPMessage({ type: "error", message: "服务器连接失败" });
+		} catch (e: any) {
+			FPMessage({ type: "error", message: e?.message || "服务器连接失败" });
 		}
 	}
 
@@ -160,12 +160,18 @@ export class MonopolyClient {
 			);
 
 			this.conn.on("data", (_data: any) => {
-				const data: ServerSocketMessage = JSON.parse(_data, (key, value) => {
-					if (value === "Infinity") return Infinity;
-					if (value === "-Infinity") return -Infinity;
-					return value;
-				});
-				if (data.msg) {
+					let data: ServerSocketMessage;
+					try {
+						data = JSON.parse(_data, (key, value) => {
+							if (value === "Infinity") return Infinity;
+							if (value === "-Infinity") return -Infinity;
+							return value;
+						});
+					} catch {
+						console.error("Failed to parse server message:", _data);
+						return;
+					}
+					if (data.msg) {
 					// 在显示通知消息时，隐藏任何正在显示的 loading
 					useLoading().hideLoading();
 					FPMessage({
@@ -204,7 +210,11 @@ export class MonopolyClient {
 				}
 			});
 		} catch (e: any) {
-			FPMessage({ type: "error", message: e });
+			if (this.peerClient) {
+				this.peerClient.destory();
+				this.peerClient = null;
+			}
+			FPMessage({ type: "error", message: e?.message || e });
 		}
 	}
 
@@ -354,14 +364,18 @@ export class MonopolyClient {
 	}
 
 	public async sendMsg(msg: ClientSocketMessage) {
-		if (this.conn) {
-			await this.conn.send(
-				JSON.stringify(msg, (key, value) => {
-					if (value === Infinity) return "Infinity";
-					if (value === -Infinity) return "-Infinity";
-					return value;
-				}),
-			);
+		if (this.conn?.open) {
+			try {
+				await this.conn.send(
+					JSON.stringify(msg, (key, value) => {
+						if (value === Infinity) return "Infinity";
+						if (value === -Infinity) return "-Infinity";
+						return value;
+					}),
+				);
+			} catch {
+				console.error("Failed to send message:", msg.type);
+			}
 		}
 	}
 
