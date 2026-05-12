@@ -43,7 +43,7 @@ export function getInitPhase() {
 const gameOverRulePhase: GamePhaseInfo = {
 	id: generateShortId('phase'),
 	name: "游戏结束判定规则",
-	description: "游戏结束判定规则, 返回一个布尔值, 当返回值为true时游戏结束",
+	description: "游戏结束判定规则, 返回 false 表示游戏继续; 返回玩家ID数组表示游戏结束, 数组顺序即为排名（索引0为第一名）",
 	from: "系统",
 	mark: GamePhaseMark.GameRoundStart,
 	initEventCode: GameOverRuleDefault,

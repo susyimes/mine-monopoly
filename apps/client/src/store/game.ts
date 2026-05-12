@@ -113,6 +113,7 @@ export const useGameData = defineStore("game-data", {
 			players: new Array<PlayerInfo>(),
 			properties: new Array<PropertyInfo>(),
 			isGameOver: false,
+			rankedPlayerIds: [],
 		};
 	},
 	getters: {

@@ -80,8 +80,8 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	/** 游戏运行时栈（事件队列管理） */
 	gameRuntimeStack: IGameRuntimeStack<GameContext>;
 
-	/** 游戏结束规则检查函数 */
-	gameOverRuleFunction: () => Promise<boolean>;
+	/** 游戏结束规则检查函数，返回 false 表示游戏继续，返回玩家ID数组表示游戏结束（数组顺序即为排名） */
+	gameOverRuleFunction: () => Promise<string[] | false>;
 
 	/** 动画完成处理器映射表（animationId -> cleanup函数） */
 	animationCompletionHandlers: Map<string, () => void>;

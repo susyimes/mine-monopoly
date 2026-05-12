@@ -28,6 +28,9 @@ export interface GameData {
 
 	/** 是否游戏结束 */
 	isGameOver: boolean;
+
+	/** 游戏结束时的玩家排名（玩家ID数组，索引0为第一名） */
+	rankedPlayerIds: string[];
 }
 
 /**

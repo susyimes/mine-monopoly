@@ -22,7 +22,6 @@ import { MonopolyHost } from "../monopoly-host/MonopolyHost";
 import { handleServerSocketMessage } from "./host-message-handlers";
 import router from "@src/router";
 import { debounce } from "@src/utils";
-import { useGameData } from "@src/store/game";
 import { arrayBufferToBase64 } from "@mine-monopoly/utils";
 
 type MonopolyClientOptions = {
@@ -363,7 +362,7 @@ export class MonopolyClient {
 			source: SocketMsgSource.Client,
 			data: {
 				operateType: OperateType.DynamicButtonClick,
-				data: { buttonId },
+				data: { buttonId, success: true },
 			},
 		});
 	}

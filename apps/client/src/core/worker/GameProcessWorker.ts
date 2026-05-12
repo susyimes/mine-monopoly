@@ -235,6 +235,9 @@ export class GameProcess implements IGameProcess {
 	/** 动画完成处理器映射表（animationId -> cleanup函数） */
 	animationCompletionHandlers: Map<string, () => void> = new Map();
 
+	/** 游戏结束时的玩家排名 */
+	private rankedPlayerIds: string[] = [];
+
 	/** 动态按钮注册表（外层key: playerId, 内层key: buttonId） */
 	private playerButtons: Map<string, Map<string, ButtonConfig>> = new Map();
 	/** 跟踪已注册监听器的玩家ID */
@@ -242,7 +245,7 @@ export class GameProcess implements IGameProcess {
 	/** 按钮ID计数器 */
 	private buttonIdCounter: number = 0;
 
-	public gameOverRuleFunction = async () => {
+	public gameOverRuleFunction = async (): Promise<string[] | false> => {
 		return false;
 	};
 
@@ -648,7 +651,7 @@ export class GameProcess implements IGameProcess {
 		const { phases } = this.mapData;
 		const gameOverRule = phases.gameOverRule;
 		const compiledCode = compileTsToJs(gameOverRule[0].initEventCode, this.fullTypes);
-		this.gameOverRuleFunction = new Function(compiledCode)() as () => Promise<boolean>;
+		this.gameOverRuleFunction = new Function(compiledCode)() as () => Promise<string[] | false>;
 	}
 
 	private initMap() {
@@ -1744,11 +1747,18 @@ export class GameProcess implements IGameProcess {
 	}
 
 	public async checkGameOver(): Promise<void> {
-		const isGameOver = await this.gameOverRuleFunction();
-		if (isGameOver) this.gameOver();
+		const result = await this.gameOverRuleFunction();
+		if (result === true) {
+			// 旧地图兼容: 返回 true 时按默认顺序（玩家ID列表）结束
+			this.gameOver(Array.from(this.players.keys()));
+		} else if (Array.isArray(result) && result.length > 0) {
+			this.gameOver(result);
+		}
 	}
 
-	private gameOver() {
+	private gameOver(rankedPlayerIds: string[]) {
+		this.isGameOver = true;
+		this.rankedPlayerIds = rankedPlayerIds;
 		this.gameDataBroadcast();
 		this.gameBroadcast({
 			type: SocketMsgType.GameOver,
@@ -1759,7 +1769,6 @@ export class GameProcess implements IGameProcess {
 		self.postMessage(<WorkerCommMsg>{
 			type: WorkerCommType.GameOver,
 		});
-		this.isGameOver = true;
 		this.destroy();
 	}
 
@@ -1782,6 +1791,7 @@ export class GameProcess implements IGameProcess {
 			players: Array.from(this.players.values()).map((player) => player.getPlayerInfo()),
 			properties: Array.from(this.properties.values()).map((property) => property.getPropertyInfo()),
 			isGameOver: this.isGameOver,
+			rankedPlayerIds: this.rankedPlayerIds,
 		};
 		return gameInfo;
 	}
