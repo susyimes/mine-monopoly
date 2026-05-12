@@ -1,7 +1,13 @@
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { getDracoLoader } from "@src/utils/three/draco";
-import { Model } from "@src/interfaces/game";
+import { getDracoLoader } from "@src/utils/draco/draco";
+
+interface Model {
+	id: string;
+	name: string;
+	fileName: string;
+	fileUrl: string;
+}
 
 export const loadHouseModels = async (houseModels: {
 	lv0: Model;

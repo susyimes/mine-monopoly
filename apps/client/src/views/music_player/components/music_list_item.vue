@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Music } from "@src/interfaces/bace";
+import { Music } from "@mine-monopoly/types";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const props = defineProps<{ music: Music; isPlaying: boolean }>();

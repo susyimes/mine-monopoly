@@ -4,7 +4,6 @@ import { lightenColor, randomString } from "@src/utils";
 import { computed, ref, reactive, onMounted, watch, nextTick, onBeforeUnmount } from "vue";
 import { ChangeRoleOperate, UserInRoomInfo } from "@mine-monopoly/types";
 import { useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
-import { RolePreviewer } from "@src/views/room/utils/RolePreviewer";
 import { __PROTOCOL__ } from "@src/../global.config";
 import { useUserInfo, useRoomInfo } from "@src/store";
 import { useMapData, useResourceStore } from "@src/store/game";

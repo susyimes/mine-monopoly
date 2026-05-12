@@ -216,7 +216,6 @@ async function initSettingStore() {
 
 import { gsap } from "gsap";
 import MotionPathPlugin from "gsap/MotionPathPlugin";
-import { isPC } from "./utils/platform";
 import { FPMessage } from "@mine-monopoly/ui";
 import soundDirective from "./directives/sound";
 

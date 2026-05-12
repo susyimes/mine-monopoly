@@ -1,6 +1,6 @@
 import axios from "axios";
 import { __MONOPOLYSERVER__ } from "@src/../global.config";
-import { Music } from "@src/interfaces/bace";
+import { Music } from "@mine-monopoly/types";
 
 const musicList: Music[] = [
 	{

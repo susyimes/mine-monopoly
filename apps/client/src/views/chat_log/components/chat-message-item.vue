@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChatMessage } from "@src/interfaces/bace";
+import { ChatMessage } from "@mine-monopoly/types";
 import { computed, onMounted, onUpdated } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { __PROTOCOL__ } from "@src/../global.config";

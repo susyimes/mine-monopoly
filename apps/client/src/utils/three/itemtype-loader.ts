@@ -1,7 +1,21 @@
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { ItemType } from "@src/interfaces/game";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
-import { getDracoLoader } from "@src/utils/three/draco";
+import { getDracoLoader } from "@src/utils/draco/draco";
+
+interface ItemTypeModel {
+	id: string;
+	name: string;
+	fileName: string;
+	fileUrl: string;
+}
+
+interface ItemType {
+	id: string;
+	color: string;
+	name: string;
+	model: ItemTypeModel;
+	size: number;
+}
 
 export const loadItemTypeModules = async (itemTypeList: ItemType[]): Promise<{ id: string; glft: GLTF }[]> => {
 	const promiseArr: Promise<{ id: string; glft: GLTF }>[] = new Array<Promise<{ id: string; glft: GLTF }>>();

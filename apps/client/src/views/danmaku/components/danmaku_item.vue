@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChatMessage } from "@src/interfaces/bace";
+import { ChatMessage } from "@mine-monopoly/types";
 
 const { message } = defineProps<{ message: ChatMessage }>();
 </script>
