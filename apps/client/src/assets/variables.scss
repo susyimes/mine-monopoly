@@ -88,8 +88,16 @@ $text-base: #303030;
   // 1. 材质纹理 (CSS Gradient 模拟)
   // V型针织纹理 (背景用)
   --texture-knit:
-    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.03) 10px, rgba(0, 0, 0, 0.03) 20px),
-    repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.02) 10px, rgba(0, 0, 0, 0.02) 20px);
+    repeating-linear-gradient(45deg,
+      transparent,
+      transparent 4px,
+      rgba(0, 0, 0, 0.02) 4px,
+      rgba(0, 0, 0, 0.02) 8px),
+    repeating-linear-gradient(-45deg,
+      transparent,
+      transparent 4px,
+      rgba(0, 0, 0, 0.01) 4px,
+      rgba(0, 0, 0, 0.01) 8px);
 
   // 毛毡杂色纹理 (按钮/补丁用)
   --texture-felt:

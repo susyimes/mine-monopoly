@@ -105,7 +105,7 @@ function handleItemClick(item: any) {
 		cursor: pointer;
 		transition: all 0.3s ease-out;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-		overflow: hidden;
+		// overflow: hidden;
 		padding: 0.5rem;
 
 		// 鼠标悬停效果
