@@ -138,6 +138,7 @@ export function createDefaultMapData(): GameMap {
 		phases: getInitPhase(),
 		buildingModelIdList: ["", "", ""],
 		uiTemplates: [],
+		modifierTemplates: [],
 		customUIs: [],
 		gameSettingForm: [
 			{ id: "initMoney", key: "initMoney", type: "number-input", label: "初始金钱", defaultValue: 10000 },

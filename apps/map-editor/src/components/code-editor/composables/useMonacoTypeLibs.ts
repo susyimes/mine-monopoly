@@ -7,6 +7,7 @@ export function useMonacoTypeLibs(monacoInstance: Ref<typeof monaco | null>) {
 		extraLibs?: string;
 		uiTemplates?: any[];
 		gameSettingForm?: any[];
+		modifierTemplates?: any[];
 	}) {
 		if (!monacoInstance.value) return;
 
@@ -77,6 +78,32 @@ export function useMonacoTypeLibs(monacoInstance: Ref<typeof monaco | null>) {
     export {};
   `,
 				filePath: "file:///game-settings.d.ts",
+			});
+		}
+
+		// 5. 动态 Modifier 模板类型
+		if (options.modifierTemplates && options.modifierTemplates.length > 0) {
+			const declarations = options.modifierTemplates
+				.map(
+					(mod) => `
+    /**
+     * **修饰器名称**: ${mod.name}
+     * **slug**: ${mod.slug}
+     * ID: \`${mod.id}\`
+     */
+    const $mod__${mod.slug}: ModifierTemplate;
+  `,
+				)
+				.join("\n");
+
+			libs.push({
+				content: `
+    declare global {
+      ${declarations}
+    }
+    export {};
+  `,
+				filePath: "file:///modifier-templates.d.ts",
 			});
 		}
 

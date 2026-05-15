@@ -51,6 +51,7 @@ import {
 	faMagnifyingGlass,
 	faCopy,
 	faObjectGroup,
+	faBoltLightning,
 } from "@fortawesome/free-solid-svg-icons";
 import { eventBus } from "./utils/event-bus";
 import { loadMapDataFromPath } from "@src/utils/file";
@@ -94,6 +95,7 @@ library.add(
 	faMagnifyingGlass,
 	faCopy,
 	faObjectGroup,
+	faBoltLightning,
 );
 
 eventBus.on("renderer-ready", () => {

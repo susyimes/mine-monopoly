@@ -24,3 +24,4 @@ export { mapItemTools } from "./map-items.js";
 export { propertyTools } from "./properties.js";
 export { uiTemplateTools } from "./ui-templates.js";
 export { customUITools } from "./custom-uis.js";
+export { modifierTemplateTools } from "./modifier-templates.js";

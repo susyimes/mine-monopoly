@@ -1,3 +1,4 @@
+import { ModifierTemplate } from "./action-system/modifier";
 import { ChanceCardInfo, GamePhaseInfo, GameSetting, UISchema, UITemplate } from "./game-process";
 import { MapItem, MapItemType, Street, Role, MapEvent, GameMapInfo, CustomUI } from "./item";
 import { FormSchema } from "./util";
@@ -72,6 +73,9 @@ export interface GameMap {
 
 	/** UI 模板列表 */
 	uiTemplates: UITemplate[];
+
+	/** Modifier 模板列表 */
+	modifierTemplates: ModifierTemplate[];
 
 	/** 自定义 UI 列表 */
 	customUIs: CustomUI[];

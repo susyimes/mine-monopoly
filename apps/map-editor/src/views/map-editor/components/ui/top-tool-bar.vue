@@ -94,6 +94,13 @@ const toolbarItems: ToolbarItem[] = [
 		component: defineAsyncComponent(() => import("../manager/custom-ui-manager/custom-ui-manager.vue")),
 	},
 	{
+		key: "ModifierTemplate",
+		text: "修饰器模板",
+		icon: "fas fa-bolt-lightning",
+		type: "modal",
+		component: defineAsyncComponent(() => import("../manager/modifier-template-manager/modifier-template-manager.vue")),
+	},
+	{
 		key: "MapData",
 		text: "JSON数据",
 		icon: "fas fa-database",

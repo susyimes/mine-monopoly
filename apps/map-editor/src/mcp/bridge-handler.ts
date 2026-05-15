@@ -67,6 +67,12 @@ type MCPToolName =
 	| "remove_custom_ui"
 	| "get_custom_ui"
 	| "list_custom_uis"
+	// Modifier Template tools
+	| "create_modifier_template"
+	| "update_modifier_template"
+	| "remove_modifier_template"
+	| "get_modifier_template"
+	| "list_modifier_templates"
 	// System tools
 	| "check_mcp_connection";
 
@@ -393,6 +399,37 @@ export async function handleToolInvocation(toolName: MCPToolName, args: any): Pr
 				result = toPlain(mapDataStore.customUIs);
 				break;
 			}
+
+		// Modifier Template Tools
+		case "create_modifier_template": {
+			const serviceResult = await mapContentService.createModifierTemplate(args);
+			result = toPlain(serviceResult);
+			break;
+		}
+
+		case "update_modifier_template": {
+			const serviceResult = await mapContentService.updateModifierTemplate(args);
+			result = toPlain(serviceResult);
+			break;
+		}
+
+		case "remove_modifier_template": {
+			await mapContentService.removeModifierTemplate(args.templateId);
+			result = { success: true };
+			break;
+		}
+
+		case "get_modifier_template": {
+			const template = mapDataStore.modifierTemplates.find(t => t.id === args.templateId);
+			if (!template) throw new Error(`ModifierTemplate 不存在: ${args.templateId}`);
+			result = toPlain(template);
+			break;
+		}
+
+		case "list_modifier_templates": {
+			result = toPlain(mapDataStore.modifierTemplates);
+			break;
+		}
 
 			// System Tools
 			case "check_mcp_connection": {

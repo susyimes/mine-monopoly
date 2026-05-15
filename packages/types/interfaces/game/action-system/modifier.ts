@@ -68,12 +68,12 @@ export interface ConsumeResult {
  */
 export interface IModifierManager<C extends ICommandMap, K extends keyof C = keyof C> {
 	/**
-	 * 添加修饰器
-	 * @param mod - 要添加的修饰器
+	 * 添加修饰器（基于模板对象）
+	 * @param template - 模板对象，包含 descriptor、effectCode 和可选 slug
 	 * @param onComplete - 修饰器结束时的回调函数（可选）
 	 * @returns 生成的修饰器 ID
 	 */
-	add<KK extends keyof C>(mod: IModifier<C, KK>, onComplete?: () => void): string;
+	add(template: ModifierTemplate, onComplete?: () => void): string;
 
 	/**
 	 * 根据 ID 移除修饰器
@@ -137,4 +137,31 @@ export interface IModifierManager<C extends ICommandMap, K extends keyof C = key
 	 * @returns 消耗结果
 	 */
 	consume(id: string, amount: number): ConsumeResult;
+}
+
+/** Modifier 模板 — 在地图编辑器中管理，运行时通过变量注入适配存档恢复 */
+export interface ModifierTemplate {
+	/** 唯一 ID */
+	id: string;
+	/** 标识，用于生成 $mod__slug 调用令牌 */
+	slug: string;
+	/** 显示名称 */
+	name: string;
+	/** 描述符配置 */
+	descriptor: {
+		timing: "before" | "after";
+		commandType: string;
+		remainingTriggers: number;
+		priority: number;
+		autoConsume: boolean;
+		meta?: { name: string; description: string };
+	};
+	/** 代码字符串，签名 (player, gameProcess, cmd, ctx) => { ... } */
+	effectCode: string;
+}
+
+/** 存档中 modifier 的快照 — 引用模板 slug + 运行时状态 */
+export interface ModifierSnapshot {
+	templateSlug: string;
+	remainingTriggers: number;
 }

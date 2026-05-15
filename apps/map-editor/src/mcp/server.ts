@@ -23,6 +23,7 @@ import { systemTools } from "./tools/system.js";
 import { gameSettingTools } from "./tools/game-settings.js";
 import { uiTemplateTools } from "./tools/ui-templates.js";
 import { customUITools } from "./tools/custom-uis.js";
+import { modifierTemplateTools } from "./tools/modifier-templates.js";
 
 /**
  * Convert Zod schema to JSON Schema format for MCP
@@ -122,6 +123,7 @@ const allTools = [
 	...gameSettingTools,
 	...uiTemplateTools,
 	...customUITools,
+	...modifierTemplateTools,
 ];
 
 /**

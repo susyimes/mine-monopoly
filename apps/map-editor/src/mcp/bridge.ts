@@ -57,6 +57,12 @@ export type MCPToolName =
 	| "remove_custom_ui"
 	| "get_custom_ui"
 	| "list_custom_uis"
+	// Modifier Template tools
+	| "create_modifier_template"
+	| "update_modifier_template"
+	| "remove_modifier_template"
+	| "get_modifier_template"
+	| "list_modifier_templates"
 	// System tools
 	| "check_mcp_connection";
 

@@ -593,11 +593,12 @@ export class MapContentService {
 	 * Get all type libraries available to the code editor
 	 * @returns extraLibs (user-defined code) and uiTemplateTypes (generated declarations)
 	 */
-	async getAllTypeLibs(): Promise<{ extraLibs: string; uiTemplateTypes: string; gameSettingTypes: string }> {
+	async getAllTypeLibs(): Promise<{ extraLibs: string; uiTemplateTypes: string; gameSettingTypes: string; modifierTemplateTypes: string }> {
 		const mapDataStore = useMapDataStore();
 		const extraLibs = mapDataStore.extraLibs || "";
 		const uiTemplates = mapDataStore.uiTemplates || [];
 		const gameSettingForm = mapDataStore.gameSettingForm || [];
+		const modifierTemplates = mapDataStore.modifierTemplates || [];
 
 		let uiTemplateTypes = "";
 		if (uiTemplates.length > 0) {
@@ -644,7 +645,30 @@ export class MapContentService {
   `;
 		}
 
-		return { extraLibs, uiTemplateTypes, gameSettingTypes };
+		let modifierTemplateTypes = "";
+		if (modifierTemplates.length > 0) {
+			const declarations = modifierTemplates
+				.map(
+					(mod) => `
+    /**
+     * **修饰器名称**: ${mod.name}
+     * **slug**: ${mod.slug}
+     * * ID: \`${mod.id}\`
+     */
+    const $mod__${mod.slug}: ModifierTemplate;
+  `,
+				)
+				.join("\n");
+
+			modifierTemplateTypes = `
+    declare global {
+      ${declarations}
+    }
+    export {};
+  `;
+		}
+
+		return { extraLibs, uiTemplateTypes, gameSettingTypes, modifierTemplateTypes };
 	}
 
 	/**
@@ -1094,6 +1118,97 @@ export class MapContentService {
 			message: `删除 CustomUI 实例成功`,
 			details: { id: instanceId, name: existing.name }
 		});
+	}
+
+	/**
+	 * ModifierTemplate Operations
+	 */
+
+	async createModifierTemplate(data: { name: string; slug: string; descriptor: any; effectCode: string }): Promise<any> {
+		const mapDataStore = useMapDataStore();
+
+		// Check slug uniqueness
+		if (mapDataStore.modifierTemplates.some(t => t.slug === data.slug)) {
+			throw new Error(`Modifier 模板别名已存在: ${data.slug}`);
+		}
+
+		const newTemplate = {
+			id: generateShortId('mod'),
+			name: data.name,
+			slug: data.slug,
+			descriptor: data.descriptor,
+			effectCode: data.effectCode,
+		};
+
+		mapDataStore.saveModifierTemplate(newTemplate as any);
+
+		eventBus.emit("mcp-operation", {
+			operation: "create_modifier_template",
+			success: true,
+			message: `创建 Modifier 模板成功: ${newTemplate.name}`,
+			details: { id: newTemplate.id, name: newTemplate.name, slug: newTemplate.slug }
+		});
+
+		return newTemplate;
+	}
+
+	async updateModifierTemplate(data: { id: string; name?: string; slug?: string; descriptor?: any; effectCode?: string }): Promise<any> {
+		const mapDataStore = useMapDataStore();
+		const existing = mapDataStore.modifierTemplates.find(t => t.id === data.id);
+		if (!existing) {
+			throw new Error(`ModifierTemplate 不存在: ${data.id}`);
+		}
+
+		// Check slug uniqueness if changing
+		if (data.slug && data.slug !== existing.slug) {
+			if (mapDataStore.modifierTemplates.some(t => t.slug === data.slug)) {
+				throw new Error(`Modifier 模板别名已存在: ${data.slug}`);
+			}
+		}
+
+		const updated = { ...existing };
+		if (data.name !== undefined) updated.name = data.name;
+		if (data.slug !== undefined) updated.slug = data.slug;
+		if (data.descriptor !== undefined) updated.descriptor = data.descriptor;
+		if (data.effectCode !== undefined) updated.effectCode = data.effectCode;
+
+		mapDataStore.saveModifierTemplate(updated as any);
+
+		eventBus.emit("mcp-operation", {
+			operation: "update_modifier_template",
+			success: true,
+			message: `更新 Modifier 模板成功: ${updated.name}`,
+			details: { id: updated.id, name: updated.name }
+		});
+
+		return updated;
+	}
+
+	async removeModifierTemplate(templateId: string): Promise<void> {
+		const mapDataStore = useMapDataStore();
+		const existing = mapDataStore.modifierTemplates.find(t => t.id === templateId);
+		if (!existing) {
+			throw new Error(`ModifierTemplate 不存在: ${templateId}`);
+		}
+
+		mapDataStore.removeModifierTemplate(templateId);
+
+		eventBus.emit("mcp-operation", {
+			operation: "remove_modifier_template",
+			success: true,
+			message: `删除 Modifier 模板成功`,
+			details: { id: templateId, name: existing.name }
+		});
+	}
+
+	async getModifierTemplate(templateId: string): Promise<any> {
+		const mapDataStore = useMapDataStore();
+		return mapDataStore.modifierTemplates.find(t => t.id === templateId);
+	}
+
+	async listModifierTemplates(): Promise<any[]> {
+		const mapDataStore = useMapDataStore();
+		return [...mapDataStore.modifierTemplates];
 	}
 }
 

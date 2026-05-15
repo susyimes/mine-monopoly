@@ -40,7 +40,7 @@ const updateHighlights = () => {
 	if (!editorInstance || !modelInstance || !monacoInstance.value) return;
 
 	const text = modelInstance.getValue();
-	const regex = /(\$ui__[a-zA-Z0-9_\-]+)/g;
+	const regex = /(\$ui__[a-zA-Z0-9_\-]+|\$mod__[a-zA-Z0-9_\-]+)/g;
 	const decorations: monaco.editor.IModelDeltaDecoration[] = [];
 	let match;
 
@@ -50,12 +50,13 @@ const updateHighlights = () => {
 		const startPos = modelInstance.getPositionAt(startOffset);
 		const endPos = modelInstance.getPositionAt(endOffset);
 
+		const isMod = match[0].startsWith("$mod__");
 		decorations.push({
 			range: new monacoInstance.value.Range(startPos.lineNumber, startPos.column, endPos.lineNumber, endPos.column),
 			options: {
 				isWholeLine: false,
-				inlineClassName: "custom-ui-token",
-				hoverMessage: { value: "🧩 UI 组件" },
+				inlineClassName: isMod ? "custom-mod-token" : "custom-ui-token",
+				hoverMessage: { value: isMod ? "⚡ 修饰器模板" : "🧩 UI 组件" },
 			},
 		});
 	}
@@ -116,6 +117,7 @@ onMounted(async () => {
 		extraLibs: mapDataStore.extraLibs || '',
 		uiTemplates: mapDataStore.uiTemplates || [],
 		gameSettingForm: mapDataStore.gameSettingForm || [],
+		modifierTemplates: mapDataStore.modifierTemplates || [],
 	});
 	}
 
@@ -161,6 +163,22 @@ onBeforeUnmount(() => {
 	background-color: #162447;
 	color: #6a85b6 !important;
 	border-color: #2f4b7c;
+}
+
+.custom-mod-token {
+	background-color: #fff7e6d7;
+	color: #d48806 !important;
+	border: 1px solid #ffd591;
+	border-radius: 4px;
+	font-weight: bold;
+	font-style: oblique;
+	margin: 0 1px;
+}
+
+.vs-dark .custom-mod-token {
+	background-color: #2b1d0e;
+	color: #d48806 !important;
+	border-color: #594214;
 }
 </style>
 

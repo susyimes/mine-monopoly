@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ChanceCardInfo, FormSchema, GameMap, PropertyInfo, UITemplate } from "@mine-monopoly/types";
+import { ChanceCardInfo, FormSchema, GameMap, ModifierTemplate, PropertyInfo, UITemplate } from "@mine-monopoly/types";
 import { CameraMode, OperationMode } from "@src/enums";
 import {
 	MapItem,
@@ -222,6 +222,26 @@ export const useMapDataStore = defineStore("MapData", {
 			const idx = this.uiTemplates.findIndex((t) => t.id === id);
 			if (idx > -1) {
 				this.uiTemplates.splice(idx, 1);
+			}
+		},
+
+		//ModifierTemplate
+
+		/** 保存或更新 Modifier 模板 */
+		saveModifierTemplate(template: ModifierTemplate) {
+			const idx = this.modifierTemplates.findIndex((t) => t.id === template.id);
+			if (idx > -1) {
+				this.modifierTemplates.splice(idx, 1, template);
+			} else {
+				this.modifierTemplates.push(template);
+			}
+		},
+
+		/** 删除 Modifier 模板 */
+		removeModifierTemplate(id: string) {
+			const idx = this.modifierTemplates.findIndex((t) => t.id === id);
+			if (idx > -1) {
+				this.modifierTemplates.splice(idx, 1);
 			}
 		},
 
