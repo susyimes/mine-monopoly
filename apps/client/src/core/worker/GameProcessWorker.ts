@@ -270,7 +270,7 @@ export class GameProcess implements IGameProcess {
 	/** 按钮ID计数器 */
 	private buttonIdCounter: number = 0;
 
-	public gameOverRuleFunction = async (): Promise<string[] | false> => {
+	public gameOverRuleFunction = async (): Promise<string[] | true | false> => {
 		return false;
 	};
 
@@ -278,7 +278,7 @@ export class GameProcess implements IGameProcess {
 		this.mapData = mapData;
 		this.gameSetting = gameSetting;
 		this.userList = userList;
-		globalThis.gameProcess = this;
+		(globalThis as any).gameProcess = this;
 
 
 		console.dir(gameSetting);
@@ -698,7 +698,7 @@ export class GameProcess implements IGameProcess {
 		const { phases } = this.mapData;
 		const gameOverRule = phases.gameOverRule;
 		const compiledCode = compileTsToJs(gameOverRule[0].initEventCode, this.fullTypes);
-		this.gameOverRuleFunction = new Function(compiledCode)() as () => Promise<string[] | false>;
+		this.gameOverRuleFunction = new Function(compiledCode)() as () => Promise<string[] | true | false>;
 	}
 
 	private initMap() {
@@ -1807,7 +1807,7 @@ export class GameProcess implements IGameProcess {
 	public async checkGameOver(): Promise<void> {
 		const result = await this.gameOverRuleFunction();
 		if (result === true) {
-			// 旧地图兼容: 返回 true 时按默认顺序（玩家ID列表）结束
+			// 旧地图兼容: 返回 true/undefined 时按默认顺序（玩家ID列表）结束
 			this.gameOver(Array.from(this.players.keys()));
 		} else if (Array.isArray(result) && result.length > 0) {
 			this.gameOver(result);

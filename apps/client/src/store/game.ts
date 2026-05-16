@@ -57,6 +57,7 @@ export const useMapData = defineStore("map-data", {
 		uiTemplates: [],
 		customUIs: [],
 		extraLibs: "",
+	modifierTemplates: [],
 	}),
 	actions: {
 		getMapEventByMapItemId(mapItemId: string) {

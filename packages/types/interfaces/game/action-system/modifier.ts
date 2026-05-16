@@ -137,6 +137,16 @@ export interface IModifierManager<C extends ICommandMap, K extends keyof C = key
 	 * @returns 消耗结果
 	 */
 	consume(id: string, amount: number): ConsumeResult;
+
+	/**
+	 * 导出修饰器快照用于存档序列化
+	 */
+	getSerializableModifiers(): ModifierSnapshot[];
+
+	/**
+	 * 从快照恢复修饰器
+	 */
+	restoreModifiers(snaps: ModifierSnapshot[], mapData: any): void;
 }
 
 /** Modifier 模板 — 在地图编辑器中管理，运行时通过变量注入适配存档恢复 */

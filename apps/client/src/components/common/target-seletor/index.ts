@@ -13,7 +13,7 @@ export async function showTargetSelector(
 			title: option ? option.title : "选择目标",
 			content: h(TargetSelector, {
 				targetType: type,
-				onTargetSelected: (newValue) => {
+				onTargetSelected: (newValue: string[]) => {
 					targetSelectedIdList = newValue;
 				},
 			}),
