@@ -1,5 +1,5 @@
 import { TargetSelectType } from "../../../../types/enums/game/game";
-import { ICommandBus, IModifier, IModifierManager, IBuffManager, PlayerCommandMap, PropertyCommandMap } from "../action-system";
+import { ICommandBus, IModifierManager, IBuffManager, PlayerCommandMap, PropertyCommandMap } from "../action-system";
 import { UserInRoomInfo } from "../item";
 import { DiceResult, IDice } from "../util";
 import { GameContext, IGamePhase } from "./events"; // 引用 events
@@ -304,11 +304,8 @@ export interface IProperty {
 	/** 地产命令总线 */
 	commandBus: ICommandBus<PropertyCommandMap>;
 
-	/**
-	 * 注册修饰器
-	 * @param modifier - 要注册的修饰器
-	 */
-	registerModifier: <K extends keyof PropertyCommandMap>(modifier: IModifier<PropertyCommandMap, K>) => void;
+	/** 地产修饰器管理器 */
+	modifierManager: IModifierManager<PropertyCommandMap>;
 }
 
 /**

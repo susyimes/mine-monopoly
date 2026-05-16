@@ -7,7 +7,6 @@ import {
 	PropertyCommandMap,
 	PropertyCustom,
 	PropertyInfo,
-	ModifierTemplate,
 } from "@mine-monopoly/types";
 import { ModifierManager } from "./action-system/ModifiersManager";
 import type { PropertySnapshot } from "@src/core/save/types";
@@ -147,10 +146,6 @@ export class Property implements IProperty {
 			customUI: this.customUI,
 		};
 		return propertyInfo;
-	}
-
-	public registerModifier(template: ModifierTemplate) {
-		(this.modifierManager as any).add(template);
 	}
 
 	public getSnapshot(): PropertySnapshot {
