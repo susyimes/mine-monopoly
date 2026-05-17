@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import { message, Modal } from "ant-design-vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { message } from "ant-design-vue";
 import { ModifierTemplate } from "@mine-monopoly/types";
 import CodeEditor from "@src/components/code-editor/index.vue";
-import libContent from "./editor-lib.d.ts?raw";
+import libContent from "@src/components/code-editor/editor-lib.d.ts?raw";
 import { generateShortId } from "@src/utils/short-id";
 
 const props = defineProps<{ data: ModifierTemplate }>();
@@ -53,32 +53,53 @@ const commandTypeOptions = [
 	},
 ];
 
-// 根据命令类型生成对应的模板代码
+// 生成完整的模板代码（用于空代码初始化）
 function generateTemplate(commandType: string): string {
-	return `(async (player: IPlayer, gameProcess: IGameProcess, cmd: ICommand<PlayerCommandMap, "${commandType}">, ctx: ICommandContext<PlayerCommandMap, "${commandType}">) => {\n\t\n})`;
+	return `(async (player: IPlayer, gameProcess: IGameProcess, cmd: ICommand<PlayerCommandMap, "${commandType}">, ctx: ICommandContext<PlayerCommandMap, "${commandType}">) => {
+	
+})`;
+}
+
+// 仅生成参数声明部分（用于替换已有代码中的参数）
+function generateParams(commandType: string): string {
+	return `player: IPlayer, gameProcess: IGameProcess, cmd: ICommand<PlayerCommandMap, "${commandType}">, ctx: ICommandContext<PlayerCommandMap, "${commandType}">`;
 }
 
 const templateText = computed(() => generateTemplate(localData.value.descriptor.commandType));
+
+/** 只替换 effectCode 中的函数参数声明部分，保留函数体 */
+function updateEffectCodeCommandType(commandType: string) {
+	const current = localData.value.effectCode?.trim();
+	if (!current) {
+		// 代码为空，使用完整模板
+		localData.value.effectCode = generateTemplate(commandType);
+		return;
+	}
+	// 匹配 async 箭头函数的参数区域：从 ( 之后到 ) => 之前
+	const paramPattern = /^(\(async\s*\()(\s*[\s\S]*?)(\s*\)\s*=>\s*\{)/;
+	const match = current.match(paramPattern);
+	if (match) {
+		const newParams = generateParams(commandType);
+		localData.value.effectCode = match[1] + ' ' + newParams + match[3] + current.slice(match[0].length);
+	} else {
+		// 无法解析参数格式，回退为完整模板
+		localData.value.effectCode = generateTemplate(commandType);
+	}
+}
+
+// 初始化时根据当前 commandType 更新参数声明
+onMounted(() => {
+	const commandType = localData.value.descriptor.commandType;
+	if (commandType) {
+		updateEffectCodeCommandType(commandType);
+	}
+});
 
 watch(
 	() => localData.value.descriptor.commandType,
 	(newType, oldType) => {
 		if (!newType || newType === oldType) return;
-		const newTemplate = generateTemplate(newType);
-		const current = localData.value.effectCode?.trim();
-		if (!current) {
-			localData.value.effectCode = newTemplate;
-		} else {
-			Modal.confirm({
-				title: "更新代码模板",
-				content: "切换命令类型会覆盖当前代码，是否继续？",
-				okText: "覆盖",
-				cancelText: "保留当前",
-				onOk: () => {
-					localData.value.effectCode = newTemplate;
-				},
-			});
-		}
+		updateEffectCodeCommandType(newType);
 	},
 );
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import CodeEditor from "@src/components/code-editor/index.vue";
-import libContent from "./editor-lib.d.ts?raw";
-import templateText from "./template-text?raw";
+import libContent from "@src/components/code-editor/editor-lib.d.ts?raw";
+import staticTemplateText from "./template-text?raw";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useMapDataStore, useResourceStore } from "@src/stores";
 import { message } from "ant-design-vue";
@@ -56,16 +56,48 @@ const chanceCardForm = reactive<ChanceCardInfo & { tempFilePath?: string }>(
 );
 const chanceCardIdSuffix = ref(props.chanceCard ? chanceCardForm.id.replace(/^card-/, '') : '');
 
+// 生成完整模板（用于空代码初始化）
+function generateTemplate(targetType: TargetSelectType): string {
+	return `(async (sourcePlayer: IPlayer, target: ${targetTypeMap[targetType]}, gameProcess: IGameProcess) => {\n  \n});`;
+}
+
+// 仅生成参数声明部分
+function generateParams(targetType: TargetSelectType): string {
+	return `sourcePlayer: IPlayer, target: ${targetTypeMap[targetType]}, gameProcess: IGameProcess`;
+}
+
+const templateText = computed(() => generateTemplate(chanceCardForm.type));
+
+/** 只替换 effectCode 中的函数参数声明部分，保留函数体 */
+function updateEffectCodeTargetType(targetType: TargetSelectType) {
+	const current = chanceCardForm.effectCode?.trim();
+	if (!current) {
+		chanceCardForm.effectCode = generateTemplate(targetType);
+		return;
+	}
+	const paramPattern = /^(\(async\s*\()(\s*[\s\S]*?)(\s*\)\s*=>\s*\{)/;
+	const match = current.match(paramPattern);
+	if (match) {
+		const newParams = generateParams(targetType);
+		chanceCardForm.effectCode = match[1] + ' ' + newParams + match[3] + current.slice(match[0].length);
+	} else {
+		chanceCardForm.effectCode = generateTemplate(targetType);
+	}
+}
+
+// 初始化时根据当前类型更新参数声明
+onMounted(() => {
+	if (chanceCardForm.type != null) {
+		updateEffectCodeTargetType(chanceCardForm.type);
+	}
+});
+
 watch(
 	() => chanceCardForm.type,
 	(newType, oldType) => {
-		if (!oldType) return;
-		chanceCardForm.effectCode = chanceCardForm.effectCode.replace(
-			`target: ${targetTypeMap[oldType]}`,
-			`target: ${targetTypeMap[newType]}`,
-		);
+		if (!oldType || newType === oldType) return;
+		updateEffectCodeTargetType(newType);
 	},
-	{ immediate: true },
 );
 
 function handleResourceChange(resource: any) {
