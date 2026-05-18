@@ -42,6 +42,7 @@ interface ElectronAPI {
 	logConsole: (data: LogConsoleData) => void;
 	logNetwork: (data: LogNetworkData) => void;
 	openLogsFolder: () => Promise<string>;
+	openInspector: () => Promise<void>;
 }
 
 declare global {

@@ -524,6 +524,22 @@ export class Room {
 							});
 					}
 					break;
+				case WorkerCommType.DebugStateResponse:
+
+					{
+
+						const bridge = (window as any).__gpBridge;
+
+						if (bridge && typeof bridge.onState === "function") {
+
+							bridge.onState(msg.data.state);
+
+						}
+
+					}
+
+					break;
+
 			}
 		});
 
@@ -553,6 +569,21 @@ export class Room {
 		window.addEventListener("beforeunload", () => {
 			this.gameProcessWorker && this.gameProcessWorker.terminate();
 		});
+
+	// DevTools debug bridge
+	(window as any).__gpBridge = {
+		requestState: () => {
+			console.log("[gpBridge] requestState called, worker:", !!this.gameProcessWorker);
+			if (this.gameProcessWorker) {
+				this.gameProcessWorker.postMessage({
+					type: WorkerCommType.DebugGetState,
+					data: undefined,
+				});
+				console.log("[gpBridge] DebugGetState sent to worker");
+			}
+		},
+		onState: null as ((state: any) => void) | null,
+	};
 
 		const handleWorkerReady = async () => {
 			if (!this.mapInfo || !this.gameProcessWorker) return;

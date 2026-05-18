@@ -25,6 +25,9 @@ interface WorkerCommDataTypeMap {
 	[WorkerCommType.UserOffLine]: { userId: string };
 	[WorkerCommType.UserReconnect]: { userId: string };
 
+	// Debug (dev only)
+	[WorkerCommType.DebugGetState]: undefined;
+
 	//Host Receive
 	[WorkerCommType.WorkerReady]: undefined;
 	[WorkerCommType.SendToUsers]: { userIdList: string[]; data: ServerSocketMessage };
@@ -36,4 +39,31 @@ interface WorkerCommDataTypeMap {
 	[WorkerCommType.RequestSnapshot]: undefined;
 	[WorkerCommType.SaveSnapshot]: { snapshot: SaveSnapshot };
 	[WorkerCommType.LoadSaveData]: { snapshot: SaveSnapshot; aiPlayerIds: string[] };
+
+	// Debug (dev only)
+	[WorkerCommType.DebugStateResponse]: { state: GameProcessDebugState | null };
+}
+
+
+/** Debug state snapshot exported from Worker for Inspector */
+export interface GameProcessDebugState {
+	currentRound: number;
+	currentMultiplier: number;
+	currentRoundPlayer: string | null;
+	currentGamePhase: string | null;
+	currentEventName: string;
+	isGameOver: boolean;
+	gameRuntimeStack: { stackSize: number; isRunning: boolean };
+	players: Array<Record<string, any>>;
+	properties: Array<Record<string, any>>;
+	chanceCardInfos: Array<[string, any]>;
+	mapItems: Array<[string, any]>;
+	mapEvents: Array<[string, any]>;
+	gameLogList: Array<Record<string, any>>;
+	customData: Record<string, any>;
+	exportData: Record<string, any>;
+	gameSetting: GameSetting;
+	playerButtons: Array<[string, Array<[string, any]>]>;
+	animationCompletionHandlers: string[];
+	rankedPlayerIds: string[];
 }

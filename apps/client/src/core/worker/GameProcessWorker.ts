@@ -1,5 +1,5 @@
 import { OperateListener } from "./class/OperateListener";
-import { WorkerCommMsg } from "@src/interfaces/worker";
+import { WorkerCommMsg, type GameProcessDebugState } from "@src/interfaces/worker";
 import { WorkerCommType } from "@src/enums/worker";
 import {
 	ChanceCardInfo,
@@ -194,6 +194,25 @@ self.addEventListener("message", async (ev) => {
 				if (gameProcess) {
 					const { snapshot, aiPlayerIds } = data.data;
 					await gameProcess.restoreFromSnapshot(snapshot, aiPlayerIds);
+				}
+			}
+			break;
+		case WorkerCommType.DebugGetState:
+			{
+				console.log("[DebugGetState] received");
+				try {
+					const state = gameProcess ? gameProcess.getDebugState() : null;
+					console.log("[DebugGetState] state serialized, players:", state?.players?.length);
+					self.postMessage(<WorkerCommMsg>{
+						type: WorkerCommType.DebugStateResponse,
+						data: { state },
+					});
+				} catch (e: any) {
+					console.error("[DebugGetState] ERROR:", e.message, e.stack);
+					self.postMessage(<WorkerCommMsg>{
+						type: WorkerCommType.DebugStateResponse,
+						data: { state: null as any },
+					});
 				}
 			}
 			break;
@@ -1854,6 +1873,37 @@ export class GameProcess implements IGameProcess {
 		return gameInfo;
 	}
 
+	/** DevTools debug: serialize all internal state */
+	public getDebugState(): GameProcessDebugState {
+		// Use JSON round-trip to strip non-serializable values (functions, etc.)
+		const raw = {
+			currentRound: this.currentRound,
+			currentMultiplier: this.currentMultiplier,
+			currentRoundPlayer: this.currentRoundPlayer ? `${this.currentRoundPlayer.name} (${this.currentRoundPlayer.id})` : null,
+			currentGamePhase: this.currentGamePhase ? this.currentGamePhase.name ?? "(unnamed)" : null,
+			currentEventName: this.currentEventName,
+			isGameOver: this.isGameOver,
+			gameRuntimeStack: {
+				stackSize: this.gameRuntimeStack.stack.length,
+				isRunning: this.gameRuntimeStack.isRunning,
+			},
+			players: Array.from(this.players.values()).map((p) => p.getPlayerInfo()),
+			properties: Array.from(this.properties.values()).map((p) => p.getPropertyInfo()),
+			chanceCardInfos: Array.from(this.chanceCardInfos.entries()),
+			mapItems: Array.from(this.mapItems.entries()).map(([id, item]) => [id, item]),
+			mapEvents: Array.from(this.mapEvents.entries()).map(([id, evt]) => [id, evt]),
+			gameLogList: this.gameLogList,
+			customData: { ...this.customData },
+			exportData: { ...this.exportData },
+			gameSetting: this.gameSetting,
+			playerButtons: Array.from(this.playerButtons.entries()).map(
+				([playerId, buttons]) => [playerId, Array.from(buttons.entries())]
+			),
+			animationCompletionHandlers: Array.from(this.animationCompletionHandlers.keys()),
+			rankedPlayerIds: [...this.rankedPlayerIds],
+		};
+		return JSON.parse(JSON.stringify(raw));
+	}
 	public createGameLinkItem(type: GameLinkItem, id: string) {
 		return `@-#${type}#-#${id}#`;
 	}

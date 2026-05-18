@@ -5,6 +5,9 @@ export enum WorkerCommType {
 	UserOffLine,
 	UserReconnect,
 
+	// Debug (dev only)
+	DebugGetState,
+
 	//Host Receive
 	WorkerReady,
 	SendToUsers,
@@ -12,8 +15,11 @@ export enum WorkerCommType {
 	GameOver,
 	GameProcessReady,
 
-	// 存档相关
+	// ????
 	RequestSnapshot,
 	SaveSnapshot,
 	LoadSaveData,
+
+	// Debug (dev only)
+	DebugStateResponse,
 }

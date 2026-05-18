@@ -322,6 +322,71 @@ app.on("activate", () => {
 	}
 });
 
+// ===== GameProcess Inspector (dev only) =====
+let inspectorWin: BrowserWindow | null = null;
+
+ipcMain.handle("open-inspector", async () => {
+	if (inspectorWin && !inspectorWin.isDestroyed()) {
+		inspectorWin.focus();
+		return;
+	}
+
+	inspectorWin = new BrowserWindow({
+		width: 900,
+		height: 700,
+		title: "GameProcess Inspector",
+		frame: false,
+		webPreferences: {
+			nodeIntegration: true,
+			contextIsolation: false,
+		},
+	});
+
+	inspectorWin.loadFile(path.join(process.env.APP_ROOT!, "electron", "inspector.html"));
+	inspectorWin.on("closed", () => {
+		inspectorWin = null;
+	});
+
+	// Handle close button from inspector window
+	ipcMain.on("close-inspector", () => {
+		if (inspectorWin && !inspectorWin.isDestroyed()) {
+			inspectorWin.close();
+		}
+	});
+});
+
+ipcMain.handle("inspector:get-state", async () => {
+	if (!win || win.isDestroyed()) {
+		return { __error: "Main window not available" };
+	}
+	try {
+		const result = await win.webContents.executeJavaScript(
+			"(function() {" +
+			"  const bridge = window.__gpBridge;" +
+			"  if (!bridge || typeof bridge.requestState !== 'function') {" +
+			"    return { __error: 'GameProcess not started yet' };" +
+			"  }" +
+			"  return new Promise((resolve) => {" +
+			"    const timeout = setTimeout(() => {" +
+			"      bridge.onState = null;" +
+			"      resolve({ __error: 'Timeout: Worker did not respond' });" +
+			"    }, 3000);" +
+			"    bridge.onState = (state) => {" +
+			"      clearTimeout(timeout);" +
+			"      bridge.onState = null;" +
+			"      resolve(state);" +
+			"    };" +
+			"    bridge.requestState();" +
+			"  });" +
+			"})()"
+		);
+		return result;
+	} catch (e: any) {
+		return { __error: e.message };
+	}
+});
+// ===== End GameProcess Inspector =====
+
 app.whenReady().then(async () => {
 	protocol.handle("local", (request) => {
 		const filePath = request.url.slice("local://".length);
