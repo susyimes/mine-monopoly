@@ -1,6 +1,7 @@
 import { GameMap } from "@mine-monopoly/types";
 import { dataToProtoBuffer, loadFromProto, ProtoFileType, encodeProductMap } from "@mine-monopoly/utils/protos";
 import { encrypt } from "@mine-monopoly/utils/crypto";
+import { gzipCompress } from "@mine-monopoly/utils";
 import { useEditorStore, useMapDataStore, useResourceStore } from "@src/stores";
 import { eventBus } from "@src/utils/event-bus";
 import { getInitPhase } from "@src/views/map-editor/components/manager/process-manager/utils/init-phase";
@@ -314,15 +315,26 @@ export function convertFpUrlToPath(urlOrPath: string): string {
 	return decodeURIComponent(rawPath);
 }
 
-export async function exportGameMapToProductFile(mapId: string, filePath: string, mapData: GameMap): Promise<void> {
+export async function exportGameMapToProductFile(
+	mapId: string,
+	filePath: string,
+	mapData: GameMap,
+	onProgress?: (stage: string, percent: number) => void
+): Promise<void> {
+	const resourceStore = useResourceStore();
+	const totalResources = resourceStore.models.length + resourceStore.images.length;
+	let loadedResources = 0;
+
 	const fetchBuffer = async (url: string): Promise<Uint8Array> => {
 		const response = await fetch(url);
 		if (!response.ok) throw new Error(`资源加载失败: ${url}`);
 		const arrayBuffer = await response.arrayBuffer();
+		loadedResources++;
+		// 将资源加载进度映射到 10-30%
+		onProgress?.("加载资源", 10 + Math.floor((loadedResources / totalResources) * 20));
 		return new Uint8Array(arrayBuffer);
 	};
 
-	const resourceStore = useResourceStore();
 	const modelFiles: ProtoFileType[] = [];
 	// 加载模型:
 	for (const model of resourceStore.models) {
@@ -356,7 +368,28 @@ export async function exportGameMapToProductFile(mapId: string, filePath: string
 		],
 	};
 
+	// 编码 protobuf
+	onProgress?.("编码数据", 40);
 	const encoded = encodeProductMap(productData);
-	const encrypted = await encrypt(encoded, __MAP_ENCRYPT_KEY__);
+
+	// 压缩数据
+	let dataToEncrypt: Uint8Array;
+	try {
+		onProgress?.("压缩中", 50);
+		dataToEncrypt = await gzipCompress(encoded, (percent) => {
+			// 将 0-100 映射到 50-80
+			onProgress?.("压缩中", 50 + Math.floor(percent * 0.3));
+		});
+		onProgress?.("压缩完成", 80);
+	} catch (error) {
+		console.warn("压缩失败，使用未压缩数据:", error);
+		// 压缩失败时回退到未压缩格式
+		dataToEncrypt = encoded;
+	}
+
+	// 加密并保存
+	onProgress?.("加密并保存", 85);
+	const encrypted = await encrypt(dataToEncrypt, __MAP_ENCRYPT_KEY__);
 	await window.electronAPI.saveFile(filePath, encrypted);
+	onProgress?.("导出完成", 100);
 }

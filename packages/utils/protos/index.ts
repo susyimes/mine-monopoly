@@ -67,3 +67,5 @@ export async function loadFromProto(
 
 export { encodeProductMap, decodeProductMap } from "./product";
 export type { ProductMapData, ProductResourceItem } from "./product";
+
+export { gzipCompress, gzipDecompress } from "../compress";

@@ -10,6 +10,7 @@ import {
 	exportGameMapToProductFile,
 } from "@src/utils/file";
 import MCPControlPanel from "@src/components/mcp/MCPControlPanel.vue";
+import ExportProgressDialog from "./export-progress-dialog.vue";
 import { eventBus } from "@src/utils/event-bus";
 
 const editorStore = useEditorStore();
@@ -35,6 +36,11 @@ const menus: MenuItem[] = [
 
 const mcpPanelVisible = ref(false);
 const mcpPanelRef = ref();
+
+// 导出进度状态
+const exportProgressVisible = ref(false);
+const exportProgressPercent = ref(0);
+const exportProgressStage = ref("");
 
 function handleMenuClick(key: OperationType) {
 	switch (key) {
@@ -73,18 +79,38 @@ async function handleExportMmmapFile() {
 		filters: [{ name: "地图产品文件", extensions: ["mmmap"] }],
 	});
 
-	editorStore.setLoading(true);
 	const path = res.filePath;
-	if (path) {
-		try {
-			await exportGameMapToProductFile(mapDataStore.id, path, mapDataStore.$state);
+	if (!path) return;
+
+	// 显示进度对话框
+	exportProgressVisible.value = true;
+	exportProgressPercent.value = 0;
+	exportProgressStage.value = "准备中...";
+
+	try {
+		await exportGameMapToProductFile(
+			mapDataStore.id,
+			path,
+			mapDataStore.$state,
+			(stage, percent) => {
+				exportProgressStage.value = stage;
+				exportProgressPercent.value = percent;
+			}
+		);
+
+		// 导出成功，短暂延迟后关闭对话框
+		exportProgressStage.value = "导出完成";
+		exportProgressPercent.value = 100;
+
+		setTimeout(() => {
+			exportProgressVisible.value = false;
 			message.success("导出 .mmmap 文件成功", 1);
-		} catch (error) {
-			console.error("导出 .mmmap 文件失败:", error);
-			message.error("导出 .mmmap 文件失败");
-		}
+		}, 500);
+	} catch (error) {
+		console.error("导出 .mmmap 文件失败:", error);
+		exportProgressVisible.value = false;
+		message.error(`导出失败: ${error instanceof Error ? error.message : "未知错误"}`);
 	}
-	editorStore.setLoading(false);
 }
 
 function handleUndoDelete() {
@@ -183,6 +209,11 @@ function handleUndoDelete() {
 		</div>
 	</div>
 	<MCPControlPanel ref="mcpPanelRef" v-model="mcpPanelVisible" />
+	<ExportProgressDialog
+		v-model:open="exportProgressVisible"
+		:percent="exportProgressPercent"
+		:stage="exportProgressStage"
+	/>
 </template>
 
 <style lang="scss" scoped>

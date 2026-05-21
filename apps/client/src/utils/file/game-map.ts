@@ -1,5 +1,5 @@
 import { GameMap, GameMapInDb, Role } from "@mine-monopoly/types";
-import { loadFromProto, ProtoFileType, decodeProductMap } from "@mine-monopoly/utils";
+import { loadFromProto, ProtoFileType, decodeProductMap, gzipDecompress } from "@mine-monopoly/utils";
 import { isProductFile, decrypt } from "@mine-monopoly/utils/crypto";
 import { env } from "@mine-monopoly/env";
 import { useLoading } from "@src/store";
@@ -18,8 +18,18 @@ async function loadFromProductFile(data: Uint8Array, key: string): Promise<{
 	// Decrypt the data
 	const decrypted = await decrypt(data, key);
 
+	// 尝试解压，如果失败则直接解析（向后兼容）
+	let productData: Uint8Array;
+	try {
+		productData = await gzipDecompress(decrypted);
+	} catch {
+		// 解压失败，说明是旧格式，直接使用解密后的数据
+		console.warn("解压失败，使用未压缩格式");
+		productData = decrypted;
+	}
+
 	// Parse the product protobuf
-	const productMap = decodeProductMap(decrypted);
+	const productMap = decodeProductMap(productData);
 
 	// Convert ProductResourceItem[] to ProtoFileType[]
 	const modelFiles: ProtoFileType[] = [];
