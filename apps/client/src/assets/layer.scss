@@ -1,5 +1,7 @@
-// ---- 静态层级定义 ----
-$z-layers: (background: "背景",
+// ---- Client 特有的层级定义 ----
+
+$z-layers: (
+  background: "背景",
   game: "游戏渲染层",
   ui: "游戏UI层",
   fly-item: "游戏弹出元素",
@@ -13,10 +15,9 @@ $z-layers: (background: "背景",
   topbar: "窗口栏",
 );
 
-// ---- 自动生成 CSS 变量 ----
+// ---- 生成 CSS 变量 ----
 :root {
-  @each $name,
-  $comment in $z-layers {
+  @each $name, $comment in $z-layers {
     $index: index($z-layers, ($name $comment));
     --z-#{$name}: #{($index * 10) - 10};
   }

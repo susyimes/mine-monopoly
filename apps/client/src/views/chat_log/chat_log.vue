@@ -165,9 +165,9 @@ function handleHideContainer() {
 		width: fit-content;
 		padding: 0.4rem 1.2rem;
 		font-size: 0.8rem;
-		box-shadow: var(--box-shadow);
+		box-shadow: var(--fp-shadow-md);
 		text-align: center;
-		color: var(--color-text-white);
+		color: var(--fp-color-text-white);
 		border-radius: 0.5rem 0.5rem 0 0;
 		pointer-events: auto;
 		margin-right: 0.3rem;
@@ -181,7 +181,7 @@ function handleHideContainer() {
 			display: flex;
 			height: 18rem;
 			flex-direction: column;
-			box-shadow: var(--box-shadow-dark);
+			box-shadow: var(--fp-shadow-md-dark);
 			border-radius: 0 1rem 0 0;
 			background-color: rgba($color: #ffffff, $alpha: 0.9);
 			overflow: hidden;
@@ -207,10 +207,10 @@ function handleHideContainer() {
 		width: max-content;
 		display: flex;
 		justify-content: space-between;
-		background-color: var(--color-second);
+		background-color: var(--fp-color-secondary);
 		padding: 0.5rem 0.4rem;
 		border-radius: 0 0.5rem 0 0;
-		box-shadow: var(--box-shadow);
+		box-shadow: var(--fp-shadow-md);
 		box-sizing: border-box;
 		z-index: calc(var(--z-chat-log) + 1);
 
@@ -221,7 +221,7 @@ function handleHideContainer() {
 			line-height: 1.8rem;
 			border-radius: 0.3rem;
 			margin-right: 0.6rem;
-			caret-color: var(--color-primary);
+			caret-color: var(--fp-color-primary);
 			font-size: unset;
 			box-sizing: border-box;
 		}

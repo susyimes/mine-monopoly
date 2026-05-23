@@ -49,7 +49,7 @@ function getUiTemplateById(id: string) {
 	& > .name > .data {
 		text-align: center;
 		font-size: 1.5rem;
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 	}
 
 	& > div {
@@ -68,8 +68,8 @@ function getUiTemplateById(id: string) {
 		& > .data {
 			flex: 1;
 			text-align: center;
-			color: var(--color-second);
-			text-shadow: var(--text-shadow);
+			color: var(--fp-color-secondary);
+			text-shadow: var(--fp-text-shadow);
 		}
 	}
 }

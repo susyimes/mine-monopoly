@@ -17,8 +17,8 @@ body {
 body {
   position: relative;
   // ---- 修改：应用针织纹理背景 ----
-  background-color: var(--color-bg); // 使用原本定义的背景色
-  background-image: var(--texture-knit); // 叠加针织纹理
+  background-color: var(--fp-color-bg); // 使用原本定义的背景色
+  background-image: var(--fp-texture-knit); // 叠加针织纹理
   background-size: 40px 40px; // 调整纹理比例
 }
 
@@ -55,13 +55,13 @@ body {
     top: calc(50% - 1.5rem);
     width: 3rem;
     height: 3rem;
-    
+
     // 缝线线团动画
     border-radius: 50%;
-    border: 0.3rem dashed white; 
+    border: 0.3rem dashed white;
     border-top-color: transparent;
     box-shadow: 0 0.2rem 0.5rem rgba(0,0,0,0.15); // 立体阴影
-    
+
     animation: spin 1.2s linear infinite;
     z-index: 2;
 
@@ -89,7 +89,7 @@ body {
 /* 滑块：缝合补丁 */
 ::-webkit-scrollbar-thumb {
   border-radius: 1rem;
-  background-color: var(--color-second);
+  background-color: var(--fp-color-secondary);
   background-clip: padding-box;
 }
 

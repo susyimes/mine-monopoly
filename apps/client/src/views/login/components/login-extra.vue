@@ -94,10 +94,10 @@ function toBilibili() {
 		background-color: rgba(255, 255, 255, 0.8);
 		font-size: 2rem;
 		border-radius: 0.7rem;
-		color: var(--color-second);
-		text-shadow: var(--text-shadow);
+		color: var(--fp-color-secondary);
+		text-shadow: var(--fp-text-shadow);
 		cursor: pointer;
-		box-shadow: var(--box-shadow);
+		box-shadow: var(--fp-shadow-md);
 
 		&.to-bilibili {
 			color: #fb7299;
@@ -116,8 +116,8 @@ function toBilibili() {
 		background-color: rgba(255, 255, 255, 0.7);
 		border-radius: 0.7rem;
 		padding: 0.6rem;
-		color: var(--color-primary);
-		text-shadow: var(--text-shadow);
+		color: var(--fp-color-primary);
+		text-shadow: var(--fp-text-shadow);
 	}
 }
 </style>

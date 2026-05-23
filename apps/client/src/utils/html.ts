@@ -29,8 +29,8 @@ export function generatePropertySchema(property: PropertyInfo): UISchema {
 				style: {
 					flex: "1",
 					textAlign: "center",
-					color: "var(--color-second)",
-					textShadow: "var(--text-shadow)",
+					color: "var(--fp-color-secondary)",
+					textShadow: "var(--fp-text-shadow)",
 				},
 			},
 		],
@@ -66,7 +66,7 @@ export function generatePropertySchema(property: PropertyInfo): UISchema {
 						style: {
 							textAlign: "center",
 							fontSize: "1.5rem",
-							color: "var(--color-primary)",
+							color: "var(--fp-color-primary)",
 							width: "100%",
 						},
 					},
@@ -100,8 +100,8 @@ export function generatePropertySchema(property: PropertyInfo): UISchema {
 						style: {
 							flex: "1",
 							textAlign: "center",
-							color: "var(--color-second)",
-							textShadow: "var(--text-shadow)",
+							color: "var(--fp-color-secondary)",
+							textShadow: "var(--fp-text-shadow)",
 						},
 					},
 				],
@@ -134,8 +134,8 @@ export function generatePropertySchema(property: PropertyInfo): UISchema {
 						style: {
 							flex: "1",
 							textAlign: "center",
-							color: "var(--color-second)",
-							textShadow: "var(--text-shadow)",
+							color: "var(--fp-color-secondary)",
+							textShadow: "var(--fp-text-shadow)",
 						},
 					},
 				],
@@ -168,8 +168,8 @@ export function generatePropertySchema(property: PropertyInfo): UISchema {
 						style: {
 							flex: "1",
 							textAlign: "center",
-							color: "var(--color-second)",
-							textShadow: "var(--text-shadow)",
+							color: "var(--fp-color-secondary)",
+							textShadow: "var(--fp-text-shadow)",
 						},
 					},
 				],

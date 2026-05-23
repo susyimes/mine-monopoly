@@ -135,7 +135,7 @@ const handleCancel = () => {
 
 .dialog-content {
 	margin-bottom: 1rem;
-	color: var(--color-primary);
+	color: var(--fp-color-primary);
 	text-align: center;
 }
 

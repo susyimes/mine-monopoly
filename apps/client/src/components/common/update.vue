@@ -180,7 +180,7 @@ onUnmounted(() => {
 	// 1. 版本信息样式
 	.version-tag {
 		display: inline-block;
-		background-color: var(--color-third); // 复用你的主题色
+		background-color: var(--fp-color-tertiary); // 复用你的主题色
 		color: white;
 		padding: 0.2rem 0.6rem;
 		border-radius: 4px;
@@ -226,12 +226,12 @@ onUnmounted(() => {
 
 			.progress-fill {
 				height: 100%;
-				background-color: var(--color-third); // 保持一致
+				background-color: var(--fp-color-tertiary); // 保持一致
 				transition: width 0.3s ease;
 			}
 		}
 		.progress-text {
-			color: var(--color-third);
+			color: var(--fp-color-tertiary);
 			min-width: 3em;
 		}
 	}
@@ -281,7 +281,7 @@ onUnmounted(() => {
 		}
 
 		.btn-primary {
-			background-color: var(--color-third);
+			background-color: var(--fp-color-tertiary);
 			color: white;
 			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 		}

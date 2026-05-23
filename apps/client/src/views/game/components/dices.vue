@@ -126,7 +126,8 @@ const displayDices = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 .dice-control-panel {
 	@include felt-patch(#ffffff);
 	z-index: var(--z-ui);
@@ -151,14 +152,14 @@ const displayDices = computed(() => {
 
 	// --- 状态：可以掷骰子 ---
 	&.can-roll {
-		background: var(--color-second);
+		background: var(--fp-color-secondary);
 		color: #fff;
 
 		// 呼吸动画
 		animation: breathing 1.5s linear infinite;
 
 		&:hover {
-			background: var(--color-third);
+			background: var(--fp-color-tertiary);
 			transform: translateY(-0.1rem) scale(1.02);
 		}
 
@@ -259,7 +260,7 @@ const displayDices = computed(() => {
 		transition: background-color 0.3s;
 
 		&.active {
-			background-color: var(--color-second);
+			background-color: var(--fp-color-secondary);
 		}
 	}
 }
@@ -293,13 +294,13 @@ const displayDices = computed(() => {
 
 @keyframes breathing {
 	0% {
-		background-color: var(--color-second);
+		background-color: var(--fp-color-secondary);
 	}
 	50% {
-		background-color: var(--color-third);
+		background-color: var(--fp-color-tertiary);
 	}
 	100% {
-		background-color: var(--color-second);
+		background-color: var(--fp-color-secondary);
 	}
 }
 </style>

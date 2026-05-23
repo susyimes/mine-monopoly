@@ -68,7 +68,8 @@ const chanceCardVisible = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 .player-detail {
 	width: 100%;
@@ -122,7 +123,7 @@ const chanceCardVisible = computed(() => {
 					border-radius: 50%;
 					border: 0.2rem solid #ffffff;
 					overflow: hidden;
-					box-shadow: var(--box-shadow);
+					box-shadow: var(--fp-shadow-md);
 					position: relative;
 					display: flex;
 					justify-content: center;
@@ -163,15 +164,15 @@ const chanceCardVisible = computed(() => {
 						align-items: center;
 						padding: 0.6rem 1.4rem;
 						border-radius: 0.4rem;
-						box-shadow: var(--box-shadow);
+						box-shadow: var(--fp-shadow-md);
 						box-sizing: border-box;
 
 						& > .name {
-							color: var(--color-second);
+							color: var(--fp-color-secondary);
 						}
 
 						& > .level {
-							color: var(--color-primary);
+							color: var(--fp-color-primary);
 						}
 					}
 				}
@@ -208,10 +209,10 @@ const chanceCardVisible = computed(() => {
 	left: 0.6rem;
 	margin: 0;
 	z-index: 1000;
-	background-color: var(--color-third);
-	background-image: var(--texture-felt);
+	background-color: var(--fp-color-tertiary);
+	background-image: var(--fp-texture-felt);
 	border-radius: 0.5rem;
 	color: #ffffff;
-	box-shadow: var(--shadow-depth);
+	box-shadow: var(--fp-shadow-depth);
 }
 </style>

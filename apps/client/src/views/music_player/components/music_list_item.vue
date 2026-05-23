@@ -25,12 +25,12 @@ const props = defineProps<{ music: Music; isPlaying: boolean }>();
 	padding: 0 0.4rem;
 	box-sizing: border-box;
 	background-color: rgba(255, 255, 255, 0.75);
-	color: var(--color-primary);
+	color: var(--fp-color-primary);
 	cursor: pointer;
 
 	&:hover {
-		background-color: var(--color-third);
-		color: var(--color-text-white);
+		background-color: var(--fp-color-tertiary);
+		color: var(--fp-color-text-white);
 	}
 
 	& > .container {

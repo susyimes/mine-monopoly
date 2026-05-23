@@ -200,7 +200,7 @@ onBeforeUnmount(() => {
 	min-width: 2.2rem;
 	height: 2.2rem;
 	// border-radius: 0 0 0.5rem 0.5rem;
-	background-color: var(--color-second);
+	background-color: var(--fp-color-secondary);
 	box-shadow: 0px 0px 0.13rem rgba(0, 0, 0, 0.12);
 	padding: 0.4rem;
 	box-sizing: border-box;
@@ -212,9 +212,9 @@ onBeforeUnmount(() => {
 }
 
 .icon {
-	color: var(--color-text-white);
+	color: var(--fp-color-text-white);
 	cursor: pointer;
-	text-shadow: var(--text-shadow);
+	text-shadow: var(--fp-text-shadow);
 }
 
 .icon_container {
@@ -262,7 +262,7 @@ onBeforeUnmount(() => {
 
 	& > .common {
 		display: inline-block;
-		color: var(--color-second);
+		color: var(--fp-color-secondary);
 		white-space: nowrap;
 		text-align: center;
 	}
@@ -275,7 +275,7 @@ onBeforeUnmount(() => {
 		& > span {
 			animation: 15s wordsLoop linear infinite normal;
 			white-space: nowrap;
-			color: var(--color-primary-110);
+			color: var(--fp-color-primary-110);
 			display: inline-block;
 
 			@keyframes wordsLoop {
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
 	height: 2rem;
 	bottom: -2rem;
 	border-radius: 0 0 0.5rem 0.5rem;
-	background-color: var(--color-second);
+	background-color: var(--fp-color-secondary);
 	box-shadow: 0px 1px 0.13rem rgba(0, 0, 0, 0.12);
 	z-index: -1;
 	display: flex;
@@ -350,7 +350,7 @@ onBeforeUnmount(() => {
 		padding: 0.3rem;
 		border-radius: 0.5rem;
 		&:hover {
-			background-color: var(--color-primary-110);
+			background-color: var(--fp-color-primary-110);
 		}
 	}
 
@@ -360,7 +360,7 @@ onBeforeUnmount(() => {
 		font-size: 0.9rem;
 		border-radius: 0.3rem;
 		text-align: center;
-		color: var(--color-second);
+		color: var(--fp-color-secondary);
 		user-select: none;
 		padding: 0.1rem;
 		background-color: rgba(255, 255, 255, 0.75);
@@ -374,8 +374,8 @@ onBeforeUnmount(() => {
 	left: 0;
 	width: 100%;
 	height: 15rem;
-	background-color: var(--color-bg-transparent);
-	box-shadow: var(--box-shadow);
+	background-color: var(--fp-color-bg-transparent);
+	box-shadow: var(--fp-shadow-md);
 	border-radius: 0.6rem;
 	overflow: hidden;
 

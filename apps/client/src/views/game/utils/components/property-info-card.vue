@@ -85,7 +85,8 @@ defineExpose({ updateProperty });
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 .property-info {
 	min-width: 15rem;
@@ -97,7 +98,7 @@ defineExpose({ updateProperty });
 	& > .name > .data {
 		text-align: center;
 		font-size: 1.2rem;
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 	}
 
 	& > div {
@@ -122,13 +123,13 @@ defineExpose({ updateProperty });
 		& > .data {
 			flex: 1;
 			text-align: center;
-			color: var(--color-second);
+			color: var(--fp-color-secondary);
 			white-space: pre-wrap; /* 保留换行和空格 */
 
 			&.level {
 				color: #1947e0;
 			}
-			// text-shadow: var(--text-shadow);
+			// text-shadow: var(--fp-text-shadow);
 		}
 	}
 }

@@ -52,7 +52,7 @@ const iconUrl = computed(() => {
 		font-size: 1.2rem;
 		font-weight: bold;
 		border-radius: 8px;
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 		margin-bottom: 0.6rem;
 		text-shadow:
 			#fff -1px 0 0,

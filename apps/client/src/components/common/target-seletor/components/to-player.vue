@@ -45,7 +45,7 @@ const targetPlayerList = computed(() => {
 		flex: 1;
 
 		& > .tips {
-			color: var(--color-primary);
+			color: var(--fp-color-primary);
 			text-align: center;
 		}
 

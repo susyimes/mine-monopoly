@@ -166,16 +166,16 @@ onUnmounted(() => {
 }
 
 .dynamic-button-container.layout-vertical::-webkit-scrollbar-track {
-	background: var(--color-bg-light);
+	background: var(--fp-color-bg-light);
 	border-radius: 2px;
 }
 
 .dynamic-button-container.layout-vertical::-webkit-scrollbar-thumb {
-	background: var(--color-third);
+	background: var(--fp-color-tertiary);
 	border-radius: 2px;
 }
 
 .dynamic-button-container.layout-vertical::-webkit-scrollbar-thumb:hover {
-	background: var(--color-second);
+	background: var(--fp-color-secondary);
 }
 </style>

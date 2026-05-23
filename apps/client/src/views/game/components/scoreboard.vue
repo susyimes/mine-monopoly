@@ -71,7 +71,7 @@ function toRoomList() {
 	height: 60%;
 	border-radius: 0.8rem;
 	overflow: hidden;
-	background-color: var(--color-bg-light);
+	background-color: var(--fp-color-bg-light);
 	display: flex;
 	flex-direction: column;
 }
@@ -81,7 +81,7 @@ function toRoomList() {
 	height: 3rem;
 	line-height: 3rem;
 	font-size: 1.8rem;
-	background-color: var(--color-primary);
+	background-color: var(--fp-color-primary);
 	color: white;
 	padding: 0 10px;
 }
@@ -94,7 +94,7 @@ function toRoomList() {
 	text-align: center;
 	line-height: 3rem;
 	font-size: 2rem;
-	background-color: var(--color-primary);
+	background-color: var(--fp-color-primary);
 }
 
 .player-list-container {

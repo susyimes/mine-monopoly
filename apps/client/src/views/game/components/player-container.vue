@@ -56,10 +56,10 @@ function handleShowPlayerDetail(player: PlayerInfo) {
 		background-color: rgba(255, 255, 255, 0.75);
 		padding: 0.3rem;
 		border-radius: 0.5rem;
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 		padding: 0.3rem 0.6rem;
 		box-sizing: border-box;
-		text-shadow: var(--text-shadow-surround-white);
+		text-shadow: var(--fp-text-shadow-surround-white);
 		margin-bottom: 0.3rem;
 		text-align: center;
 	}

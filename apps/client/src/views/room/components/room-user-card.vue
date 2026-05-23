@@ -106,7 +106,8 @@ function handleColorChange(e: Event) {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 $top-bar-height: 2.8rem;
 
@@ -129,7 +130,7 @@ $top-bar-height: 2.8rem;
 	position: relative;
 	border-radius: 0.8rem;
 	box-sizing: border-box;
-	box-shadow: var(--box-shadow);
+	box-shadow: var(--fp-shadow-md);
 	z-index: var(--z-ui);
 	@include felt-patch(#ffedb7);
 
@@ -208,7 +209,7 @@ $top-bar-height: 2.8rem;
 		color: #ffffff;
 		text-align: center;
 		z-index: 100;
-		box-shadow: var(--shadow-depth);
+		box-shadow: var(--fp-shadow-depth);
 		padding: 0;
 	}
 
@@ -224,7 +225,7 @@ $top-bar-height: 2.8rem;
 			animation: bounce 1.5s ease-in-out infinite;
 
 			&:hover:not([disabled]) {
-				background-color: var(--color-primary);
+				background-color: var(--fp-color-primary);
 			}
 
 			&.no-role[disabled] {
@@ -235,7 +236,7 @@ $top-bar-height: 2.8rem;
 	}
 
 	& > .is-room-owner {
-		@include felt-patch(var(--color-third));
+		@include felt-patch(var(--fp-color-tertiary));
 		position: absolute;
 		display: flex;
 		justify-content: center;
@@ -246,11 +247,11 @@ $top-bar-height: 2.8rem;
 		font-size: 0.9rem;
 		color: #ffffff;
 		z-index: 101;
-		background-color: var(--color-third);
+		background-color: var(--fp-color-tertiary);
 		border-radius: 0.6rem;
 		gap: 0.3rem;
 		user-select: none;
-		background-image: var(--texture-felt);
+		background-image: var(--fp-texture-felt);
 
 		&:before {
 			top: 0.3rem;
@@ -292,7 +293,7 @@ $top-bar-height: 2.8rem;
 			display: flex;
 			justify-content: center;
 			align-items: center;
-			box-shadow: var(--shadow-card);
+			box-shadow: var(--fp-shadow-card);
 			border-radius: 0.8rem;
 
 			& > img {
@@ -331,7 +332,7 @@ $top-bar-height: 2.8rem;
 				line-height: 2.4rem;
 				color: #ffffff;
 				font-size: 1.1rem;
-				text-shadow: var(--text-shadow);
+				text-shadow: var(--fp-text-shadow);
 			}
 		}
 	}

@@ -134,10 +134,10 @@ function handleItemClick(item: any) {
 
 		// 选中状态
 		&.is-selected {
-			border-color: var(--color-primary); // 主题色边框
+			border-color: var(--fp-color-primary); // 主题色边框
 			box-shadow:
 				0 4px 8px rgba(0, 0, 0, 0.1),
-				0 0 0 1px var(--color-primary); // 增加主题色外圈
+				0 0 0 1px var(--fp-color-primary); // 增加主题色外圈
 		}
 
 		// 选中图标角标
@@ -154,7 +154,7 @@ function handleItemClick(item: any) {
 			justify-content: center;
 
 			color: #ffffff;
-			background-color: var(--color-primary); // 主题色背景
+			background-color: var(--fp-color-primary); // 主题色背景
 			border-radius: 50%; // 保持圆角一致性
 			z-index: 10;
 		}

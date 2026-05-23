@@ -50,7 +50,7 @@ const containerEl = ref<HTMLElement | null>(null);
 			margin-bottom: 2rem;
 
 			& > div {
-				box-shadow: var(--box-shadow);
+				box-shadow: var(--fp-shadow-md);
 			}
 		}
 	}

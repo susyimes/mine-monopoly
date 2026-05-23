@@ -18,9 +18,9 @@ const _currentMultiplier = computed(() => gameInfoStore.currentMultiplier);
 
 <style scoped lang="scss">
 .round-info {
-	color: var(--color-text-white);
-	background-color: var(--color-second);
-	text-shadow: var(--text-shadow);
+	color: var(--fp-color-text-white);
+	background-color: var(--fp-color-secondary);
+	text-shadow: var(--fp-text-shadow);
 	display: flex;
 	justify-content: space-around;
 	align-items: center;

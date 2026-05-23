@@ -48,7 +48,8 @@ const formattedDescription = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 .buff-item-card {
 	position: relative;
@@ -58,7 +59,7 @@ const formattedDescription = computed(() => {
 
 	// 基础材质：白色毛毡
 	background-color: #fff;
-	background-image: var(--texture-felt);
+	background-image: var(--fp-texture-felt);
 	border-radius: 0.6rem;
 
 	// 深度与阴影
@@ -80,7 +81,7 @@ const formattedDescription = computed(() => {
 	.fabric-strip {
 		width: 6px;
 		border-radius: 0.6rem 0 0 0.6rem;
-		background-color: var(--color-primary); // 主色
+		background-color: var(--fp-color-primary); // 主色
 		// 模拟斜纹织带纹理
 		background-image: linear-gradient(
 			45deg,
@@ -117,15 +118,15 @@ const formattedDescription = computed(() => {
 
 		.name {
 			font-size: 1.1rem;
-			color: var(--color-text-primary);
+			color: var(--fp-color-text-primary);
 		}
 
 		.timing-badge {
 			font-size: 0.75rem;
 			padding: 0.15rem 0.5rem;
 			border-radius: 4px;
-			background-color: var(--color-bg-warning); // 浅橙色背景
-			color: var(--color-warning); // 深橙色文字
+			background-color: var(--fp-color-bg-warning); // 浅橙色背景
+			color: var(--fp-color-warning); // 深橙色文字
 			border: 1px dashed rgba(0, 0, 0, 0.1);
 		}
 	}
@@ -139,7 +140,7 @@ const formattedDescription = computed(() => {
 	.desc-text {
 		margin: 0;
 		font-size: 0.95rem;
-		color: var(--color-text-regular);
+		color: var(--fp-color-text-regular);
 		line-height: 1.5;
 		text-align: justify;
 		white-space: pre-wrap; /* 保留换行和空格 */
@@ -158,14 +159,14 @@ const formattedDescription = computed(() => {
 		justify-content: space-around;
 		align-items: center;
 		gap: 4px;
-		background: var(--color-bg-light);
-		color: var(--color-primary);
+		background: var(--fp-color-bg-light);
+		color: var(--fp-color-primary);
 		padding: 2px 8px;
 		border-radius: 10px;
 
 		&.is-infinite {
-			background: var(--color-bg-light);
-			color: var(--color-primary);
+			background: var(--fp-color-bg-light);
+			color: var(--fp-color-primary);
 		}
 
 		&.source {

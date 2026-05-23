@@ -88,7 +88,7 @@ defineExpose({ open, close });
 }
 .duration-bar {
 	height: 0.3rem;
-	background-color: var(--color-second);
+	background-color: var(--fp-color-secondary);
 	border-radius: 0.2rem;
 	animation-name: progress-shrink;
 	animation-timing-function: linear;

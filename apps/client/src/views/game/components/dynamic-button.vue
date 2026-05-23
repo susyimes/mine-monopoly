@@ -52,19 +52,19 @@ const handleClick = () => {
 	/* 视觉基础样式 */
 	background: rgba(255, 255, 255, 0.65);
   box-shadow:
-    var(--shadow-depth);
+    var(--fp-shadow-depth);
 	user-select: none;
 	color: #555;
 }
 
 .dynamic-button.enabled {
-	background: var(--color-second);
+	background: var(--fp-color-secondary);
 	border-color: rgba(255, 255, 255, 0.8);
 	color: #fff;
 }
 
 .dynamic-button.enabled:hover {
-	background: var(--color-third);
+	background: var(--fp-color-tertiary);
 }
 
 .dynamic-button.enabled:active {

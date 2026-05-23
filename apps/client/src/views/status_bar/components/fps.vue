@@ -16,7 +16,7 @@ const fpsTextColor = computed(() => {
 </script>
 
 <template>
-	<div class="fps-container" :style="{ color: `var(--color-text-${fpsTextColor})` }" title="帧率">
+	<div class="fps-container" :style="{ color: `var(--fp-color-text-${fpsTextColor})` }" title="帧率">
 		<FontAwesomeIcon icon="gauge-high" /> {{ utilStore.fps }} FPS
 	</div>
 </template>

@@ -438,7 +438,7 @@
 	.setting-container {
 		display: flex;
 		align-items: center;
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 		user-select: none; /* 防止文本被选中 */
 
 		& > .setting-list {
@@ -455,7 +455,7 @@
 				border-radius: 0.5rem;
 				padding: 0.8rem;
 				box-sizing: border-box;
-				box-shadow: var(--box-shadow);
+				box-shadow: var(--fp-shadow-md);
 				overflow: hidden;
 				position: relative;
 
@@ -478,13 +478,13 @@
 					align-items: center;
 
 					& input[type="radio"]:checked + label {
-						color: var(--color-primary);
+						color: var(--fp-color-primary);
 					}
 
 					& label {
 						padding: 0.2rem;
 						cursor: pointer;
-						color: var(--color-third);
+						color: var(--fp-color-tertiary);
 					}
 
 					// 音量控制样式
@@ -535,11 +535,11 @@
 
 							&.decrease,
 							&.increase {
-								color: var(--color-primary);
+								color: var(--fp-color-primary);
 							}
 
 							&.mute {
-								color: var(--color-third);
+								color: var(--fp-color-tertiary);
 								margin-left: 0.5rem; /* 静音图标稍微离远一点 */
 
 								&.muted {
@@ -556,7 +556,7 @@
 							min-width: 3.5rem;
 							text-align: center;
 							font-weight: 500;
-							color: var(--color-primary);
+							color: var(--fp-color-primary);
 							font-size: 1.1rem;
 							margin: 0 0.1rem;
 						}
@@ -592,7 +592,7 @@
 
 					.apply-button {
 						width: 100%;
-						background: var(--color-primary);
+						background: var(--fp-color-primary);
 						color: white;
 						border: none;
 						border-radius: 0.5rem;
@@ -615,7 +615,7 @@
 						&:disabled {
 							opacity: 0.4;
 							cursor: not-allowed;
-							background: var(--color-third);
+							background: var(--fp-color-tertiary);
 						}
 					}
 				}

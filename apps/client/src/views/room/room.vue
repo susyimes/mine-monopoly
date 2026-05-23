@@ -388,7 +388,8 @@ async function handleUploadMap() {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 .room-page {
 	width: 80%;
@@ -409,7 +410,7 @@ async function handleUploadMap() {
 		box-sizing: border-box;
 		border-radius: 0.6rem;
 		backdrop-filter: blur(0.2rem);
-		box-shadow: var(--box-shadow);
+		box-shadow: var(--fp-shadow-md);
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
@@ -447,13 +448,13 @@ async function handleUploadMap() {
 		left: -0.3rem;
 		padding: 0 0.7rem;
 		font-size: 1rem;
-		text-shadow: var(--text-shadow);
+		text-shadow: var(--fp-text-shadow);
 		border-radius: 0.6rem;
 		transform: rotate(-2.5deg);
 	}
 
 	& > .room-name {
-		background-image: var(--texture-felt);
+		background-image: var(--fp-texture-felt);
 		border-radius: 0.6rem;
 		height: 2.7rem;
 		font-size: 1.1rem;
@@ -462,13 +463,13 @@ async function handleUploadMap() {
 		right: 0.5rem;
 		text-align: center;
 		width: 70%;
-		background-color: var(--color-third);
-		text-shadow: var(--text-shadow);
+		background-color: var(--fp-color-tertiary);
+		text-shadow: var(--fp-text-shadow);
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		box-shadow:
-			0 0.15rem 0 darken($color-second, 12%),
+			0 0.15rem 0 darken(fp.$fp-color-secondary, 12%),
 			0 0.2rem 0.3rem rgba(0, 0, 0, 0.15);
 	}
 }
@@ -496,7 +497,7 @@ async function handleUploadMap() {
 		padding: 0.2rem;
 		text-align: center;
 		background-color: rgba(255, 255, 255, 0.5);
-		color: var(--color-third);
+		color: var(--fp-color-tertiary);
 		user-select: none;
 		font-size: 1rem;
 		border-radius: 0.4rem;
@@ -510,7 +511,7 @@ async function handleUploadMap() {
 			font-size: 1.1rem;
 			margin-left: 0.8rem;
 			user-select: text;
-			color: var(--color-second);
+			color: var(--fp-color-secondary);
 			border-radius: 0.4rem;
 			padding: 0 0.4rem;
 		}
@@ -533,8 +534,8 @@ async function handleUploadMap() {
 			display: inline-block;
 			padding: 0.6rem 1rem;
 			border-radius: 0 0.3rem 0.3rem 0.3rem;
-			background-color: var(--color-second);
-			color: var(--color-text-white);
+			background-color: var(--fp-color-secondary);
+			color: var(--fp-color-text-white);
 		}
 	}
 
@@ -552,16 +553,16 @@ async function handleUploadMap() {
 			padding: 0.6rem 1.2rem;
 			border-radius: 0.6rem;
 			&.nomap:not([disabled]) {
-				background-color: var(--color-second);
+				background-color: var(--fp-color-secondary);
 				animation: identifier 1.5s infinite ease-in-out;
 
 				&:hover {
-					background-color: var(--color-third);
+					background-color: var(--fp-color-tertiary);
 				}
 
 				@keyframes identifier {
 					50% {
-						background-color: lighten($color-second, 10%);
+						background-color: lighten(fp.$fp-color-secondary, 10%);
 					}
 				}
 			}
@@ -574,8 +575,8 @@ async function handleUploadMap() {
 			background-color: rgba(255, 255, 255, 0.7);
 			border-radius: 0.7rem;
 			padding: 0.6rem;
-			color: var(--color-primary);
-			text-shadow: var(--text-shadow);
+			color: var(--fp-color-primary);
+			text-shadow: var(--fp-text-shadow);
 			margin-bottom: 0.3rem;
 		}
 	}
@@ -587,10 +588,10 @@ async function handleUploadMap() {
 		justify-content: center;
 		align-items: center;
 		box-sizing: border-box;
-		border: 0.4rem solid var(--color-border-lighter);
+		border: 0.4rem solid var(--fp-color-border-lighter);
 		border-radius: 1rem;
-		background-color: var(--color-bg-disable);
-		color: var(--color-text-secondary);
+		background-color: var(--fp-color-bg-disable);
+		color: var(--fp-color-text-secondary);
 	}
 
 	& .map-previewer {
@@ -616,7 +617,7 @@ async function handleUploadMap() {
 
 	.game-setting-item {
 		background-color: #ffffff;
-		background-image: var(--texture-felt);
+		background-image: var(--fp-texture-felt);
 		margin-top: 0.7rem;
 		padding: 0.5rem 0.8rem;
 		border: 0.2rem solid #ffffff;
@@ -628,7 +629,7 @@ async function handleUploadMap() {
 			color: #393939;
 		}
 		& .value {
-			color: var(--color-second);
+			color: var(--fp-color-secondary);
 		}
 	}
 }
@@ -645,7 +646,7 @@ async function handleUploadMap() {
 		padding: 0 0.7rem;
 		border: 0;
 		font-size: 1.2rem;
-		text-shadow: var(--text-shadow);
+		text-shadow: var(--fp-text-shadow);
 		margin-bottom: 0;
 		border-radius: 0.5rem;
 	}
@@ -661,7 +662,7 @@ async function handleUploadMap() {
 			padding: 0 0.7rem;
 			border: 0;
 			font-size: 1.2rem;
-			text-shadow: var(--text-shadow);
+			text-shadow: var(--fp-text-shadow);
 			border-radius: 0.5rem;
 		}
 
@@ -669,7 +670,7 @@ async function handleUploadMap() {
 			flex: 1;
 			height: 2.7rem;
 			font-size: 1rem;
-			background-color: var(--color-third);
+			background-color: var(--fp-color-tertiary);
 			display: flex;
 			justify-content: center;
 			align-items: center;
@@ -694,7 +695,7 @@ async function handleUploadMap() {
 	.save-item {
 		background-color: rgba(255, 255, 255, 0.8);
 		border-radius: 0.6rem;
-		box-shadow: var(--box-shadow);
+		box-shadow: var(--fp-shadow-md);
 		overflow: hidden;
 
 		.save-item-header {
@@ -707,14 +708,14 @@ async function handleUploadMap() {
 			.save-map-name {
 				font-weight: bold;
 				font-size: 1rem;
-				color: var(--color-primary);
+				color: var(--fp-color-primary);
 			}
 
 			.save-round-badge {
 				font-size: 0.85rem;
 				padding: 0.15rem 0.5rem;
 				border-radius: 1rem;
-				background-color: var(--color-primary);
+				background-color: var(--fp-color-primary);
 				color: white;
 				font-weight: 500;
 			}
@@ -744,7 +745,7 @@ async function handleUploadMap() {
 
 				.save-load-btn {
 					flex: 1;
-					background-color: var(--color-primary);
+					background-color: var(--fp-color-primary);
 					color: white;
 					display: flex;
 					justify-content: center;

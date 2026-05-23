@@ -54,7 +54,7 @@ function handleGameLog(gameLog: GameLog) {
 				case GameLogLinkItem.ArrivedEvent:
 					const arrivedEvent = toRaw(mapInfoStroe.getMapEventById(id));
 					if (arrivedEvent) {
-						item = { type, data: arrivedEvent, text: arrivedEvent.name, color: "var(--color-second)" };
+						item = { type, data: arrivedEvent, text: arrivedEvent.name, color: "var(--fp-color-secondary)" };
 					}
 					break;
 
@@ -79,7 +79,7 @@ function handleGameLog(gameLog: GameLog) {
 							type,
 							data: property,
 							text: property.name,
-							color: property.owner ? property.owner.color : "var(--color-second)",
+							color: property.owner ? property.owner.color : "var(--fp-color-secondary)",
 						};
 					}
 					break;
@@ -139,7 +139,7 @@ function generatePopItem(e: MouseEvent, itemType: GameLogLinkItem, props: any) {
 	el.style.zIndex = "calc(var(--z-chat-log) + 1)";
 	el.style.left = x - 20 + "px";
 	el.style.bottom = document.body.clientHeight - y - 20 + "px";
-	el.style.boxShadow = "var(--box-shadow)";
+	el.style.boxShadow = "var(--fp-shadow-md)";
 	if (useDeviceStatus().isMobile) {
 		window.addEventListener("touchend", unMount, { once: true });
 	} else {
@@ -187,7 +187,7 @@ const logTime = computed(() => {
 		margin-right: 0.5rem;
 	}
 	& > .text-item {
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 	}
 	& > .link-item {
 		text-decoration: underline;

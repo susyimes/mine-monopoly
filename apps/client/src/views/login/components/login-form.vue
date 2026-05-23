@@ -270,7 +270,7 @@ function handleColorClick() {
 		margin: 0.3rem 0;
 		height: 2.5rem;
 		font-size: 1.2rem;
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 	}
 
 	#color {
@@ -279,7 +279,7 @@ function handleColorClick() {
 
 	.input-tip {
 		font-size: 0.7rem;
-		color: var(--color-text-second);
+		color: var(--fp-color-text-secondary);
 		margin-top: -0.1rem;
 		margin-left: .5rem;
 	}
@@ -323,7 +323,7 @@ function handleColorClick() {
 		display: block;
 		font-size: 1rem;
 		margin-bottom: 0;
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 	}
 }
 
@@ -341,7 +341,7 @@ function handleColorClick() {
 	z-index: 10;
 	margin: 0;
 	font-size: 1.8rem;
-	background-color: var(--color-primary);
+	background-color: var(--fp-color-primary);
 	display: flex;
 	text-align: center;
 	align-items: center;
@@ -349,7 +349,7 @@ function handleColorClick() {
 	border-radius: 0.5rem;
 	padding: 0.2rem 1rem;
 	user-select: none;
-	box-shadow: var(--box-shadow);
+	box-shadow: var(--fp-shadow-md);
 }
 
 .tip {
@@ -359,12 +359,12 @@ function handleColorClick() {
 	& > span {
 		margin-left: auto;
 		font-size: 0.8rem;
-		color: var(--color-text-second);
+		color: var(--fp-color-text-secondary);
 		user-select: none;
 
 		& > span {
-			color: var(--color-primary);
-			border-bottom: 0.1rem solid var(--color-primary);
+			color: var(--fp-color-primary);
+			border-bottom: 0.1rem solid var(--fp-color-primary);
 			cursor: pointer;
 		}
 	}

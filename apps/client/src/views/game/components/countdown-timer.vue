@@ -45,12 +45,12 @@ const showCountdown = computed(() => utilStore.showCountdown);
 	justify-content: space-around;
 	align-items: center;
 	font-size: 1.4rem;
-	background-color: var(--color-third);
+	background-color: var(--fp-color-tertiary);
 	padding: 1.2rem;
 	border-radius: 1rem;
 	border: 0.4rem solid rgba(255, 255, 255, 0.5);
 	box-sizing: border-box;
-	box-shadow: var(--box-shadow);
+	box-shadow: var(--fp-shadow-md);
 	overflow: hidden;
 	transition: width 0.3s ease-in-out;
 	position: absolute;
@@ -65,12 +65,12 @@ const showCountdown = computed(() => utilStore.showCountdown);
 		top: 0;
 		height: 100%;
 		z-index: 1;
-		background-color: var(--color-second);
+		background-color: var(--fp-color-secondary);
 		transition: width 0.3s ease-in-out;
 	}
 
 	& > .text {
-		color: var(--color-text-white);
+		color: var(--fp-color-text-white);
 		white-space: nowrap;
 		z-index: 2;
 

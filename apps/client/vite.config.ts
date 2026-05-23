@@ -45,6 +45,13 @@ export default defineConfig(({ command, mode }) => {
 			minify: isCheck ? false : 'terser',
 			sourcemap: isCheck ? 'inline' : false,
 		},
+		css: {
+			preprocessorOptions: {
+				scss: {
+					silenceDeprecations: ['legacy-js-api'],
+				},
+			},
+		},
 		resolve: {
 			alias: [
 				{
@@ -54,6 +61,10 @@ export default defineConfig(({ command, mode }) => {
 				{
 					find: "@mine-monopoly/env",
 					replacement: path.resolve(__dirname, "../../packages/env/src/browser.ts"),
+				},
+				{
+					find: "@mine-monopoly/style",
+					replacement: path.resolve(__dirname, "../../packages/style/src"),
 				},
 			],
 		},

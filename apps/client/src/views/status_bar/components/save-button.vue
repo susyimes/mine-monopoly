@@ -38,7 +38,8 @@ async function handleSave() {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 .save-button {
 	height: 2.5rem;

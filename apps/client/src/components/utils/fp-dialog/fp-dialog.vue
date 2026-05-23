@@ -78,7 +78,8 @@ function closeDialog() {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 .fp-dialog {
 	position: fixed;
@@ -106,7 +107,7 @@ function closeDialog() {
 	}
 
 	.fp-dialog-main {
-		@include felt-patch(var(--color-bg-light));
+		@include felt-patch(var(--fp-color-bg-light));
 
 		min-width: 30em;
 		// min-height: 20em;
@@ -126,11 +127,11 @@ function closeDialog() {
 		margin-bottom: 0.5rem;
 
 		.title {
-			@include felt-patch(var(--color-third));
+			@include felt-patch(var(--fp-color-tertiary));
 			position: absolute;
 			top: -1.6rem;
-			color: var(--color-text-white);
-			text-shadow: var(--text-shadow);
+			color: var(--fp-color-text-white);
+			text-shadow: var(--fp-text-shadow);
 			position: absolute;
 			z-index: 10;
 			transform: rotate(-1.8deg);
@@ -145,7 +146,7 @@ function closeDialog() {
 			display: flex;
 			justify-content: center;
 			align-items: center;
-			background-color: var(--color-third);
+			background-color: var(--fp-color-tertiary);
 		}
 	}
 
@@ -170,7 +171,7 @@ function closeDialog() {
 			transition: filter 0.2s;
 
 			&.btn-confirm {
-				background-color: var(--color-third);
+				background-color: var(--fp-color-tertiary);
 				color: white;
 
 				&:disabled {
@@ -186,8 +187,8 @@ function closeDialog() {
 			&.btn-cancel {
 				border: 1px solid #b0b1b3;
 				background-color: #ffffff;
-				color: var(--color-third);
-				border-color: var(--color-third);
+				color: var(--fp-color-tertiary);
+				border-color: var(--fp-color-tertiary);
 				text-shadow: none;
 
 				&:hover {

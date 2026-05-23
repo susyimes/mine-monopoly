@@ -201,7 +201,7 @@ const handleSubmit = () => {
 }
 .form-control {
 	width: 50%;
-	color: var(--color-second);
+	color: var(--fp-color-secondary);
 }
 .submit-btn {
 	font-size: 1rem;

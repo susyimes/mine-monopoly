@@ -24,7 +24,8 @@ const avatarSrc = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 .user-card {
 	width: 100%;
@@ -76,7 +77,7 @@ const avatarSrc = computed(() => {
 		& > .username {
 			color: #ffffff;
 			font-size: 2em;
-			text-shadow: var(--text-shadow);
+			text-shadow: var(--fp-text-shadow);
 			word-break: break-all;
 		}
 	}

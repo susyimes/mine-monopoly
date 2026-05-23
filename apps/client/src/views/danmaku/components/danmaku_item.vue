@@ -25,7 +25,7 @@ const { message } = defineProps<{ message: ChatMessage }>();
 
 .danmaku_item {
 	& > .message {
-		text-shadow: var(--text-shadow);
+		text-shadow: var(--fp-text-shadow);
 		color: #151515;
 	}
 }

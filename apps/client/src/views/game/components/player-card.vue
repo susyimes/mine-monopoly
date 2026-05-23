@@ -41,7 +41,7 @@ watch(
 	<div
 		class="player-card"
 		:class="{ is_bankrupted: _isBankrupted }"
-		:style="{ 'border-color': roundMark ? 'var(--color-third)' : '' }"
+		:style="{ 'border-color': roundMark ? 'var(--fp-color-tertiary)' : '' }"
 	>
 		<!-- <div :style="{ color: _userInfo.color }" class="card-num">
 			<FontAwesomeIcon icon="wand-sparkles" style="margin-right: 0.3rem" />{{ player.chanceCards.length }}
@@ -65,7 +65,8 @@ watch(
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 
 .player-card {
 	@include felt-patch(#ffffff);
@@ -96,7 +97,7 @@ watch(
 		padding: 0.2rem 0.4rem;
 		border-radius: 0 0.8rem 0 0.8rem;
 		background-color: rgba($color: #ffffff, $alpha: 0.75);
-		text-shadow: var(--text-shadow-surround-white);
+		text-shadow: var(--fp-text-shadow-surround-white);
 		font-size: 1.1rem;
 	}
 
@@ -133,7 +134,7 @@ watch(
 		border-radius: 50%;
 		border: 0.2rem solid #ffffff;
 		overflow: hidden;
-		box-shadow: var(--box-shadow);
+		box-shadow: var(--fp-shadow-md);
 		position: relative;
 		display: flex;
 		justify-content: center;
@@ -144,7 +145,7 @@ watch(
 			font-size: 1.5rem;
 			width: $avatar_size;
 			height: $avatar_size;
-			color: var(--color-text-error);
+			color: var(--fp-color-text-error);
 			background-color: rgba($color: #ffffff, $alpha: 0.5);
 			position: absolute;
 			left: 0;
@@ -155,7 +156,7 @@ watch(
 			font-size: 1.5rem;
 			width: $avatar_size;
 			height: $avatar_size;
-			color: var(--color-third, #6c5ce7);
+			color: var(--fp-color-third, #6c5ce7);
 			background-color: rgba(255, 255, 255, 0.5);
 			position: absolute;
 			left: 0;
@@ -174,7 +175,7 @@ watch(
 		flex-direction: column;
 		justify-content: space-around;
 		align-items: center;
-		text-shadow: var(--text-shadow-surround-white);
+		text-shadow: var(--fp-text-shadow-surround-white);
 
 		& > .money {
 			font-size: 1.1rem;

@@ -77,7 +77,7 @@ onUpdated(() => {
 			margin-top: 0.1rem;
 			padding: 0.2rem 0.4rem;
 			border-radius: 0.3rem;
-			box-shadow: var(--box-shadow);
+			box-shadow: var(--fp-shadow-md);
 		}
 	}
 }

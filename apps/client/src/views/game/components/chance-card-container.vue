@@ -114,10 +114,10 @@ async function handleChanceCardClick(card: ChanceCardClientInfo) {
 		opacity: 0.5;
 		padding: 0.3rem;
 		border-radius: 0.5rem;
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 		padding: 0.3rem 0.6rem;
 		box-sizing: border-box;
-		text-shadow: var(--text-shadow-surround-white);
+		text-shadow: var(--fp-text-shadow-surround-white);
 		margin-bottom: 0.3rem;
 		position: absolute;
 		bottom: 0;
@@ -131,7 +131,7 @@ async function handleChanceCardClick(card: ChanceCardClientInfo) {
 	//  bottom: 0;
 	//  width: 100%;
 	//  height: 30%;
-	//  background-color: var(--color-second);
+	//  background-color: var(--fp-color-secondary);
 	//  border: 0.4rem solid rgba(255, 255, 255, 0.5);
 	//  border-radius: 0.8rem 0.8rem 0 0;
 	//  border-bottom: 0;

@@ -147,8 +147,8 @@ const backgroundSvgList: string[] = [
 			<Chat v-if="canChat" />
 			<DanmakuContainer v-if="canChat" />
 			<Background
-				background-color="var(--color-third)"
-				color="var(--color-second)"
+				background-color="var(--fp-color-tertiary)"
+				color="var(--fp-color-secondary)"
 				:icons="backgroundSvgList"
 				:icon-size="70"
 				:angle="40"

@@ -53,8 +53,8 @@ const formattedDescription = computed(() => {
 		display: inline-block;
 		padding: 0.6em 1em;
 		border-radius: 0 0.6em 0.6em 0.6em;
-		background-color: var(--color-second);
-		color: var(--color-text-white);
+		background-color: var(--fp-color-secondary);
+		color: var(--fp-color-text-white);
 		text-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.3);
 		pointer-events: auto;
 	}

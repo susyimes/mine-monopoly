@@ -1,175 +1,19 @@
-// ---- 原有基础色 ----
-$color-primary: #ff8f00;
-$color-second: #ffa000;
-$color-third: #ffc10f;
+// =============================================================================
+// 样式变量入口 - 使用 @mine-monopoly/style 统一样式包
+// =============================================================================
 
-// ---- 原有语义色基准 ----
-$color-success: #67c23a;
-$color-warning: #e6a23c;
-$color-error: #f56c6c;
-$color-info: #909399;
-$color-message: #095fce;
+@use '@mine-monopoly/style/variables' as fp;
+@use '@mine-monopoly/style/mixins' as fp-mixins;
 
-// ---- 原有中性色基准 ----
-$color-black: #000000;
-$color-white: #ffffff;
-$text-base: #303030;
-
-:root {
-  // ---- 原有变量定义 (完整保留) ----
-  --color-primary: #{$color-primary};
-  --color-primary-110: #{mix($color-black, $color-primary, 10%)};
-  --color-second: #{$color-second};
-  --color-third: #{$color-third};
-
-  --color-bg: #ffcc80;
-  --color-bg-transparent: rgba(255, 255, 255, 0.65);
-  --color-bg-light: #fff8e1;
-  --color-bg-disable: #c8c9cc;
-
-  --color-bg-success: #e1f3d8;
-  --color-bg-warning: #faecd8;
-  --color-bg-error: #fde2e2;
-  --color-bg-message: #cedfff;
-
-  --color-border-success: #d1edc4;
-  --color-border-warning: #f8e3c5;
-  --color-border-error: #fcd3d3;
-  --color-border-message: #a8d4ff;
-
-  --color-text-primary: #ff8800;
-  --color-text-second: #{$text-base};
-  --color-text-white: #ffffff;
-  --color-text-disable: #909399;
-
-  // 语义文字色
-  --color-text-success: #{$color-success};
-  --color-text-warning: #{$color-warning};
-  --color-text-error: #{$color-error};
-  --color-text-message: #{$color-message};
-
-  // 原始阴影
-  --box-shadow: 0px 0px 0.8rem rgba(0, 0, 0, .12);
-  --box-shadow-dark: 0px 0px 0.8rem rgba(0, 0, 0, .22);
-  --text-shadow: .2rem .2rem 0.13rem rgba(0, 0, 0, 0.15);
-  --text-shadow-light: .2rem .2rem 0.13rem rgba(255, 255, 255, 1);
-  --text-shadow-surround-white: #fff -1px 0 0, #fff 1px 0 0, #fff 0 1px 0, #fff 0 -1px 0;
-
-  --color-primary-hover: #{mix($color-white, $color-primary, 20%)};
-  --color-primary-active: #{mix($color-black, $color-primary, 10%)};
-
-  --color-primary-light-5: #{mix($color-white, $color-primary, 50%)};
-  --color-primary-light-9: #{mix($color-white, $color-primary, 90%)};
-
-  --color-success-hover: #{mix($color-white, $color-success, 20%)};
-  --color-success-active: #{mix($color-black, $color-success, 10%)};
-
-  --color-warning-hover: #{mix($color-white, $color-warning, 20%)};
-  --color-warning-active: #{mix($color-black, $color-warning, 10%)};
-
-  --color-error-hover: #{mix($color-white, $color-error, 20%)};
-  --color-error-active: #{mix($color-black, $color-error, 10%)};
-
-  --color-info-hover: #{mix($color-white, $color-info, 20%)};
-  --color-info-active: #{mix($color-black, $color-info, 10%)};
-
-  --color-text-regular: #606266; // 常规正文
-  --color-text-secondary: #909399; // 次要文字 (同 disable)
-  --color-text-placeholder: #c0c4cc; // 占位符
-
-  --color-border-base: #dcdfe6; // 默认边框
-  --color-border-light: #e4e7ed; // 浅边框 (分割线)
-  --color-border-lighter: #ebeef5; // 极浅边框
-  --color-border-extra-light: #f2f6fc;
-
-  --color-mask-white: rgba(255, 255, 255, 0.9);
-  --color-mask-black: rgba(0, 0, 0, 0.45);
-
-  // 1. 材质纹理 (CSS Gradient 模拟)
-  // V型针织纹理 (背景用)
-  --texture-knit:
-    repeating-linear-gradient(45deg,
-      transparent,
-      transparent 4px,
-      rgba(0, 0, 0, 0.02) 4px,
-      rgba(0, 0, 0, 0.02) 8px),
-    repeating-linear-gradient(-45deg,
-      transparent,
-      transparent 4px,
-      rgba(0, 0, 0, 0.01) 4px,
-      rgba(0, 0, 0, 0.01) 8px);
-
-  // 毛毡杂色纹理 (按钮/补丁用)
-  --texture-felt:
-    radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.05) 100%),
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.02) 2px, rgba(0, 0, 0, 0.02) 4px);
-
-  // 2. 缝线与深度
-  --stitch-color-light: rgba(255, 255, 255, 0.5); // 亮色缝线
-  --stitch-color-dark: rgba(0, 0, 0, 0.25); // 暗色缝线
-
-  --shadow-depth: 0 0.25rem 0 rgba(0, 0, 0, 0.15); // 布料厚度 (外凸)
-  --shadow-inset: inset 0 0.15rem 0.1rem rgba(0, 0, 0, 0.15); // 剪裁凹陷 (内凹)
-  --shadow-card: var(--shadow-depth),
-    0 0 0 3px rgba(0, 0, 0, 0.05);
-
-  --text-shadow-embroider: 0 1px 1px rgba(255, 255, 255, 0.4); // 刺绣高光
-  --text-shadow-pressed: 0 -1px 0 rgba(0, 0, 0, 0.2); // 压印凹陷
+// 导出 mixins 供全局使用
+@mixin felt-patch($bg-color: var(--fp-color-bg-light), $stitch-color: var(--fp-stitch-color-light), $offset: 0.4rem) {
+  @include fp-mixins.fp-felt-patch($bg-color, $stitch-color, $offset);
 }
 
-// 带内侧缝线的毛毡补丁
-@mixin felt-patch($bg-color: var(--color-bg-light),
-  $stitch-color: var(--stitch-color-light),
-  $offset: 0.4rem) {
-  background-color: $bg-color;
-  background-image: var(--texture-felt);
-  box-sizing: border-box;
-  border-radius: 0.8rem;
-  box-shadow:
-    var(--shadow-card);
-  position: relative;
-  padding: calc($offset + 0.5rem);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: $offset;
-    left: $offset;
-    right: $offset;
-    bottom: $offset;
-
-    border: 2px dashed rgba(0, 0, 0, 0.08);
-    border-radius: inherit;
-
-    pointer-events: none;
-    z-index: 1;
-  }
-}
-
-// 剪裁凹槽效果
 @mixin felt-cutout {
-  background-color: rgba(255, 255, 255, 0.85);
-  border: none;
-  border-radius: 0.6rem;
-  box-shadow:
-    var(--shadow-inset),
-    0 1px 0 rgba(255, 255, 255, 0.6); // 底部高光
+  @include fp-mixins.fp-felt-cutout;
 }
 
-// 内侧缝线装饰
-@mixin inner-stitch($color: var(--stitch-color-light), $offset: 4px) {
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: $offset;
-    left: $offset;
-    right: $offset;
-    bottom: $offset;
-    border: 1.5px dashed $color;
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 1;
-  }
+@mixin inner-stitch($color: var(--fp-stitch-color-light), $offset: 4px) {
+  @include fp-mixins.fp-inner-stitch($color, $offset);
 }

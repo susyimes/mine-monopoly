@@ -1,4 +1,5 @@
-@import './variables.scss';
+@use '@mine-monopoly/style/variables' as fp;
+@use './variables' as *; // 导入 mixins
 
 %form-control {
   @include felt-cutout;
@@ -6,7 +7,7 @@
   width: auto;
   padding: 0.6rem 0.8rem;
   font-size: 1rem;
-  color: var(--color-text-primary);
+  color: var(--fp-color-text-primary);
 
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
 
@@ -18,7 +19,7 @@
     background-color: #fff;
     box-shadow:
       inset 0 0.1rem 0.1rem rgba(0, 0, 0, 0.1),
-      0 0 0 3px $color-third;
+      0 0 0 3px #{fp.$fp-color-tertiary};
   }
 }
 
@@ -50,11 +51,11 @@ input[type="submit"] {
   border: 0;
   font-size: 1.1rem;
   padding: 0.4rem 1rem;
-  color: var(--color-text-white);
-  --btn-bg: var(--color-second); // 可被子类覆盖的自定义背景色变量
+  color: var(--fp-color-text-white);
+  --btn-bg: var(--fp-color-secondary); // 可被子类覆盖的自定义背景色变量
   background-color: var(--btn-bg);
-  background-image: var(--texture-felt);
-  text-shadow: var(--text-shadow-pressed);
+  background-image: var(--fp-texture-felt);
+  text-shadow: var(--fp-text-shadow-pressed);
   cursor: pointer;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
@@ -78,7 +79,7 @@ input[type="submit"] {
   }
 
   &:hover {
-    --btn-bg: var(--color-primary);
+    --btn-bg: var(--fp-color-primary);
     transform: translateY(-2px);
     box-shadow:
       0 0.35rem 0 color-mix(in srgb, var(--btn-bg), black 20%),
@@ -86,7 +87,7 @@ input[type="submit"] {
   }
 
   &:active {
-    --btn-bg: var(--color-primary);
+    --btn-bg: var(--fp-color-primary);
     transform: translateY(0.2rem);
     box-shadow:
       0 0.05rem 0 color-mix(in srgb, var(--btn-bg), black 20%),
@@ -95,8 +96,8 @@ input[type="submit"] {
 
   &:disabled {
     cursor: not-allowed;
-    color: var(--color-text-disable);
-    background-color: var(--color-bg-disable);
+    color: var(--fp-color-text-disable);
+    background-color: var(--fp-color-bg-disable);
     transform: none;
     box-shadow: none;
 
@@ -139,21 +140,21 @@ input[type="submit"] {
 
 // 毛毡卡片容器
 .felt-card {
-  @include felt-patch(var(--color-bg-light));
+  @include felt-patch(var(--fp-color-bg-light));
   position: relative;
 }
 
 .felt-card-no-stitched {
-  background-image: var(--texture-felt);
+  background-image: var(--fp-texture-felt);
 }
 
 // 缝线装饰容器
 .stitched-box {
-  background: var(--color-second);
+  background: var(--fp-color-secondary);
   border-radius: 0.5rem;
   padding: 1rem;
-  border: 2px dashed var(--color-white);
-  box-shadow: var(--shadow-depth);
+  border: 2px dashed var(--fp-color-text-white);
+  box-shadow: var(--fp-shadow-depth);
   color: white;
-  text-shadow: var(--text-shadow-pressed);
+  text-shadow: var(--fp-text-shadow-pressed);
 }

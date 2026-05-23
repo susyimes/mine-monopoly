@@ -32,7 +32,7 @@ const helpHtml = computed(() => marked.parse(helpContent) as string);
 .help-container {
 	:deep(h2),
 		:deep(h3) {
-		color: var(--color-primary);
+		color: var(--fp-color-primary);
 		margin-top: 1rem;
 
 		&:first-child {
@@ -55,7 +55,7 @@ const helpHtml = computed(() => marked.parse(helpContent) as string);
 
 		&::before {
 			content: "- ";
-			color: var(--color-second);
+			color: var(--fp-color-secondary);
 		}
 	}
 
@@ -65,7 +65,7 @@ const helpHtml = computed(() => marked.parse(helpContent) as string);
 	}
 
 	:deep(strong) {
-		color: var(--color-text-second);
+		color: var(--fp-color-text-secondary);
 	}
 }
 </style>

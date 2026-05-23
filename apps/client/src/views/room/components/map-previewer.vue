@@ -51,8 +51,8 @@ const coverImageUrl = computed(() => {
 		display: inline-block;
 		padding: 0.3rem 0.5rem;
 		border-radius: 0.6rem;
-		background-color: var(--color-second);
-		color: var(--color-text-white);
+		background-color: var(--fp-color-secondary);
+		color: var(--fp-color-text-white);
 	}
 
 	.bottom {
@@ -68,8 +68,8 @@ const coverImageUrl = computed(() => {
 		padding: 0.2rem 0.3rem;
 		border-radius: 0.4rem;
 		font-size: 0.7rem;
-		color: var(--color-text-regular);
-		background-color: var(--color-bg-transparent);
+		color: var(--fp-color-text-regular);
+		background-color: var(--fp-color-bg-transparent);
 	}
 }
 .map-cover-container {

@@ -150,7 +150,8 @@ async function handleGetRandomPublicRoom(e: Event) {
 </template>
 
 <style lang="scss" scoped>
-@import "@src/assets/variables.scss";
+@use "@src/assets/variables" as *;
+@use "@mine-monopoly/style/variables" as fp;
 .hall-page {
 	width: 100%;
 	height: 100%;
@@ -201,7 +202,7 @@ async function handleGetRandomPublicRoom(e: Event) {
 		& .title {
 			display: inline-block;
 			font-size: 1.6rem;
-			color: var(--color-primary);
+			color: var(--fp-color-primary);
 			margin-bottom: 0.7rem;
 			background-color: rgba(255, 255, 255, 0.45);
 			padding: 0.4rem 0.8rem;
@@ -231,8 +232,8 @@ async function handleGetRandomPublicRoom(e: Event) {
 				background-color: rgba(255, 255, 255, 0.7);
 				border-radius: 0.7rem;
 				padding: 0.6rem;
-				color: var(--color-primary);
-				text-shadow: var(--text-shadow);
+				color: var(--fp-color-primary);
+				text-shadow: var(--fp-text-shadow);
 			}
 		}
 

@@ -26,7 +26,7 @@ const avatarSrc = computed(() => {
 	border-radius: 0.4rem;
 	margin-bottom: 0.6rem;
 	overflow: hidden;
-	box-shadow: var(--box-shadow);
+	box-shadow: var(--fp-shadow-md);
 
 	& > .avatar {
 		width: 2.5rem;

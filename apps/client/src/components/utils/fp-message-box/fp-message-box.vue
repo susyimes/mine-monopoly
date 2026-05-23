@@ -116,7 +116,7 @@ const handleDialogClose = () => {
 .message-content {
 	padding: 10px 0 20px 0;
 	font-size: 1rem;
-	color: var(--color-text-regular, #333);
+	color: var(--fp-color-text-regular, #333);
 	line-height: 1.5;
 
 	// 使用 pre-wrap 保留换行符和空格
@@ -154,7 +154,7 @@ const handleDialogClose = () => {
 		transition: filter 0.2s;
 
 		&.btn-confirm {
-			background-color: var(--color-second);
+			background-color: var(--fp-color-secondary);
 			color: white;
 
 			&:hover {
@@ -165,8 +165,8 @@ const handleDialogClose = () => {
 		&.btn-cancel {
 			border: 1px solid #b0b1b3;
 			background-color: #ffffff;
-			color: var(--color-third);
-			border-color: var(--color-third);
+			color: var(--fp-color-tertiary);
+			border-color: var(--fp-color-tertiary);
 			text-shadow: none;
 
 			&:hover {

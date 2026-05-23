@@ -78,7 +78,7 @@ const currentSelectedProperty = computed(() => {
 		align-items: center;
 
 		.tips {
-			color: var(--color-primary);
+			color: var(--fp-color-primary);
 			text-align: center;
 			margin-bottom: 1rem;
 			font-size: 1.1rem;
@@ -121,7 +121,7 @@ const currentSelectedProperty = computed(() => {
 				font-size: 1.1rem;
 
 				.highlight-text {
-					color: var(--color-primary);
+					color: var(--fp-color-primary);
 				}
 			}
 		}

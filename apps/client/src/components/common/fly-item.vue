@@ -39,7 +39,7 @@ const getRandomRotation = () => {
 	& > span {
 		display: block;
 		font-size: 1rem;
-		text-shadow: var(--text-shadow-surround-white);
+		text-shadow: var(--fp-text-shadow-surround-white);
 		scale: 1.5;
 	}
 }

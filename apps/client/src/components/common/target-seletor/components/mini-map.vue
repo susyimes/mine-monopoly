@@ -211,7 +211,7 @@ function handleMapItemClick(item: MapItemWithContext) {
 			transform: translate(-50%, -50%);
 			width: 120%;
 			height: 120%;
-			border: 3px solid var(--color-primary, #409eff);
+			border: 3px solid var(--fp-color-primary, #409eff);
 			border-radius: 20%;
 			pointer-events: none;
 			animation: select-pulse 1s infinite alternate;

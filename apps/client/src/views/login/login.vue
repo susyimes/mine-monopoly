@@ -265,7 +265,7 @@ function toRoomList() {
 		span.lable {
 			font-size: 1.3rem;
 			margin-bottom: 0.3rem;
-			color: var(--color-primary);
+			color: var(--fp-color-primary);
 		}
 
 		input {
@@ -274,10 +274,10 @@ function toRoomList() {
 			box-sizing: border-box;
 			margin-bottom: 0.5rem;
 			transition: 0.3s all;
-			border: 0.2rem solid var(--color-bg);
+			border: 0.2rem solid var(--fp-color-bg);
 
 			&:focus {
-				border: 0.2rem solid var(--color-primary);
+				border: 0.2rem solid var(--fp-color-primary);
 			}
 		}
 	}
@@ -343,8 +343,8 @@ function toRoomList() {
 		& > span {
 			transition: 0.2s all;
 			font-size: 2rem;
-			color: var(--color-primary);
-			text-shadow: var(--text-shadow);
+			color: var(--fp-color-primary);
+			text-shadow: var(--fp-text-shadow);
 			z-index: 1;
 
 			&:first-child {
@@ -364,12 +364,12 @@ function toRoomList() {
 			left: 50%;
 			transform: translate(-50%, -50%);
 			z-index: 0;
-			color: var(--color-second);
+			color: var(--fp-color-secondary);
 			opacity: 0.2;
 		}
 
 		&:hover {
-			background-color: var(--color-second);
+			background-color: var(--fp-color-secondary);
 
 			& > span {
 				font-size: 2.8rem;
@@ -379,7 +379,7 @@ function toRoomList() {
 
 				&:first-child {
 					font-size: 0;
-					color: var(--color-primary);
+					color: var(--fp-color-primary);
 					text-shadow: 0.13rem 0.13rem 0.13rem rgb(255, 245, 229);
 				}
 			}
@@ -411,7 +411,7 @@ function toRoomList() {
 		margin-top: auto;
 		margin-bottom: 9rem;
 		color: #ffffff;
-		text-shadow: var(--text-shadow);
+		text-shadow: var(--fp-text-shadow);
 		animation: blink infinite 1.8s;
 		cursor: pointer;
 

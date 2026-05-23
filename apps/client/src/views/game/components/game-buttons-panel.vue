@@ -37,7 +37,7 @@ defineEmits<{
 
 	/* 使用纹理背景 + 颜色 */
 	background-color: #ffffff;
-	background-image: var(--texture-felt);
+	background-image: var(--fp-texture-felt);
 	background-repeat: repeat;
 	border-radius: 1.5rem;
 
@@ -45,14 +45,14 @@ defineEmits<{
 	padding: 1.2rem;
 	padding-top: 1rem;
 	box-shadow:
-		var(--shadow-depth),
+		var(--fp-shadow-depth),
 		0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
 .panel-title {
 	font-size: 0.9rem;
 	font-weight: 600;
-	color: var(--color-text-second);
+	color: var(--fp-color-text-secondary);
 	text-align: center;
 	margin-bottom: 0.6rem;
 	white-space: nowrap;

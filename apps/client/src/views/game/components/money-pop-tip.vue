@@ -5,7 +5,7 @@ import { computed } from "vue";
 const props = withDefaults(defineProps<{ money: number }>(), { money: 0 });
 const tipContent = computed(() => (props.money > 0 ? `+${props.money}` : props.money));
 const tipStyle = computed(() =>
-	props.money < 0 ? "color: var(--color-text-error)" : "color: var(--color-text-success)"
+	props.money < 0 ? "color: var(--fp-color-text-error)" : "color: var(--fp-color-text-success)"
 );
 </script>
 
