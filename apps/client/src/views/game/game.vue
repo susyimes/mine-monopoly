@@ -29,7 +29,6 @@
 	import { compileTsToJs } from "@src/utils";
 	import { storeToRefs } from "pinia";
 	import UiRenderer from "@src/components/utils/ui-renderer/ui-renderer.vue";
-	import MoneyParticleSystem from "./components/money-particle-system.vue";
 	import FpErrorBoundary from "@src/components/utils/fp-error-boundary/index.vue";
 	//pinia仓库
 	const mapDataStore = useMapData();
@@ -42,7 +41,6 @@
 
 	let socketClient: MonopolyClient;
 	let gameRenderer: GameRenderer | null;
-	const moneyParticleSystemRef = ref<any>(null);
 	const islockingCamera = ref(true);
 	const lockCameraIcon = computed(() => (islockingCamera.value ? "fa-video" : "fa-video-slash"));
 
@@ -76,10 +74,6 @@
 			await gameRenderer.init();
 
 				// 注册金钱粒子系统
-				if (moneyParticleSystemRef.value) {
-					gameRenderer.registerMoneyParticleSystem(moneyParticleSystemRef.value);
-				}
-
 			// 恢复心跳检测
 			socketClient.resumeHeartBeat();
 
@@ -145,10 +139,8 @@
 			</div>
 
 			<!-- 金钱粒子系统：放在 ui-container 外部，避免 pointer-events 冲突 -->
-			<MoneyParticleSystem ref="moneyParticleSystemRef" />
 
 			<scoreboard />
-
 		</div>
 	</FpErrorBoundary>
 </template>

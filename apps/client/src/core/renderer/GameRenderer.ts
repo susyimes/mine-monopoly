@@ -18,6 +18,7 @@ import { CSS2DObject, CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRe
 import PropertyInfoCard from "@src/views/game/utils/components/property-info-card.vue";
 import MapEventCard from "@src/views/game/utils/components/map-event-card.vue";
 import moneyPopTip from "@src/views/game/components/money-pop-tip.vue";
+import MoneyParticle3D from "@src/views/game/components/money-particle-3d.vue";
 import { loadHouseModels } from "@src/views/game/utils/house-loader";
 import { debounce, getScreenPosition, isMobileDevice, throttle } from "@src/utils";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -93,7 +94,7 @@ export class GameRenderer {
 	private arrivedEventInfoLabelInstance: ComponentPublicInstance;
 
 	private diceManager: DiceManager | null = null;
-	private moneyParticleSystemRef: any = null;
+	private activeMoneyParticles: Map<string, CSS2DObject[]> = new Map();
 	private isRenderDice = false;
 	private diceRollQueue: DiceResult[][] = []; // 骰子动画队列
 	private isProcessingDiceRoll: boolean = false; // 是否正在处理骰子动画
@@ -470,7 +471,7 @@ export class GameRenderer {
 			console.log(`[机会卡性能] fonts.ready: ${performance.now() - t0}ms`);
 
 			// 1. 并发预加载所有图标（预热浏览器缓存，消除后续1s超时等待）
-			const allIconUrls = preloadData.map(d => d.iconUrl);
+			const allIconUrls = preloadData.map((d) => d.iconUrl);
 			loadingMask.text = `正在预加载机会卡图标...`;
 			const t1 = performance.now();
 			await ChanceCardTextureGenerator.preloadIcons(allIconUrls);
@@ -479,13 +480,9 @@ export class GameRenderer {
 			// 2. 并发生成纹理（4张同时处理）
 			await ChanceCardTextureGenerator.preloadLiteFont();
 			const t2 = performance.now();
-			await ChanceCardTextureGenerator.preloadTexturesConcurrent(
-				preloadData,
-				4,
-				(completed, total, cardName) => {
-					loadingMask.text = `正在预加载机会卡 (${completed}/${total}): ${cardName}`;
-				}
-			);
+			await ChanceCardTextureGenerator.preloadTexturesConcurrent(preloadData, 4, (completed, total, cardName) => {
+				loadingMask.text = `正在预加载机会卡 (${completed}/${total}): ${cardName}`;
+			});
 			console.log(`[机会卡性能] preloadTextures (${total}张): ${performance.now() - t2}ms`);
 			console.log(`[机会卡性能] 总耗时: ${performance.now() - t0}ms`);
 
@@ -726,7 +723,7 @@ export class GameRenderer {
 		// 计算所有动画关键点的包围盒中心（用于摄像机聚焦）
 		const allPoints = [sourcePosition.clone(), ...targetPositions];
 		const boundingBox = new THREE.Box3();
-		allPoints.forEach(point => boundingBox.expandByPoint(point));
+		allPoints.forEach((point) => boundingBox.expandByPoint(point));
 		const focusCenter = new THREE.Vector3();
 		boundingBox.getCenter(focusCenter);
 
@@ -740,7 +737,7 @@ export class GameRenderer {
 		const newCameraPosition = new THREE.Vector3(
 			focusCenter.x,
 			focusCenter.y + cameraDistance * 0.6,
-			focusCenter.z + cameraDistance * 0.8
+			focusCenter.z + cameraDistance * 0.8,
 		);
 
 		// 平滑移动摄像机和焦点
@@ -772,28 +769,28 @@ export class GameRenderer {
 		const timeline = gsap.timeline({
 			onComplete: () => {
 				void (async () => {
-				// 动画完成后清理
-				card3d.dispose();
-				this.activeChanceCard3Ds = this.activeChanceCard3Ds.filter(c => c !== card3d);
+					// 动画完成后清理
+					card3d.dispose();
+					this.activeChanceCard3Ds = this.activeChanceCard3Ds.filter((c) => c !== card3d);
 
-				// 恢复摄像机位置
-				await Promise.all([
-					gsap.to(this.camera.position, {
-						x: originalCameraPosition.x,
-						y: originalCameraPosition.y,
-						z: originalCameraPosition.z,
-						duration: 0.5,
-						ease: "power2.inOut",
-					}),
-					gsap.to(this.controls.target, {
-						x: originalControlsTarget.x,
-						y: originalControlsTarget.y,
-						z: originalControlsTarget.z,
-						duration: 0.5,
-						ease: "power2.inOut",
-					}),
-				]);
-			})();
+					// 恢复摄像机位置
+					await Promise.all([
+						gsap.to(this.camera.position, {
+							x: originalCameraPosition.x,
+							y: originalCameraPosition.y,
+							z: originalCameraPosition.z,
+							duration: 0.5,
+							ease: "power2.inOut",
+						}),
+						gsap.to(this.controls.target, {
+							x: originalControlsTarget.x,
+							y: originalControlsTarget.y,
+							z: originalControlsTarget.z,
+							duration: 0.5,
+							ease: "power2.inOut",
+						}),
+					]);
+				})();
 			},
 		});
 
@@ -810,48 +807,60 @@ export class GameRenderer {
 		const midPoint = new THREE.Vector3(
 			(sourcePosition.x + screenCenterPos.x) / 2 + Math.cos(randomAngle) * horizontalOffset, // ⭐ X轴随机偏移
 			Math.max(sourcePosition.y, screenCenterPos.y) + 6, // ⭐ 向上弧度6个单位
-			(sourcePosition.z + screenCenterPos.z) / 2 + Math.sin(randomAngle) * horizontalOffset  // ⭐ Z轴随机偏移
+			(sourcePosition.z + screenCenterPos.z) / 2 + Math.sin(randomAngle) * horizontalOffset, // ⭐ Z轴随机偏移
 		);
 
 		// 使用贝塞尔曲线路径创建弧度运动
 		const curve = new THREE.QuadraticBezierCurve3(
 			sourcePosition.clone().add(new THREE.Vector3(0, 0.5, 0)), // 起点（玩家位置+0.5）
-			midPoint,                                                      // 控制点（随机方向的高点）
-			screenCenterPos                                                // 终点（屏幕中心）
+			midPoint, // 控制点（随机方向的高点）
+			screenCenterPos, // 终点（屏幕中心）
 		);
 
 		// 创建路径动画对象
 		const pathProgress = { value: 0 };
-		timeline.to(pathProgress, {
-			value: 1,
-			duration: 0.5,
-			ease: "power2.out",
-			onUpdate: () => {
-				const point = curve.getPoint(pathProgress.value);
-				pivot.position.copy(point);
-				// ⭐ 不使用pivot.lookAt，保持pivot.rotation不变
-			}
-		}, 0);
+		timeline.to(
+			pathProgress,
+			{
+				value: 1,
+				duration: 0.5,
+				ease: "power2.out",
+				onUpdate: () => {
+					const point = curve.getPoint(pathProgress.value);
+					pivot.position.copy(point);
+					// ⭐ 不使用pivot.lookAt，保持pivot.rotation不变
+				},
+			},
+			0,
+		);
 
 		// 缩放动画：0 → 2倍（使用临时对象避免GSAP从0开始的问题）
 		const scaleObj = { value: 0 };
-		timeline.to(scaleObj, {
-			value: 2,
-			duration: 0.5,
-			ease: "back.out(1.7)", // 弹性效果
-			onUpdate: () => {
-				mesh.scale.set(scaleObj.value, scaleObj.value, scaleObj.value);
-			}
-		}, 0); // 与位置动画同时进行
+		timeline.to(
+			scaleObj,
+			{
+				value: 2,
+				duration: 0.5,
+				ease: "back.out(1.7)", // 弹性效果
+				onUpdate: () => {
+					mesh.scale.set(scaleObj.value, scaleObj.value, scaleObj.value);
+				},
+			},
+			0,
+		); // 与位置动画同时进行
 
 		// ⭐ 阶段1也添加旋转动画（只有Y轴）
-		timeline.to(mesh.rotation, {
-			x: 0,           // ⭐ X轴不旋转
-			y: Math.PI * 2,  // ⭐ Y轴旋转360度
-			z: 0,           // Z轴保持0，不影响朝向
-			duration: 0.5,
-			ease: "power2.out",
-		}, 0); // 与位置动画同时进行
+		timeline.to(
+			mesh.rotation,
+			{
+				x: 0, // ⭐ X轴不旋转
+				y: Math.PI * 2, // ⭐ Y轴旋转360度
+				z: 0, // Z轴保持0，不影响朝向
+				duration: 0.5,
+				ease: "power2.out",
+			},
+			0,
+		); // 与位置动画同时进行
 
 		// ===== 阶段2：停留展示 =====
 		// ⭐ 停留时平滑转向摄像机
@@ -870,19 +879,22 @@ export class GameRenderer {
 
 		timeline.to(rotationObj, {
 			value: 1,
-			duration: 0.2,  // 旋转过渡时间（加快速度）
+			duration: 0.2, // 旋转过渡时间（加快速度）
 			ease: "power2.inOut",
 			onUpdate: () => {
 				// 球面线性插值（slerp）实现平滑旋转
 				// 手动实现插值：先复制起始四元数，然后向目标插值
 				pivot.quaternion.copy(currentQuaternion).slerp(targetQuaternion, rotationObj.value);
-			}
+			},
 		});
 
 		// 停留一段时间（旋转完成后）
-		timeline.to({}, {
-			duration: 1,  // 停留时间
-		});
+		timeline.to(
+			{},
+			{
+				duration: 1, // 停留时间
+			},
+		);
 
 		// ===== 阶段3：3D翻转 + 曲线飞向目标 =====
 		for (let i = 0; i < targetPositions.length; i++) {
@@ -894,15 +906,19 @@ export class GameRenderer {
 				const resetRotationObj = { value: 0 };
 				const resetQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0));
 
-				timeline.to(resetRotationObj, {
-					value: 1,
-					duration: 0.8,  // 与整个飞行动画同步，0.8秒
-					ease: "power2.inOut",  // 使用和飞行动画一样的缓动函数
-					onUpdate: () => {
-						// 从面向摄像机的状态过渡回初始状态
-						pivot.quaternion.copy(targetQuaternion).slerp(resetQuaternion, resetRotationObj.value);
-					}
-				}, `target${i}`); // 与位置动画完全同步
+				timeline.to(
+					resetRotationObj,
+					{
+						value: 1,
+						duration: 0.8, // 与整个飞行动画同步，0.8秒
+						ease: "power2.inOut", // 使用和飞行动画一样的缓动函数
+						onUpdate: () => {
+							// 从面向摄像机的状态过渡回初始状态
+							pivot.quaternion.copy(targetQuaternion).slerp(resetQuaternion, resetRotationObj.value);
+						},
+					},
+					`target${i}`,
+				); // 与位置动画完全同步
 			}
 
 			// ⭐ 为每个目标生成随机方向
@@ -911,54 +927,66 @@ export class GameRenderer {
 
 			// ⭐ 计算当前曲线的中间控制点
 			// 对于第一个目标，明确使用screenCenterPos作为起点，避免瞬移
-			const currentPos = (i === 0) ? screenCenterPos.clone() : pivot.position.clone();
+			const currentPos = i === 0 ? screenCenterPos.clone() : pivot.position.clone();
 			const curveMidPoint = new THREE.Vector3(
 				(currentPos.x + targetPos.x) / 2 + Math.cos(randomAngle) * horizontalOffset,
 				Math.max(currentPos.y, targetPos.y) + 3, // ⭐ 向上弧度3个单位
-				(currentPos.z + targetPos.z) / 2 + Math.sin(randomAngle) * horizontalOffset
+				(currentPos.z + targetPos.z) / 2 + Math.sin(randomAngle) * horizontalOffset,
 			);
 
 			// ⭐ 使用贝塞尔曲线创建随机方向的弧线运动
 			const flyCurve = new THREE.QuadraticBezierCurve3(
-				currentPos,           // 起点（当前位置）
-				curveMidPoint,        // 控制点（随机方向的弧线顶点）
-				targetPos             // 终点（目标位置）
+				currentPos, // 起点（当前位置）
+				curveMidPoint, // 控制点（随机方向的弧线顶点）
+				targetPos, // 终点（目标位置）
 			);
 
 			// 位置动画：沿曲线飞向目标（不改变pivot的旋转）
 			const flyProgress = { value: 0 };
-			timeline.to(flyProgress, {
-				value: 1,
-				duration: 0.8,
-				ease: "power2.inOut",
-				onUpdate: () => {
-					// ⭐ 沿曲线移动
-					const point = flyCurve.getPoint(flyProgress.value);
-					pivot.position.copy(point);
-					// ⭐ 不使用pivot.lookAt，保持pivot.rotation不变，避免倾斜
+			timeline.to(
+				flyProgress,
+				{
+					value: 1,
+					duration: 0.8,
+					ease: "power2.inOut",
+					onUpdate: () => {
+						// ⭐ 沿曲线移动
+						const point = flyCurve.getPoint(flyProgress.value);
+						pivot.position.copy(point);
+						// ⭐ 不使用pivot.lookAt，保持pivot.rotation不变，避免倾斜
+					},
 				},
-			}, `target${i}`);
+				`target${i}`,
+			);
 
 			// 缩放动画：2倍 → 1倍（使用临时对象）
 			const scaleObj2 = { value: 2 };
-			timeline.to(scaleObj2, {
-				value: 1,
-				duration: 0.8,
-				ease: "power2.inOut",
-				onUpdate: () => {
-					mesh.scale.set(scaleObj2.value, scaleObj2.value, scaleObj2.value);
-				}
-			}, `target${i}`); // 与位置动画同时进行
+			timeline.to(
+				scaleObj2,
+				{
+					value: 1,
+					duration: 0.8,
+					ease: "power2.inOut",
+					onUpdate: () => {
+						mesh.scale.set(scaleObj2.value, scaleObj2.value, scaleObj2.value);
+					},
+				},
+				`target${i}`,
+			); // 与位置动画同时进行
 
 			// ⭐ 3D翻转动画：继续旋转360度（从当前值继续）
 			// 阶段1已经旋转到Math.PI * 2，所以阶段3继续旋转到Math.PI * 4
-			timeline.to(mesh.rotation, {
-				x: 0,           // ⭐ X轴不旋转（始终保持0）
-				y: Math.PI * 4,  // ⭐ 从Math.PI*2继续旋转到Math.PI*4（再转360度）
-				z: 0,           // Z轴保持0，不影响朝向
-				duration: 0.8,
-				ease: "power2.inOut",
-			}, `target${i}`); // 与位置动画同时进行
+			timeline.to(
+				mesh.rotation,
+				{
+					x: 0, // ⭐ X轴不旋转（始终保持0）
+					y: Math.PI * 4, // ⭐ 从Math.PI*2继续旋转到Math.PI*4（再转360度）
+					z: 0, // Z轴保持0，不影响朝向
+					duration: 0.8,
+					ease: "power2.inOut",
+				},
+				`target${i}`,
+			); // 与位置动画同时进行
 
 			if (isLastTarget) {
 				// ===== 阶段4：淡出消失 =====
@@ -969,7 +997,7 @@ export class GameRenderer {
 					ease: "power2.in",
 					onUpdate: () => {
 						mesh.scale.set(scaleObj3.value, scaleObj3.value, scaleObj3.value);
-					}
+					},
 				});
 			} else {
 				// 不是最后一个目标：短暂停顿后继续
@@ -983,12 +1011,12 @@ export class GameRenderer {
 
 	private initEventListener() {
 		// 监听当前回合玩家变化
-		useEventBus().on("game-currentPlayerIdInRound", (newPlayerId: string, oldPlayerId: string) => {
-			if (newPlayerId && newPlayerId !== oldPlayerId) {
-				console.log("[相机] 回合切换:", oldPlayerId, "->", newPlayerId);
-				this.focusPlayerById(newPlayerId);
-			}
-		});
+		// useEventBus().on("game-currentPlayerIdInRound", (newPlayerId: string, oldPlayerId: string) => {
+		// 	if (newPlayerId && newPlayerId !== oldPlayerId) {
+		// 		console.log("[相机] 回合切换:", oldPlayerId, "->", newPlayerId);
+		// 		this.focusPlayerById(newPlayerId);
+		// 	}
+		// });
 
 		const mapDataStore = useMapData();
 
@@ -1130,26 +1158,10 @@ export class GameRenderer {
 			}
 		});
 
-			useEventBus().on("player-money", async (playerId: string, oldMoney: number, newMoney: number) => {
-				const moneyDiff = newMoney - oldMoney;
-
-				if (this.moneyParticleSystemRef) {
-					const playerEntity = this.playerEntities.get(playerId);
-					if (!playerEntity) return;
-
-					const playerPosition = playerEntity.model.position.clone();
-					const screenPos = this.getWorldToScreenPosition(playerPosition);
-
-					await this.moneyParticleSystemRef.spawnParticles({
-						playerId,
-						amount: moneyDiff,
-						playerX: screenPos.x,
-						playerY: screenPos.y,
-					});
-				} else {
-					this.createPopoverOnPlayerTop(playerId, moneyPopTip, { money: moneyDiff }, 2000);
-				}
-			});
+		useEventBus().on("player-money", async (playerId: string, oldMoney: number, newMoney: number) => {
+			const moneyDiff = newMoney - oldMoney;
+			this.spawnMoneyParticleOnPlayer(playerId, moneyDiff);
+		});
 		for (const key of ["level", "owner", "costList"]) {
 			useEventBus().on(`property-${key}`, async (propertyId: string) => {
 				this.updateBuilding(useGameData().getPropertyById(propertyId)!);
@@ -1856,13 +1868,6 @@ export class GameRenderer {
 		}
 	}
 
-	/**
-	 * 注册金钱粒子系统
-	 */
-	public registerMoneyParticleSystem(systemRef: any) {
-		this.moneyParticleSystemRef = systemRef;
-	}
-
 	public toggleLockCamera() {
 		this.isLockingRole = !this.isLockingRole;
 		return this.isLockingRole;
@@ -1927,19 +1932,67 @@ export class GameRenderer {
 		this.controls.update();
 	}
 
-		/**
-		 * 将世界坐标转换为屏幕坐标
-		 */
-		private getWorldToScreenPosition(worldPos: THREE.Vector3): { x: number; y: number } {
-			const vector = worldPos.clone();
-			vector.project(this.camera);
+	/**
+	 * 将世界坐标转换为屏幕坐标
+	 */
+	private getWorldToScreenPosition(worldPos: THREE.Vector3): { x: number; y: number } {
+		const vector = worldPos.clone();
+		vector.project(this.camera);
 
-			const screenX = (vector.x * 0.5 + 0.5) * this.container.clientWidth;
-			const screenY = (-(vector.y * 0.5) + 0.5) * this.container.clientHeight;
+		const screenX = (vector.x * 0.5 + 0.5) * this.container.clientWidth;
+		const screenY = (-(vector.y * 0.5) + 0.5) * this.container.clientHeight;
 
-			return { x: screenX, y: screenY };
+		return { x: screenX, y: screenY };
+	}
+
+	/**
+	 * 在玩家头顶创建钱币动画（使用 CSS2DObject）
+	 */
+	private spawnMoneyParticleOnPlayer(playerId: string, amount: number) {
+		const playerEntity = this.playerEntities.get(playerId);
+		if (!playerEntity) return;
+
+		const position = playerEntity.model.position.clone();
+		position.y += 1; // 角色头顶上方
+		// position.x += 0.3; // 右上角偏移
+
+		const size = this.getParticleSize(amount);
+
+		const { css2DObject, unmount } = createCSS2DObjectFromVue(MoneyParticle3D, {
+			amount,
+			size,
+			onComplete: () => {
+				unmount();
+				this.scene.remove(css2DObject);
+				// 从活跃列表中移除
+				const particles = this.activeMoneyParticles.get(playerId);
+				if (particles) {
+					const index = particles.indexOf(css2DObject);
+					if (index > -1) particles.splice(index, 1);
+				}
+			},
+		});
+
+		css2DObject.position.copy(position);
+		this.scene.add(css2DObject);
+
+		// 追踪活跃粒子
+		if (!this.activeMoneyParticles.has(playerId)) {
+			this.activeMoneyParticles.set(playerId, []);
 		}
+		this.activeMoneyParticles.get(playerId)!.push(css2DObject);
+	}
 
+	/**
+	 * 根据金额获取粒子尺寸
+	 */
+	private getParticleSize(amount: number): "sm" | "md" | "lg" | "xl" {
+		const absAmount = Math.abs(amount);
+		if (absAmount < 100) return "sm";
+		if (absAmount < 500) return "md";
+		if (absAmount < 1000) return "lg";
+		return "xl";
+	}
 	/**
 	 * 应用新的像素比
 	 */
