@@ -31,8 +31,6 @@
 	import UiRenderer from "@src/components/utils/ui-renderer/ui-renderer.vue";
 	import MoneyParticleSystem from "./components/money-particle-system.vue";
 	import FpErrorBoundary from "@src/components/utils/fp-error-boundary/index.vue";
-	import SafeModeActionPanel from "@src/components/SafeModeActionPanel.vue";
-
 	//pinia仓库
 	const mapDataStore = useMapData();
 	const userInfoStore = useUserInfo();
@@ -99,7 +97,11 @@
 	onBeforeUnmount(() => {
 		if (gameRenderer) gameRenderer.destroy();
 		gameRenderer = null;
-		destoryMonopolyClient();
+		// 只有在真正离开房间时才销毁 MonopolyClient（安全模式回房间时不销毁）
+		const nextRoute = router.currentRoute.value.name;
+		if (nextRoute !== "room") {
+			destoryMonopolyClient();
+		}
 	});
 
 	function getUiTemplateById(id: string) {
@@ -147,8 +149,6 @@
 
 			<scoreboard />
 
-			<!-- 安全模式操作面板 -->
-			<SafeModeActionPanel />
 		</div>
 	</FpErrorBoundary>
 </template>

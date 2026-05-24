@@ -557,8 +557,11 @@ export interface SocketMessageDataType {
 	[SocketMsgType.GameOver]: {
 		/** 客户端发送的数据（不支持） */
 		client: never;
-		/** 服务器返回的数据（无） */
-		server: undefined;
+		/** 服务器返回的数据 */
+		server: {
+			/** 是否返回房间（安全模式放弃游戏时使用） */
+			returnToRoom?: boolean;
+		};
 	};
 
 	/**
@@ -739,8 +742,8 @@ export interface SocketMessageDataType {
 export interface SafeModePanelMessage {
 	/** 进入安全模式的原因 */
 	reason: string;
-	/** 是否可以重试 */
-	canRetry: boolean;
+	/** 是否可以保存（游戏是否有实际进度） */
+	canSave: boolean;
 	/** 错误详情（可选） */
 	errorDetails?: {
 		category?: string;
@@ -887,4 +890,12 @@ export interface PlayerOperationResult {
 
 	/** 动态按钮点击 */
 	[OperateType.DynamicButtonClick]: DynamicButtonClickOperationResult;
+
+	/** 安全模式重试 */
+
+	/** 安全模式放弃游戏 */
+	[OperateType.SafeModeAbort]: undefined;
+
+	/** 安全模式存档并退出 */
+	[OperateType.SafeModeSaveAndExit]: undefined;
 }

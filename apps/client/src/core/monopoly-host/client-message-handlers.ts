@@ -104,12 +104,29 @@ const handleGameStart: ClientMessageHandler<SocketMsgType.GameStart> = (conn, ms
 };
 const handleOperation: ClientMessageHandler<SocketMsgType.Operation> = (conn, msg, host, clientId) => {
 	const { operateType, data } = msg.data;
+	const room = host.getRoom();
+
+	// 心跳检查逻辑
 	if (operateType === OperateType.LoadingStarted) {
 		host.pauseClientHeartCheck(clientId);
 	} else if (operateType === OperateType.GameInitFinished || operateType === OperateType.MapResourceLoaded) {
 		host.resumeClientHeartCheck(clientId);
 	}
-	host.getRoom().emitOperation(clientId, operateType, data);
+
+	// 安全模式操作处理（只有房主可以执行）
+	if (clientId === room.getOwnerId()) {
+		if (operateType === OperateType.SafeModeSaveAndExit) {
+			room.saveAndExitFromSafeMode();
+		} else if (operateType === OperateType.SafeModeAbort) {
+			room.abandonGame();
+		} else {
+			// 其他操作转发给 Worker
+			room.emitOperation(clientId, operateType, data);
+		}
+	} else {
+		// 非房主的操作转发给 Worker
+		room.emitOperation(clientId, operateType, data);
+	}
 };
 const handleLeaveRoom: ClientMessageHandler<SocketMsgType.LeaveRoom> = (conn, msg, host, clientId) => {
 	const room = host.getRoom();

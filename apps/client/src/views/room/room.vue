@@ -63,7 +63,7 @@
 
 	watch(currentMap, () => {
 		checkSaves();
-	});
+	}, { immediate: true });
 
 	function handleChangeMap() {
 		if (socketClient && tempMapSelectedId.value.length > 0 && tempMapSelectedId.value[0] !== currentMap.value?.id) {

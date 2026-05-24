@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import useEventBus from "@src/utils/event-bus";
+import router from "@src/router";
 import { SocketMsgType, SocketMsgSource, OperateType } from "@mine-monopoly/types";
 import { useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 import { useRoomInfo } from "@src/store";
 
 interface SafeModeData {
 	reason: string;
-	canRetry: boolean;
+	canSave: boolean;
 	errorDetails?: {
 		category?: string;
 		type?: string;
@@ -19,11 +20,10 @@ interface SafeModeData {
 const visible = ref(false);
 const safeModeData = ref<SafeModeData>({
 	reason: "",
-	canRetry: false,
+	canSave: false,
 	errorDetails: undefined,
 });
 
-const socketClient = useMonopolyClient();
 const roomInfoStore = useRoomInfo();
 
 // 是否是房主
@@ -33,25 +33,32 @@ const isRoomOwner = computed(() => roomInfoStore.amIRoomOwner);
 const showDetails = ref(false);
 
 /**
- * 处理重试操作
+ * 处理存档并退出操作
  */
-const handleRetry = () => {
-	socketClient.sendMsg({
+const handleSaveAndExit = () => {
+	const client = useMonopolyClient();
+	if (!client) return;
+
+	client.sendMsg({
 		type: SocketMsgType.Operation,
 		source: SocketMsgSource.Client,
 		data: {
-			operateType: OperateType.SafeModeRetry,
+			operateType: OperateType.SafeModeSaveAndExit,
 			data: undefined,
 		},
 	});
 	visible.value = false;
+	router.replace({ name: "room" });
 };
 
 /**
  * 处理放弃游戏操作
  */
 const handleAbort = () => {
-	socketClient.sendMsg({
+	const client = useMonopolyClient();
+	if (!client) return;
+
+	client.sendMsg({
 		type: SocketMsgType.Operation,
 		source: SocketMsgSource.Client,
 		data: {
@@ -60,6 +67,7 @@ const handleAbort = () => {
 		},
 	});
 	visible.value = false;
+	router.replace({ name: "room" });
 };
 
 /**
@@ -67,6 +75,7 @@ const handleAbort = () => {
  */
 const handleClose = () => {
 	visible.value = false;
+	router.replace({ name: "room" });
 };
 
 /**
@@ -78,15 +87,19 @@ const showSafeModePanel = (data: SafeModeData) => {
 	showDetails.value = false;
 };
 
-onMounted(() => {
-	const eventBus = useEventBus();
-	eventBus.on("safe-mode:show", showSafeModePanel);
-});
-
-onUnmounted(() => {
-	const eventBus = useEventBus();
-	eventBus.remove("safe-mode:show", showSafeModePanel);
-});
+// 监听路由变化，进入游戏页面时注册事件（解决 GameRenderer.destroy 中 removeAll() 清掉监听器的问题）
+watch(
+	() => router.currentRoute.value.name,
+	(name, oldName) => {
+		const eventBus = useEventBus();
+		if (name === "game") {
+			eventBus.on("safe-mode:show", showSafeModePanel);
+		} else if (oldName === "game") {
+			eventBus.remove("safe-mode:show", showSafeModePanel);
+		}
+	},
+	{ immediate: true },
+);
 </script>
 
 <template>
@@ -96,7 +109,7 @@ onUnmounted(() => {
 				<div class="safe-mode-panel">
 					<!-- 警告图标 -->
 					<div class="warning-icon">
-						<FontAwesomeIcon icon="fa-triangle-exclamation" />
+						<FontAwesomeIcon icon="fa-circle-exclamation" />
 					</div>
 
 					<!-- 标题 -->
@@ -109,7 +122,7 @@ onUnmounted(() => {
 					<div v-if="safeModeData.errorDetails" class="error-details-section">
 						<button class="details-toggle" @click="showDetails = !showDetails">
 							<span>{{ showDetails ? "隐藏" : "显示" }}错误详情</span>
-							<FontAwesomeIcon :icon="showDetails ? 'fa-chevron-up' : 'fa-chevron-down'" />
+							<FontAwesomeIcon :icon="showDetails ? 'fa-angle-up' : 'fa-angle-down'" />
 						</button>
 						<Transition name="expand">
 							<div v-if="showDetails" class="error-details">
@@ -139,15 +152,16 @@ onUnmounted(() => {
 							<p class="waiting-text">等待房主处理...</p>
 						</template>
 
-						<!-- 房主可以选择重试或放弃 -->
+						<!-- 房主可以选择存档退出或放弃 -->
 						<template v-else>
-							<button v-if="safeModeData.canRetry" class="btn-retry" @click="handleRetry">
-								<FontAwesomeIcon icon="fa-rotate-right" />
-								<span>重试</span>
+							<!-- 只有游戏有进度时才显示存档并退出按钮 -->
+							<button v-if="safeModeData.canSave" class="btn-save-exit" @click="handleSaveAndExit">
+								<FontAwesomeIcon icon="fa-floppy-disk" />
+								<span>存档并退出</span>
 							</button>
 							<button class="btn-abort" @click="handleAbort">
-								<FontAwesomeIcon icon="fa-door-open" />
-								<span>结束游戏</span>
+								<FontAwesomeIcon :icon="safeModeData.canSave ? 'fa-right-from-bracket' : 'fa-house'" />
+								<span>{{ safeModeData.canSave ? '放弃游戏' : '返回房间' }}</span>
 							</button>
 						</template>
 					</div>
@@ -322,13 +336,13 @@ button {
 	}
 }
 
-.btn-retry {
-	background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+.btn-save-exit {
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 	color: #ffffff;
 
 	&:hover:not(:disabled) {
 		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+		box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
 	}
 }
 

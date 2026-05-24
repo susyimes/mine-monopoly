@@ -33,6 +33,10 @@ class EventBus {
 		fnArr && fnArr.push({ fn, isOnce: true });
 	}
 
+	public getListeners(eventName: string): number {
+		return this.eventMap.get(eventName)?.length || 0;
+	}
+
 	public emit(eventName: string, ...args: any[]) {
 		const fnArr = this.eventMap.get(eventName);
 		if (fnArr) {

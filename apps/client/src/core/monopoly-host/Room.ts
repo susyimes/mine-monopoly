@@ -57,6 +57,10 @@ export class Room {
 	private lastKnownGameState: HeartbeatData["gameState"] | null = null;
 	private heartbeatTimeout: number | null = null;
 	private initTimeoutTimer: number | null = null;
+	// 标记是否正在手动请求快照（避免重复保存）
+	private isManuallyRequestingSnapshot: boolean = false;
+	// 标记是否正在进入安全模式（防止重复调用）
+	private enteringSafeMode: boolean = false;
 
 	private static readonly HEARTBEAT_NORMAL_TIMEOUT = 15000;
 	private static readonly HEARTBEAT_BUSY_TIMEOUT = 60000;
@@ -505,89 +509,16 @@ export class Room {
 		// 状态转换: Uninitialized -> Initializing
 		this.transitionTo(WorkerState.Initializing, "开始创建游戏进程");
 
+		// 重置安全模式相关标志
+		this.enteringSafeMode = false;
+
 		// 启动初始化超时定时器
 		this.startInitTimeout();
 
 		this.gameProcessWorker = new GameProcessWorker();
-		this.gameProcessWorker.addEventListener("message", (ev) => {
-			// 处理 Worker 内部错误消息
-			const rawData = ev.data as any;
-			if (rawData?.type === "worker-error") {
-				handleWorkerError(rawData.data);
-				return;
-			}
 
-			const msg: WorkerCommMsg = ev.data;
-			switch (msg.type) {
-				case WorkerCommType.WorkerReady:
-					handleWorkerReady();
-					break;
-				case WorkerCommType.SendToUsers:
-					handleSendToUsers(msg.data);
-					break;
-				case WorkerCommType.GameStart:
-					handleGameStart();
-					break;
-				case WorkerCommType.GameOver:
-					this.handleGameOver();
-					break;
-				case WorkerCommType.GameProcessReady:
-					this.handleGameProcessReady();
-					break;
-				case WorkerCommType.WorkerStateChanged:
-					this.handleWorkerStateChanged(msg.data);
-					break;
-				case WorkerCommType.WorkerHeartbeat:
-					this.handleWorkerHeartbeat(msg.data);
-					break;
-				case WorkerCommType.ValidationError:
-					this.handleValidationError(msg.data);
-					break;
-				case WorkerCommType.DetailedError:
-					this.handleDetailedError(msg.data);
-					break;
-				case WorkerCommType.EnterSafeMode:
-					this.handleEnterSafeMode(msg.data);
-					break;
-				case WorkerCommType.ExitSafeMode:
-					this.handleExitSafeMode();
-					break;
-				case WorkerCommType.RetryFromSafeMode:
-					this.handleRetryFromSafeMode();
-					break;
-				case WorkerCommType.SaveSnapshot:
-					{
-						const { snapshot } = msg.data;
-						const mapId = this.mapInfo?.from === "server" ? this.mapInfo.data : "";
-						const mapVersion = useMapData().info?.version ?? "0.0.0";
-						const mapName = useMapData().info?.name ?? "未知地图";
-						this.saveManager.save(snapshot, mapId, mapVersion, mapName)
-							.then(() => {
-								FPMessage({ type: "success", message: "存档成功！" });
-							})
-							.catch((e) => {
-								FPMessage({ type: "error", message: `存档失败: ${e.message}` });
-							});
-					}
-					break;
-				case WorkerCommType.DebugStateResponse:
-
-					{
-
-						const bridge = (window as any).__gpBridge;
-
-						if (bridge && typeof bridge.onState === "function") {
-
-							bridge.onState(msg.data.state);
-
-						}
-
-					}
-
-					break;
-
-			}
-		});
+		// 设置消息处理器
+		this.setupWorkerMessageHandler();
 
 		// 监听 Worker 错误事件 - 进入安全模式
 		this.gameProcessWorker.addEventListener("error", (event) => {
@@ -617,79 +548,6 @@ export class Room {
 			}
 		},
 		onState: null as ((state: any) => void) | null,
-	};
-
-		const handleWorkerReady = async () => {
-			if (!this.mapInfo || !this.gameProcessWorker) return;
-			useLoading().showLoading("正在获取地图信息...");
-			const mapData = JSON.parse(
-				JSON.stringify(useMapData().$state, (key, value) => {
-					if (value === Infinity) return "Infinity";
-					if (value === -Infinity) return "-Infinity";
-					return value;
-				}),
-			);
-			// console.log("🚀 ~ Room ~ handleWorkerReady ~ mapData:", mapData)
-			// console.log("🚀 ~ Room ~ handleWorkerReady ~ this.mapId:", this.mapId)
-			// if (this.mapId !== mapData.id) {
-			// 	FPMessage({ type: "error", message: "地图缓存与游戏地图不符" });
-			// }
-			useLoading().showLoading("正在加载地图...");
-			this.gameProcessWorker.postMessage(<WorkerCommMsg>{
-				type: WorkerCommType.LoadGameInfo,
-				data: {
-					setting: this.gameSetting,
-					mapInfo: mapData,
-					userList: Array.from(this.userList.values()).map((u) => {
-						const { socketClient, ...userInfo } = u;
-						return userInfo;
-					}),
-					roomOwnerId: this.ownerId,
-					saveData: this.pendingSaveData ?? undefined,
-				},
-			});
-			this.pendingSaveData = null;
-			const deviceStatusStore = useDeviceStatus();
-			deviceStatusStore.$subscribe((mutation, state) => {
-				if (this.gameProcessWorker)
-					this.gameProcessWorker.postMessage(<WorkerCommMsg>{
-						type: WorkerCommType.EmitOperation,
-						data: {
-							userId: this.ownerId,
-							operateType: state.isFocus ? OperateType.ResumeGame : OperateType.PauseGame,
-						},
-					});
-			});
-		};
-
-		const handleSendToUsers = (data: { userIdList: string[]; data: ServerSocketMessage }) => {
-			for (let index = 0; index < data.userIdList.length; index++) {
-				const userId = data.userIdList[index];
-				const user = this.userList.get(userId);
-				user && this.sendToClient(user.socketClient, data.data.type, data.data.data, data.data.msg);
-			}
-		};
-		const handleGameStart = () => {};
-
-		// 处理来自 Worker 的错误消息 - 进入安全模式
-		const handleWorkerError = (errorData: {
-			type: string;
-			message: string;
-			stack?: string;
-			info?: string;
-			timestamp?: string;
-			additionalData?: Record<string, any>;
-		}) => {
-			console.error("[GameProcess Worker Error]:", errorData);
-			useLoading().hideLoading();
-
-			// 进入安全模式
-			this.enterSafeMode(errorData.message, {
-				type: errorData.type,
-				stack: errorData.stack,
-				info: errorData.info,
-			});
-
 	};
 	}
 	private async handleGameOver() {
@@ -1169,6 +1027,19 @@ export class Room {
 			return;
 		}
 
+		// 如果正在进入安全模式，不再重复进入
+		if (this.enteringSafeMode) {
+			logService.warn({
+				category: ErrorCategory.WORKER,
+				type: "AlreadyEnteringSafeMode",
+				message: "已经在进入安全模式的过程中",
+				info: reason,
+			});
+			return;
+		}
+
+		this.enteringSafeMode = true;
+
 		this.transitionTo(WorkerState.SafeMode, reason);
 
 		// 通知 Worker 进入安全模式
@@ -1180,7 +1051,7 @@ export class Room {
 		}
 
 		// 记录详细错误
-			logWorkerError({
+		logWorkerError({
 				message: `进程遇到错误: ${reason}`,
 				type: "EnterSafeMode",
 				workerState: this.workerState,
@@ -1188,8 +1059,27 @@ export class Room {
 			});
 
 
+		// 判断是否可以保存：只有当游戏进行了至少一回合时才有实际进度
+		const canSave = (this.lastKnownGameState?.currentRound ?? 0) > 0;
+
+
 		// 向房主发送选项提示
-		this.notifySafeModeOptions(reason);
+		this.roomBroadcast({
+				type: SocketMsgType.SafeModePanel,
+				source: SocketMsgSource.Server,
+				data: {
+					reason: this.formatUserFriendlyReason(reason),
+					canSave: canSave,
+					errorDetails: technicalDetails ? {
+						category: technicalDetails.category,
+						type: technicalDetails.type,
+						message: technicalDetails.message,
+					} : undefined,
+				},
+			});
+
+		// 重置标志
+		this.enteringSafeMode = false;
 	}
 
 	/**
@@ -1346,12 +1236,136 @@ export class Room {
 			msg: { type: "warning", content: "房主放弃了当前游戏" },
 		});
 
-		// 通知所有玩家游戏结束
+		// 通知所有玩家游戏结束并返回房间
 		this.roomBroadcast({
 			type: SocketMsgType.GameOver,
 			source: SocketMsgSource.Server,
-			data: undefined,
+			data: { returnToRoom: true },
 		});
+
+		// 重置所有玩家准备状态
+		Array.from(this.userList.values()).forEach((u) => {
+			u.isReady = false;
+		});
+		this.roomInfoBroadcast();
+	}
+
+	/**
+	 * 房主从安全模式存档并退出
+	 */
+	public async saveAndExitFromSafeMode(): Promise<void> {
+		logService.info({
+			category: ErrorCategory.WORKER,
+			type: "SaveAndExitFromSafeMode",
+			message: "房主选择存档并退出",
+		});
+
+		// 通知所有玩家
+		this.roomBroadcast({
+			type: SocketMsgType.MsgNotify,
+			source: SocketMsgSource.Server,
+			data: undefined,
+			msg: { type: "info", content: "正在保存游戏并退出..." },
+		});
+
+		try {
+			// 1. 获取当前快照
+			let snapshot: SaveSnapshot | null = null;
+			if (this.gameProcessWorker) {
+				// 标记为手动请求快照，避免触发自动保存
+				this.isManuallyRequestingSnapshot = true;
+
+				// 发送请求获取快照
+				this.gameProcessWorker.postMessage(<WorkerCommMsg>{
+					type: WorkerCommType.RequestSnapshot,
+					data: undefined,
+				});
+
+				// 等待快照响应
+				snapshot = await new Promise<SaveSnapshot | null>((resolve) => {
+					const timeout = setTimeout(() => {
+						this.isManuallyRequestingSnapshot = false;
+						resolve(null);
+					}, 5000);
+
+					const handler = (ev: MessageEvent) => {
+						const msg: WorkerCommMsg = ev.data;
+						if (msg.type === WorkerCommType.SaveSnapshot) {
+							clearTimeout(timeout);
+							const worker = this.gameProcessWorker;
+							if (worker) worker.removeEventListener("message", handler);
+							resolve(msg.data.snapshot);
+						}
+					};
+
+					this.gameProcessWorker.addEventListener("message", handler);
+				});
+			}
+
+			if (!snapshot) {
+				throw new Error("无法获取当前游戏状态");
+			}
+
+			// 2. 保存到 IndexedDB
+			const mapId = this.mapInfo?.from === "server" ? this.mapInfo.data : "";
+			const mapVersion = useMapData().info?.version ?? "0.0.0";
+			const mapName = useMapData().info?.name ?? "未知地图";
+
+			const record = await this.saveManager.save(snapshot, mapId, mapVersion, mapName);
+
+			// 3. 通知存档成功
+			this.roomBroadcast({
+				type: SocketMsgType.MsgNotify,
+				source: SocketMsgSource.Server,
+				data: undefined,
+				msg: { type: "success", content: `存档成功！存档ID: ${record.id}` },
+			});
+
+			// 4. 等待一段时间让玩家看到消息
+			await new Promise(resolve => setTimeout(resolve, 2000));
+
+			// 5. 结束游戏，返回房间
+			this.endGameAndReturnToRoom();
+
+		} catch (e: any) {
+			// 确保重置标志位
+			this.isManuallyRequestingSnapshot = false;
+
+			logService.error({
+				category: ErrorCategory.WORKER,
+				type: "SaveAndExitFailed",
+				message: `存档并退出失败: ${e.message}`,
+			});
+
+			this.roomBroadcast({
+				type: SocketMsgType.MsgNotify,
+				source: SocketMsgSource.Server,
+				data: undefined,
+				msg: { type: "error", content: `存档失败: ${e.message}` },
+			});
+		}
+	}
+
+	/**
+	 * 结束游戏并返回房间
+	 */
+	private endGameAndReturnToRoom(): void {
+		// 通知所有玩家游戏结束并返回房间
+		this.roomBroadcast({
+			type: SocketMsgType.GameOver,
+			source: SocketMsgSource.Server,
+			data: { returnToRoom: true },
+		});
+
+		// 清理 Worker
+		if (this.gameProcessWorker) {
+			this.gameProcessWorker.terminate();
+			this.gameProcessWorker = null;
+		}
+
+		// 重置状态
+		this.isStarted = false;
+		this.workerState = WorkerState.Ready;
 
 		// 重置所有玩家准备状态
 		Array.from(this.userList.values()).forEach((u) => {
@@ -1370,6 +1384,9 @@ export class Room {
 		}
 
 		this.transitionTo(WorkerState.Initializing, "重新初始化游戏进程");
+
+		// 重置安全模式相关标志
+		this.enteringSafeMode = false;
 
 		// 启动初始化超时定时器
 		this.startInitTimeout();
@@ -1440,6 +1457,34 @@ export class Room {
 					break;
 				case WorkerCommType.RetryFromSafeMode:
 					this.handleRetryFromSafeMode();
+					break;
+				case WorkerCommType.SaveSnapshot:
+					{
+						// 如果是手动请求快照，跳过自动保存
+						if (this.isManuallyRequestingSnapshot) {
+							this.isManuallyRequestingSnapshot = false;
+							break;
+						}
+						const { snapshot } = msg.data;
+						const mapId = this.mapInfo?.from === "server" ? this.mapInfo.data : "";
+						const mapVersion = useMapData().info?.version ?? "0.0.0";
+						const mapName = useMapData().info?.name ?? "未知地图";
+						this.saveManager.save(snapshot, mapId, mapVersion, mapName)
+							.then(() => {
+								FPMessage({ type: "success", message: "存档成功！" });
+							})
+							.catch((e) => {
+								FPMessage({ type: "error", message: `存档失败: ${e.message}` });
+							});
+					}
+					break;
+				case WorkerCommType.DebugStateResponse:
+					{
+						const bridge = (window as any).__gpBridge;
+						if (bridge && typeof bridge.onState === "function") {
+							bridge.onState(msg.data.state);
+						}
+					}
 					break;
 				default:
 					console.warn("[Room] Unknown Worker message type:", msg.type);

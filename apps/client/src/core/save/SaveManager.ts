@@ -17,7 +17,7 @@ export class SaveManager {
 		mapId: string,
 		mapVersion: string,
 		mapName: string,
-	): Promise<void> {
+	): Promise<SaveRecord> {
 		// 查找是否已有同一局游戏的存档记录
 		const existingRecords = await this.storage.listByMap(mapId, mapVersion);
 		// 取最近一次存档作为 previousSnapshot 回滚参考
@@ -41,6 +41,7 @@ export class SaveManager {
 		};
 
 		await this.storage.save(record);
+		return record;
 	}
 
 	/**
@@ -60,7 +61,7 @@ export class SaveManager {
 	/**
 	 * 删除存档
 	 */
-	async delete(id: string): Promise<void> {
+	async delete(id: string): Promise<SaveRecord> {
 		return this.storage.delete(id);
 	}
 

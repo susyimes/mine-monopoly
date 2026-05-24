@@ -31,7 +31,8 @@ export enum OperateType {
 	/** 动态按钮点击 */
 	DynamicButtonClick = "DynamicButtonClick",
 	/** 安全模式重试 */
-	SafeModeRetry = "SafeModeRetry",
 	/** 安全模式放弃游戏 */
 	SafeModeAbort = "SafeModeAbort",
+	/** 安全模式存档并退出 */
+	SafeModeSaveAndExit = "SafeModeSaveAndExit",
 }

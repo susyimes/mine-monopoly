@@ -499,8 +499,18 @@ const handlePlayerTp: ServerMessageHandler<SocketMsgType.PlayerTp> = (msg) => {
 	useEventBus().emit("player-tp", playerId, positionIndex, walkId);
 };
 
-const handleGameOver: ServerMessageHandler<SocketMsgType.GameOver> = () => {
+const handleGameOver: ServerMessageHandler<SocketMsgType.GameOver> = (msg) => {
 	const gameInfoStore = useGameData();
+	// 安全模式放弃游戏时回到房间，不显示排行榜
+	if (msg.data?.returnToRoom) {
+		// 清理游戏数据但保持房间连接
+		useRoomInfo().$patch({ isStarted: false });
+		useChat().$reset();
+		useGameLog().$reset();
+		gameInfoStore.$reset();
+		router.replace({ name: "room" });
+		return;
+	}
 	gameInfoStore.isGameOver = true;
 };
 
