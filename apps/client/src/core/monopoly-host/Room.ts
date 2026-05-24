@@ -1040,6 +1040,9 @@ export class Room {
 
 		this.enteringSafeMode = true;
 
+		// 清除初始化超时，防止超时回调覆盖安全模式状态
+		this.clearInitTimeout();
+
 		this.transitionTo(WorkerState.SafeMode, reason);
 
 		// 通知 Worker 进入安全模式
@@ -1074,6 +1077,7 @@ export class Room {
 						category: technicalDetails.category,
 						type: technicalDetails.type,
 						message: technicalDetails.message,
+						stack: technicalDetails.stack,
 					} : undefined,
 				},
 			});

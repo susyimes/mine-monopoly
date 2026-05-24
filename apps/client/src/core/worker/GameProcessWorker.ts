@@ -162,7 +162,7 @@ async function handleMessage(data: WorkerCommMsg) {
 					if (saveData) {
 						gameProcess.setPendingSaveData(saveData);
 					}
-					gameProcess.start();
+					await gameProcess.start();
 
 					// 发送gameProcess就绪消息给主线程，包含gameProcess引用
 					self.postMessage(<WorkerCommMsg>{
@@ -793,12 +793,17 @@ export class GameProcess implements IGameProcess {
 		const { mapItems, mapEvents, chanceCards } = this.mapData;
 
 		mapEvents.forEach((mapEvent) => {
-			const effectCode = compileTsToJs(mapEvent.effectCode, this.fullTypes);
-			this.mapEvents.set(mapEvent.id, {
-				...mapEvent,
-				effectCode,
-				fn: new Function(effectCode)(),
-			});
+			try {
+				const effectCode = compileTsToJs(mapEvent.effectCode, this.fullTypes);
+				this.mapEvents.set(mapEvent.id, {
+					...mapEvent,
+					effectCode,
+					fn: new Function(effectCode)(),
+				});
+			} catch (e: any) {
+				console.error(`[initMap] 地图事件 "${mapEvent.name || mapEvent.id}" 初始化失败:`, e);
+				reportWorkerError(e, `地图事件初始化: ${mapEvent.name || mapEvent.id}`);
+			}
 		});
 
 		mapItems.forEach((mapItem) => {

@@ -38,6 +38,8 @@ import { base64ToArrayBuffer } from "@mine-monopoly/utils";
 import { showTargetSelector } from "@src/components/common/target-seletor";
 import { showItemSelector } from "@src/components/utils/item-selector";
 import { FPMessageCard } from "../../components/utils/fp-message-card/index";
+import { logErrorWithOptions } from "@src/utils/log/error-helpers";
+import { ErrorCategory } from "@src/utils/log/index";
 
 type ServerMessageHandler<T extends SocketMsgType> = (
 	msg: SocketMessage<T, SocketMsgSource.Server>,
@@ -287,7 +289,18 @@ const handleChangeMap: ServerMessageHandler<SocketMsgType.ChangeMap> = async (ms
 		});
 		useLoading().hideLoading();
 	} catch (e: any) {
-		FPMessage({ type: "error", message: e.message });
+		logErrorWithOptions({
+			category: ErrorCategory.GAME_RUNTIME,
+			message: `地图加载失败: ${e.message}`,
+			error: e instanceof Error ? e : undefined,
+			extraInfo: { mapData: msg.data },
+		});
+		FPMessageBox({
+			title: "地图加载失败",
+			content: `地图数据加载过程中发生错误，请通知房主重新选择地图。\n\n错误详情: ${e.message}`,
+			confirmText: "确定",
+			showCancel: false,
+		}).catch(() => {});
 		useLoading().hideLoading();
 	} finally {
 		client.resumeHeartBeat();
@@ -690,6 +703,7 @@ const handleButtonRemove: ServerMessageHandler<SocketMsgType.ButtonRemove> = (ms
 
 const handleSafeModePanel: ServerMessageHandler<SocketMsgType.SafeModePanel> = (msg, client) => {
 	const eventBus = useEventBus();
+	useLoading().hideLoading();
 	eventBus.emit('safe-mode:show', msg.data);
 };
 

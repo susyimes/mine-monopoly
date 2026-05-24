@@ -14,6 +14,7 @@ interface SafeModeData {
 		category?: string;
 		type?: string;
 		message?: string;
+		stack?: string;
 	};
 }
 
@@ -28,9 +29,6 @@ const roomInfoStore = useRoomInfo();
 
 // 是否是房主
 const isRoomOwner = computed(() => roomInfoStore.amIRoomOwner);
-
-// 错误详情展开状态
-const showDetails = ref(false);
 
 /**
  * 处理存档并退出操作
@@ -84,17 +82,19 @@ const handleClose = () => {
 const showSafeModePanel = (data: SafeModeData) => {
 	safeModeData.value = data;
 	visible.value = true;
-	showDetails.value = false;
 };
 
-// 监听路由变化，进入游戏页面时注册事件（解决 GameRenderer.destroy 中 removeAll() 清掉监听器的问题）
+// 监听路由变化，在 room 和 game 页面注册事件（解决 GameRenderer.destroy 中 removeAll() 清掉监听器的问题）
+// room 路由也需要注册，因为游戏初始化失败时用户还在 room 页面，未导航到 game
 watch(
 	() => router.currentRoute.value.name,
 	(name, oldName) => {
 		const eventBus = useEventBus();
-		if (name === "game") {
+		const shouldListen = name === "game" || name === "room";
+		const wasListening = oldName === "game" || oldName === "room";
+		if (shouldListen) {
 			eventBus.on("safe-mode:show", showSafeModePanel);
-		} else if (oldName === "game") {
+		} else if (wasListening) {
 			eventBus.remove("safe-mode:show", showSafeModePanel);
 		}
 	},
@@ -118,14 +118,9 @@ watch(
 					<!-- 原因说明 -->
 					<p class="reason-text">{{ safeModeData.reason }}</p>
 
-					<!-- 错误详情（可折叠） -->
+					<!-- 错误详情 -->
 					<div v-if="safeModeData.errorDetails" class="error-details-section">
-						<button class="btn-gray btn-small details-toggle" @click="showDetails = !showDetails">
-							<span>{{ showDetails ? "隐藏" : "显示" }}错误详情</span>
-							<FontAwesomeIcon :icon="showDetails ? 'fa-angle-up' : 'fa-angle-down'" />
-						</button>
-						<Transition name="expand">
-							<div v-if="showDetails" class="error-details">
+												<div class="error-details">
 								<div v-if="safeModeData.errorDetails.category" class="detail-item">
 									<span class="detail-label">错误类别:</span>
 									<span class="detail-value">{{ safeModeData.errorDetails.category }}</span>
@@ -138,9 +133,12 @@ watch(
 									<span class="detail-label">错误信息:</span>
 									<span class="detail-value">{{ safeModeData.errorDetails.message }}</span>
 								</div>
+								<div v-if="safeModeData.errorDetails.stack" class="detail-item">
+									<span class="detail-label">错误堆栈:</span>
+									<pre class="detail-stack">{{ safeModeData.errorDetails.stack }}</pre>
+								</div>
 							</div>
-						</Transition>
-					</div>
+						</div>
 
 					<!-- 操作按钮区域 -->
 					<div class="action-buttons">
@@ -289,6 +287,21 @@ watch(
 	color: #7f1d1d;
 	font-family: monospace;
 	word-break: break-all;
+}
+
+.detail-stack {
+	margin: 0.25rem 0 0 0;
+	padding: 0.5rem;
+	background-color: #fee2e2;
+	border-radius: 0.25rem;
+	font-size: 0.75rem;
+	color: #991b1b;
+	font-family: monospace;
+	white-space: pre-wrap;
+	word-break: break-all;
+	line-height: 1.4;
+	max-height: 200px;
+	overflow-y: auto;
 }
 
 .action-buttons {
