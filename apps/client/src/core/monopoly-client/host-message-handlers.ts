@@ -157,6 +157,9 @@ export function handleServerSocketMessage(msg: ServerSocketMessage, client: Mono
 		case SocketMsgType.ButtonRemove:
 			handleButtonRemove(msg, client);
 			break;
+		case SocketMsgType.SafeModePanel:
+			handleSafeModePanel(msg, client);
+			break;
 		default:
 			break;
 	}
@@ -312,6 +315,8 @@ const handleGameInit: ServerMessageHandler<SocketMsgType.GameInit> = (msg) => {
 			state.currentMultiplier = gameData.currentMultiplier;
 			state.players = gameData.players;
 			state.properties = gameData.properties;
+			state.isGameOver = false;
+			state.rankedPlayerIds = [];
 		});
 
 		// 重置状态管理器，然后设置破产状态
@@ -671,6 +676,11 @@ const handleButtonStateChanged: ServerMessageHandler<SocketMsgType.ButtonStateCh
 const handleButtonRemove: ServerMessageHandler<SocketMsgType.ButtonRemove> = (msg, client) => {
 	const eventBus = useEventBus();
 	eventBus.emit('button:remove', msg.data);
+};
+
+const handleSafeModePanel: ServerMessageHandler<SocketMsgType.SafeModePanel> = (msg, client) => {
+	const eventBus = useEventBus();
+	eventBus.emit('safe-mode:show', msg.data);
 };
 
 function buildDefaultFormData(fields: FormField<string, any>[]): Record<string, any> {
