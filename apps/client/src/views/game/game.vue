@@ -1,149 +1,156 @@
 <script setup lang="ts">
-import {
-	onMounted,
-	computed,
-	onUnmounted,
-	ref,
-	onBeforeMount,
-	onBeforeUnmount,
-	h,
-	VNode,
-	isVNode,
-	render,
-	Fragment,
-} from "vue";
-import { GameRenderer } from "@src/core/renderer/GameRenderer";
-import { useLoading, useUtil } from "@src/store";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import router from "@src/router/index";
-import { MonopolyClient, useMonopolyClient, destoryMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
-import Dices from "./components/dices.vue";
-import ChanceCardContainer from "./components/chance-card-container.vue";
-import CountdownTimer from "./components/countdown-timer.vue";
-import scoreboard from "./components/scoreboard.vue";
-import PlayerContainer from "./components/player-container.vue";
-import GameButtonsPanel from "./components/game-buttons-panel.vue";
-import { useGameData, useMapData } from "@src/store/game";
-import { useUserInfo } from "@src/store";
-import { CustomUI, GameMap, UISchema } from "@mine-monopoly/types";
-import { compileTsToJs } from "@src/utils";
-import { storeToRefs } from "pinia";
-import UiRenderer from "@src/components/utils/ui-renderer/ui-renderer.vue";
-import MoneyParticleSystem from "./components/money-particle-system.vue";
+	import {
+		onMounted,
+		computed,
+		onUnmounted,
+		ref,
+		onBeforeMount,
+		onBeforeUnmount,
+		h,
+		VNode,
+		isVNode,
+		render,
+		Fragment,
+	} from "vue";
+	import { GameRenderer } from "@src/core/renderer/GameRenderer";
+	import { useLoading, useUtil } from "@src/store";
+	import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+	import router from "@src/router/index";
+	import { MonopolyClient, useMonopolyClient, destoryMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
+	import Dices from "./components/dices.vue";
+	import ChanceCardContainer from "./components/chance-card-container.vue";
+	import CountdownTimer from "./components/countdown-timer.vue";
+	import scoreboard from "./components/scoreboard.vue";
+	import PlayerContainer from "./components/player-container.vue";
+	import GameButtonsPanel from "./components/game-buttons-panel.vue";
+	import { useGameData, useMapData } from "@src/store/game";
+	import { useUserInfo } from "@src/store";
+	import { CustomUI, GameMap, UISchema } from "@mine-monopoly/types";
+	import { compileTsToJs } from "@src/utils";
+	import { storeToRefs } from "pinia";
+	import UiRenderer from "@src/components/utils/ui-renderer/ui-renderer.vue";
+	import MoneyParticleSystem from "./components/money-particle-system.vue";
+	import FpErrorBoundary from "@src/components/utils/fp-error-boundary/index.vue";
+	import SafeModeActionPanel from "@src/components/SafeModeActionPanel.vue";
 
-//pinia仓库
-const mapDataStore = useMapData();
-const userInfoStore = useUserInfo();
+	//pinia仓库
+	const mapDataStore = useMapData();
+	const userInfoStore = useUserInfo();
 
-const windowWidth = computed(() => window.innerWidth);
-const windowHeight = computed(() => window.innerHeight);
+	const windowWidth = computed(() => window.innerWidth);
+	const windowHeight = computed(() => window.innerHeight);
 
-const currentPlayerId = computed(() => userInfoStore.userId);
+	const currentPlayerId = computed(() => userInfoStore.userId);
 
-let socketClient: MonopolyClient;
-let gameRenderer: GameRenderer | null;
-const moneyParticleSystemRef = ref<any>(null);
-const islockingCamera = ref(true);
-const lockCameraIcon = computed(() => (islockingCamera.value ? "fa-video" : "fa-video-slash"));
+	let socketClient: MonopolyClient;
+	let gameRenderer: GameRenderer | null;
+	const moneyParticleSystemRef = ref<any>(null);
+	const islockingCamera = ref(true);
+	const lockCameraIcon = computed(() => (islockingCamera.value ? "fa-video" : "fa-video-slash"));
 
-function handleToggleLockCamera() {
-	if (gameRenderer) islockingCamera.value = gameRenderer.toggleLockCamera();
-}
-
-function handleRollDice() {
-	if (socketClient) {
-		socketClient.rollDice();
+	function handleToggleLockCamera() {
+		if (gameRenderer) islockingCamera.value = gameRenderer.toggleLockCamera();
 	}
-}
 
-onMounted(async () => {
-	try {
-		socketClient = useMonopolyClient();
-		useLoading().showLoading("加载数据中...");
-
-		// 暂停心跳检测，避免加载期间误判断连
-		socketClient.sendLoadingStarted();
-		socketClient.pauseHeartBeat();
-
-		const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
-		const container = document.getElementsByClassName("game-page")[0] as HTMLDivElement;
-		if (!canvas || !container) {
-			throw new Error("游戏画布元素未找到");
+	function handleRollDice() {
+		if (socketClient) {
+			socketClient.rollDice();
 		}
-		const mapData = JSON.parse(JSON.stringify(mapDataStore.$state)) as GameMap;
-		console.log("🚀 ~ mapData:", mapData);
-		gameRenderer = new GameRenderer(canvas, container, mapData);
-		await gameRenderer.init();
-
-			// 注册金钱粒子系统
-			if (moneyParticleSystemRef.value) {
-				gameRenderer.registerMoneyParticleSystem(moneyParticleSystemRef.value);
-			}
-
-		// 恢复心跳检测
-		socketClient.resumeHeartBeat();
-
-		useLoading().showLoading("数据加载完成，等待其他玩家加载...");
-		socketClient.gameInitFinished();
-	} catch (e: any) {
-		// 异常时也要恢复心跳，防止永久暂停
-		socketClient?.resumeHeartBeat();
-		console.error(e);
-		useLoading().hideLoading();
-		router.replace({ name: "room-router" });
 	}
-});
 
-onBeforeUnmount(() => {
-	if (gameRenderer) gameRenderer.destroy();
-	gameRenderer = null;
-	destoryMonopolyClient();
-});
+	onMounted(async () => {
+		try {
+			socketClient = useMonopolyClient();
+			useLoading().showLoading("加载数据中...");
 
-function getUiTemplateById(id: string) {
-	return (
-		useMapData().getUITempolateById(id)?.template || { id: "404", type: "text", content: `找不到ID为: ${id} 的UI组件` }
-	);
-}
+			// 暂停心跳检测，避免加载期间误判断连
+			socketClient.sendLoadingStarted();
+			socketClient.pauseHeartBeat();
+
+			const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
+			const container = document.getElementsByClassName("game-page")[0] as HTMLDivElement;
+			if (!canvas || !container) {
+				throw new Error("游戏画布元素未找到");
+			}
+			const mapData = JSON.parse(JSON.stringify(mapDataStore.$state)) as GameMap;
+			console.log("🚀 ~ mapData:", mapData);
+			gameRenderer = new GameRenderer(canvas, container, mapData);
+			await gameRenderer.init();
+
+				// 注册金钱粒子系统
+				if (moneyParticleSystemRef.value) {
+					gameRenderer.registerMoneyParticleSystem(moneyParticleSystemRef.value);
+				}
+
+			// 恢复心跳检测
+			socketClient.resumeHeartBeat();
+
+			useLoading().showLoading("数据加载完成，等待其他玩家加载...");
+			socketClient.gameInitFinished();
+		} catch (e: any) {
+			// 异常时也要恢复心跳，防止永久暂停
+			socketClient?.resumeHeartBeat();
+			console.error(e);
+			useLoading().hideLoading();
+			router.replace({ name: "room-router" });
+		}
+	});
+
+	onBeforeUnmount(() => {
+		if (gameRenderer) gameRenderer.destroy();
+		gameRenderer = null;
+		destoryMonopolyClient();
+	});
+
+	function getUiTemplateById(id: string) {
+		return (
+			useMapData().getUITempolateById(id)?.template || { id: "404", type: "text", content: `找不到ID为: ${id} 的UI组件` }
+		);
+	}
 </script>
 
 <template>
-	<div class="game-page">
-		<canvas id="game-canvas" :width="windowWidth" :height="windowHeight"></canvas>
-		<div class="ui-container">
-			<UiRenderer
-				v-for="ui in mapDataStore.customUIs"
-				:schema="getUiTemplateById(ui.uiSchema)"
-				:context="useGameData().$state"
-				:style="{
-					gridArea: `${ui.layout.y + 1} / ${ui.layout.x + 1} / span ${ui.layout.height} / span ${ui.layout.width}`,
-					zIndex: `var(--z-ui)`,
-				}"
-			/>
+	<FpErrorBoundary>
+		<div class="game-page">
+			<canvas id="game-canvas" :width="windowWidth" :height="windowHeight"></canvas>
+			<div class="ui-container">
+				<UiRenderer
+					v-for="ui in mapDataStore.customUIs"
+					:schema="getUiTemplateById(ui.uiSchema)"
+					:context="useGameData().$state"
+					:style="{
+						gridArea: `${ui.layout.y + 1} / ${ui.layout.x + 1} / span ${ui.layout.height} / span ${ui.layout.width}`,
+						zIndex: `var(--z-ui)`,
+					}"
+				/>
 
-			<PlayerContainer />
+				<PlayerContainer />
 
-			<div class="tool-bar ui-item">
-				<button class="border-button lock-camera" @click="handleToggleLockCamera">
-					<FontAwesomeIcon :icon="lockCameraIcon" />
-				</button>
+				<div class="tool-bar ui-item">
+					<button class="border-button lock-camera" @click="handleToggleLockCamera">
+						<FontAwesomeIcon :icon="lockCameraIcon" />
+					</button>
+				</div>
+
+				<ChanceCardContainer />
+
+				<!-- 游戏按钮面板：包含骰子按钮和动态按钮 -->
+				<GameButtonsPanel :player-id="currentPlayerId" title="操作面板" @rollDice="handleRollDice" />
+
+				<teleport to="body">
+					<CountdownTimer />
+				</teleport>
 			</div>
 
-			<ChanceCardContainer />
+			<!-- 金钱粒子系统：放在 ui-container 外部，避免 pointer-events 冲突 -->
+			<MoneyParticleSystem ref="moneyParticleSystemRef" />
 
-			<!-- 游戏按钮面板：包含骰子按钮和动态按钮 -->
-			<GameButtonsPanel :player-id="currentPlayerId" title="操作面板" @rollDice="handleRollDice" />
+			<scoreboard />
 
-			<teleport to="body">
-				<CountdownTimer />
-			</teleport>
+			<!-- 安全模式操作面板 -->
+			<SafeModeActionPanel />
 		</div>
-
-		<!-- 金钱粒子系统：放在 ui-container 外部，避免 pointer-events 冲突 -->
-		<MoneyParticleSystem ref="moneyParticleSystemRef" />
-
-		<scoreboard />
-	</div>
+	</FpErrorBoundary>
 </template>
 
 <style lang="scss" scoped>

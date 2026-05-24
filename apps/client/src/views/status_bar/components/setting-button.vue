@@ -12,9 +12,24 @@
 	import { useRoomInfo, useChat, useGameLog } from "@src/store";
 	import { useGameData } from "@src/store/game";
 	import router from "@src/router";
+	import LogPanel from "@src/components/log-panel";
+
+	const settingVisible = ref(false);
+	const logPanelVisible = ref(false);
+
+	// 暴露 window 对象给模板使用
+	const win = window as any;
 
 	const openInspector = () => {
 		window.electronAPI?.openInspector();
+	};
+
+	const openLogsFolder = () => {
+		window.electronAPI?.openLogsFolder?.().then((path: string) => {
+			console.log('日志文件夹已打开:', path);
+		}).catch(() => {
+			FpMessage({ type: 'error', message: '无法打开日志文件夹' });
+		});
 	};
 
 	async function handleExitGame() {
@@ -47,7 +62,6 @@
 		}
 	}
 
-	const settingVisible = ref(false);
 	const settingStore = useSettig();
 	const route = useRoute();
 	const eventBus = useEventBus();
@@ -396,6 +410,15 @@
 					</div>
 				</div>
 
+				<!-- 日志管理 -->
+				<div class="setting-item">
+					<div class="label">日志</div>
+					<div class="content log-actions">
+						<button @click="logPanelVisible = true" class="log-button">查看日志</button>
+						<button v-if="win.electronAPI?.openLogsFolder" @click="openLogsFolder" class="log-button">打开日志文件夹</button>
+					</div>
+				</div>
+
 				<!-- 开发者工具 -->
 				<div class="setting-item">
 					<div class="label">开发者</div>
@@ -422,6 +445,9 @@
 			</div>
 		</div>
 	</FpDialog>
+
+	<!-- 日志面板 -->
+	<LogPanel v-model:visible="logPanelVisible" />
 </template>
 
 <style lang="scss" scoped>
@@ -485,6 +511,28 @@
 						padding: 0.2rem;
 						cursor: pointer;
 						color: var(--fp-color-tertiary);
+					}
+
+					// 日志按钮样式
+					&.log-actions {
+						gap: 0.5rem;
+
+						.log-button {
+							flex: 1;
+							background: var(--fp-color-secondary);
+							color: white;
+							border: none;
+							border-radius: 0.4rem;
+							padding: 0.5rem 0.8rem;
+							font-size: 0.9rem;
+							cursor: pointer;
+							transition: all 0.2s;
+
+							&:hover {
+								opacity: 0.9;
+								transform: translateY(-1px);
+							}
+						}
 					}
 
 					// 音量控制样式
@@ -622,40 +670,40 @@
 			}
 		}
 	}
-		.dev-button {
-			width: 100%;
-			--btn-bg: #6c5ce7; // 使用 --btn-bg 变量让阴影颜色自适应
-			background: var(--btn-bg);
-			color: white;
-			border: none;
-			border-radius: 0.5rem;
-			padding: 0.6rem;
-			font-size: 0.9rem;
-			cursor: pointer;
-			transition: all 0.3s;
-		}
-		.dev-button:hover {
-			opacity: 0.85;
-			transform: translateY(-2px);
-		}
+	.dev-button {
+		width: 100%;
+		--btn-bg: #6c5ce7; // 使用 --btn-bg 变量让阴影颜色自适应
+		background: var(--btn-bg);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		padding: 0.6rem;
+		font-size: 0.9rem;
+		cursor: pointer;
+		transition: all 0.3s;
+	}
+	.dev-button:hover {
+		opacity: 0.85;
+		transform: translateY(-2px);
+	}
 
-		.exit-button {
-			width: 100%;
-			--btn-bg: #e74c3c;
-			background: var(--btn-bg);
-			color: white;
-			border: none;
-			border-radius: 0.5rem;
-			padding: 0.6rem;
-			font-size: 0.9rem;
-			cursor: pointer;
-			transition: all 0.3s;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-		}
-		.exit-button:hover {
-			opacity: 0.85;
-			transform: translateY(-2px);
-		}
+	.exit-button {
+		width: 100%;
+		--btn-bg: #e74c3c;
+		background: var(--btn-bg);
+		color: white;
+		border: none;
+		border-radius: 0.5rem;
+		padding: 0.6rem;
+		font-size: 0.9rem;
+		cursor: pointer;
+		transition: all 0.3s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.exit-button:hover {
+		opacity: 0.85;
+		transform: translateY(-2px);
+	}
 </style>

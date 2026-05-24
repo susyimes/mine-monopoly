@@ -10,6 +10,7 @@ import MusicPlayer from "@src/views/music_player/music_player.vue";
 import DanmakuContainer from "@src/views/danmaku/danmaku_container.vue";
 import { isFullScreen, isMobileDevice } from "@src/utils";
 import { TitleBar } from "@mine-monopoly/ui";
+import SafeModeActionPanel from "@src/components/SafeModeActionPanel.vue";
 import { isPC } from "./utils/platform";
 import { useDeviceStatus } from "./store";
 import {
@@ -165,6 +166,7 @@ const backgroundSvgList: string[] = [
 		</div>
 	</div>
 	<Update />
+<SafeModeActionPanel />
 </template>
 
 <style lang="scss" scoped>
