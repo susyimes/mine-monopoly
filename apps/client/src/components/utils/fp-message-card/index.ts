@@ -7,9 +7,14 @@ export interface MessageCardOptions {
 	content?: string | VNode | (() => VNode) | UISchema;
 	appContext?: AppContext;
 	duration?: number;
+	onClosed?: () => void;
 }
 
-export function FPMessageCard(options: MessageCardOptions) {
+export interface MessageCardHandle {
+	close: () => void;
+}
+
+export function FPMessageCard(options: MessageCardOptions): MessageCardHandle {
 	const container = document.createElement("div");
 
 	let contentNode = options.content;
@@ -23,6 +28,9 @@ export function FPMessageCard(options: MessageCardOptions) {
 		onClosed: () => {
 			render(null, container);
 			container.remove();
+			if (options.onClosed) {
+				options.onClosed();
+			}
 		},
 	});
 
@@ -37,5 +45,20 @@ export function FPMessageCard(options: MessageCardOptions) {
 
 	if (vnode.component && vnode.component.exposed) {
 		(vnode.component.exposed as any).open();
+
+		// 返回关闭方法
+		return {
+			close: () => {
+				(vnode.component!.exposed as any).close();
+			},
+		};
 	}
+
+	// 如果没有 exposed，返回一个空的 close 方法
+	return {
+		close: () => {
+			render(null, container);
+			container.remove();
+		},
+	};
 }
