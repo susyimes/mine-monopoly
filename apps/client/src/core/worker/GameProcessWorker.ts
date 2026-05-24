@@ -162,7 +162,7 @@ async function handleMessage(data: WorkerCommMsg) {
 					if (saveData) {
 						gameProcess.setPendingSaveData(saveData);
 					}
-					await gameProcess.start();
+					gameProcess.start();
 
 					// 发送gameProcess就绪消息给主线程，包含gameProcess引用
 					self.postMessage(<WorkerCommMsg>{
@@ -1929,34 +1929,40 @@ export class GameProcess implements IGameProcess {
 	}
 
 	public async start() {
-		// 步骤1: 初始化玩家和地皮（包含预初始化阶段）
-		await this.initPlayers();
-		await this.initProperties();
+		try {
+			// 步骤1: 初始化玩家和地皮（包含预初始化阶段）
+			await this.initPlayers();
+			await this.initProperties();
 
-		// 步骤2: 运行游戏初始化后阶段
-		await this.runInitedPhase();
+			// 步骤2: 运行游戏初始化后阶段
+			await this.runInitedPhase();
 
-		// 步骤2.5: 如果有待注入的存档数据，在发送给客户端之前恢复
-		// 这样客户端首次收到的 GameInit 就是存档后的正确状态
-		if (this.pendingSaveData) {
-			await this.restoreFromSnapshot(this.pendingSaveData.snapshot, this.pendingSaveData.aiPlayerIds);
-			this.pendingSaveData = null;
+			// 步骤2.5: 如果有待注入的存档数据，在发送给客户端之前恢复
+			// 这样客户端首次收到的 GameInit 就是存档后的正确状态
+			if (this.pendingSaveData) {
+				await this.restoreFromSnapshot(this.pendingSaveData.snapshot, this.pendingSaveData.aiPlayerIds);
+				this.pendingSaveData = null;
+			}
+
+			// 步骤3: 发送游戏初始化消息给客户端（已包含存档恢复后的状态）
+			this.gameBroadcast({
+				type: SocketMsgType.GameInit,
+				source: SocketMsgSource.Server,
+				data: this.getGameData(),
+			});
+
+			// 步骤4: 等待客户端初始化完成
+			await this.waitInitFinished();
+
+			// 启动心跳机制
+			this.startHeartbeat();
+		} catch (e: any) {
+			console.error("[GameProcess.start Init Error]:", e);
+			reportWorkerError(e, "GameProcess.start 初始化阶段");
+			throw e;
 		}
 
-		// 步骤3: 发送游戏初始化消息给客户端（已包含存档恢复后的状态）
-		this.gameBroadcast({
-			type: SocketMsgType.GameInit,
-			source: SocketMsgSource.Server,
-			data: this.getGameData(),
-		});
-
-		// 步骤4: 等待客户端初始化完成
-		await this.waitInitFinished();
-
-		// 启动心跳机制
-		this.startHeartbeat();
-
-		// 步骤5: 开始游戏循环
+		// 步骤5: 开始游戏循环（不放在 try 中，游戏循环中的错误由 unhandledrejection 捕获）
 		await this.gameLoop();
 	}
 
