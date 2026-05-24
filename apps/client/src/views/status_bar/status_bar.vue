@@ -22,8 +22,8 @@
 		<CameraFocusButton />
 		<MapInfoButton />
 		<Help />
-		<SettingButton />
 		<SaveButton />
+		<SettingButton />
 	</div>
 </template>
 

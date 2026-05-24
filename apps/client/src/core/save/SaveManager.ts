@@ -17,6 +17,7 @@ export class SaveManager {
 		mapId: string,
 		mapVersion: string,
 		mapName: string,
+		playerNames: string[],
 	): Promise<SaveRecord> {
 		// 查找是否已有同一局游戏的存档记录
 		const existingRecords = await this.storage.listByMap(mapId, mapVersion);
@@ -24,7 +25,6 @@ export class SaveManager {
 		const latest = existingRecords.length > 0 ? existingRecords[existingRecords.length - 1] : null;
 
 		const userIds = Object.keys(snapshot.playerSnapshots);
-		const names = userIds.map(id => `Player-${id.slice(0, 4)}`);
 
 		const record: SaveRecord = {
 			id: randomString(16),
@@ -35,7 +35,7 @@ export class SaveManager {
 			round: snapshot.currentRound,
 			playerCount: userIds.length,
 			playerUserIds: userIds,
-			playerNames: names,
+			playerNames,
 			snapshot,
 			previousSnapshot: latest?.snapshot,
 		};

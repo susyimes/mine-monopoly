@@ -59,6 +59,8 @@
 		const mapId = roomInfoStore.mapId;
 		const mapVersion = useMapData().info?.version ?? "0.0.0";
 		saveRecords.value = await saveManager.listByMap(mapId, mapVersion);
+		// 按时间降序排序，最新的在前面
+		saveRecords.value.sort((a, b) => b.saveTime - a.saveTime);
 	}
 
 	watch(currentMap, () => {
@@ -705,7 +707,6 @@
 		background-color: rgba(255, 255, 255, 0.8);
 		border-radius: 0.6rem;
 		box-shadow: var(--fp-shadow-md);
-		overflow: hidden;
 
 		.save-item-header {
 			display: flex;

@@ -1311,7 +1311,12 @@ export class Room {
 			const mapVersion = useMapData().info?.version ?? "0.0.0";
 			const mapName = useMapData().info?.name ?? "未知地图";
 
-			const record = await this.saveManager.save(snapshot, mapId, mapVersion, mapName);
+				// 获取玩家名字列表
+				const playerNames = Object.keys(snapshot.playerSnapshots).map(
+					userId => this.userList.get(userId)?.username ?? `Player-${userId.slice(0, 4)}`
+				);
+
+			const record = await this.saveManager.save(snapshot, mapId, mapVersion, mapName, playerNames);
 
 			// 3. 通知存档成功
 			this.roomBroadcast({
@@ -1469,7 +1474,11 @@ export class Room {
 						const mapId = this.mapInfo?.from === "server" ? this.mapInfo.data : "";
 						const mapVersion = useMapData().info?.version ?? "0.0.0";
 						const mapName = useMapData().info?.name ?? "未知地图";
-						this.saveManager.save(snapshot, mapId, mapVersion, mapName)
+						// 获取玩家名字列表
+						const playerNames = Object.keys(snapshot.playerSnapshots).map(
+							userId => this.userList.get(userId)?.username ?? `Player-${userId.slice(0, 4)}`
+						);
+						this.saveManager.save(snapshot, mapId, mapVersion, mapName, playerNames)
 							.then(() => {
 								FPMessage({ type: "success", message: "存档成功！" });
 							})
