@@ -720,6 +720,33 @@ export interface SocketMessageDataType {
 		/** 服务器发送的按钮移除信息 */
 		server: ButtonRemoveMessage;
 	};
+
+	/**
+	 * 安全模式操作面板
+	 * 服务器通知房主显示安全模式操作面板
+	 */
+	[SocketMsgType.SafeModePanel]: {
+		/** 客户端发送的数据（不支持） */
+		client: never;
+		/** 服务器发送的安全模式信息 */
+		server: SafeModePanelMessage;
+	};
+}
+
+/**
+ * 安全模式面板消息
+ */
+export interface SafeModePanelMessage {
+	/** 进入安全模式的原因 */
+	reason: string;
+	/** 是否可以重试 */
+	canRetry: boolean;
+	/** 错误详情（可选） */
+	errorDetails?: {
+		category?: string;
+		type?: string;
+		message?: string;
+	};
 }
 
 /**
