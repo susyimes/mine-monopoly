@@ -17,8 +17,8 @@ import {
 	PlayerOperationResult,
 	RoomMapInfo,
 } from "@mine-monopoly/types";
-import { WorkerCommType } from "@src/enums/worker";
-import { WorkerCommMsg } from "@src/interfaces/worker";
+import { WorkerCommType, WorkerState } from "@src/enums/worker";
+import { WorkerCommMsg, HeartbeatData, WorkerStateChangedData } from "@src/interfaces/worker";
 import { useLoading, useDeviceStatus } from "@src/store";
 import { randomString } from "@src/utils";
 import { getGameMapById } from "@src/utils/api/map";
@@ -28,6 +28,7 @@ import GameProcessWorker from "@src/core/worker/GameProcessWorker?worker";
 import { getGameMap } from "@src/utils/file/game-map";
 import { useMapData } from "@src/store/game";
 import { FPMessage } from "@mine-monopoly/ui";
+import logService, { ErrorCategory, logWorkerError, logErrorWithOptions } from "@src/utils/log";
 import { OperateListener } from "../worker/class/OperateListener";
 import { base64ToArrayBuffer } from "@mine-monopoly/utils";
 import { SaveManager, SaveRecord, SaveSnapshot } from "@src/core/save";
@@ -49,6 +50,17 @@ export class Room {
 	private operationListener: OperateListener;
 	private saveManager: SaveManager = new SaveManager();
 	private pendingSaveData: { snapshot: any; aiPlayerIds: string[] } | null = null;
+
+	// 状态管理相关属性
+	private workerState: WorkerState = WorkerState.Uninitialized;
+	private safeModeReason: string = "";
+	private lastKnownGameState: HeartbeatData["gameState"] | null = null;
+	private heartbeatTimeout: number | null = null;
+	private initTimeoutTimer: number | null = null;
+
+	private static readonly HEARTBEAT_NORMAL_TIMEOUT = 15000;
+	private static readonly HEARTBEAT_BUSY_TIMEOUT = 60000;
+	private static readonly INIT_TIMEOUT = 30000;
 
 	constructor(roomId: string) {
 		this.roomId = roomId;
@@ -381,7 +393,7 @@ export class Room {
 				data: { show: true, text: "地图加载中..." },
 			});
 			sendChangeMapMessage();
-		} else if ((data.from = "custom")) {
+		} else if ((data.from === "custom")) {
 			//如果地图来源为玩家 (有风险的)
 			//需要其他玩家确定
 			const otherPlayers = Array.from(this.userList.values()).filter((user) => user.userId !== this.ownerId);
@@ -490,8 +502,21 @@ export class Room {
 		const mapName = mapId ? useMapData().info?.name : null;
 		setRoomStarted(this.getRoomId(), true, mapId, mapName);
 
+		// 状态转换: Uninitialized -> Initializing
+		this.transitionTo(WorkerState.Initializing, "开始创建游戏进程");
+
+		// 启动初始化超时定时器
+		this.startInitTimeout();
+
 		this.gameProcessWorker = new GameProcessWorker();
 		this.gameProcessWorker.addEventListener("message", (ev) => {
+			// 处理 Worker 内部错误消息
+			const rawData = ev.data as any;
+			if (rawData?.type === "worker-error") {
+				handleWorkerError(rawData.data);
+				return;
+			}
+
 			const msg: WorkerCommMsg = ev.data;
 			switch (msg.type) {
 				case WorkerCommType.WorkerReady:
@@ -507,7 +532,28 @@ export class Room {
 					this.handleGameOver();
 					break;
 				case WorkerCommType.GameProcessReady:
-					console.log("GameProcess已就绪");
+					this.handleGameProcessReady();
+					break;
+				case WorkerCommType.WorkerStateChanged:
+					this.handleWorkerStateChanged(msg.data);
+					break;
+				case WorkerCommType.WorkerHeartbeat:
+					this.handleWorkerHeartbeat(msg.data);
+					break;
+				case WorkerCommType.ValidationError:
+					this.handleValidationError(msg.data);
+					break;
+				case WorkerCommType.DetailedError:
+					this.handleDetailedError(msg.data);
+					break;
+				case WorkerCommType.EnterSafeMode:
+					this.handleEnterSafeMode(msg.data);
+					break;
+				case WorkerCommType.ExitSafeMode:
+					this.handleExitSafeMode();
+					break;
+				case WorkerCommType.RetryFromSafeMode:
+					this.handleRetryFromSafeMode();
 					break;
 				case WorkerCommType.SaveSnapshot:
 					{
@@ -543,27 +589,15 @@ export class Room {
 			}
 		});
 
-		// 监听 Worker 错误事件
+		// 监听 Worker 错误事件 - 进入安全模式
 		this.gameProcessWorker.addEventListener("error", (event) => {
 			console.error("[Worker Error Event]:", event);
-			FPMessage({
-				type: "error",
-				message: "游戏进程发生错误，日志已记录",
-			});
+			useLoading().hideLoading();
 
-			// 通过 electron API 记录错误
-			if (window.electronAPI?.logError) {
-				window.electronAPI.logError({
-					type: "Worker",
-					message: event.message || "Unknown Worker Error",
-					timestamp: new Date().toISOString(),
-					additionalData: {
-						eventType: "error",
-						filename: event.filename,
-						lineno: event.lineno,
-					},
-				});
-			}
+			// 进入安全模式
+			this.enterSafeMode("Worker初始化失败", {
+				message: event.message || "Unknown Worker Error",
+			});
 		});
 
 		window.addEventListener("beforeunload", () => {
@@ -637,7 +671,7 @@ export class Room {
 		};
 		const handleGameStart = () => {};
 
-		// 处理来自 Worker 的错误消息
+		// 处理来自 Worker 的错误消息 - 进入安全模式
 		const handleWorkerError = (errorData: {
 			type: string;
 			message: string;
@@ -647,22 +681,17 @@ export class Room {
 			additionalData?: Record<string, any>;
 		}) => {
 			console.error("[GameProcess Worker Error]:", errorData);
+			useLoading().hideLoading();
 
-			FPMessage({
-				type: "error",
-				message: `游戏进程错误: ${errorData.message}\n日志已记录，请查看 logs 文件夹`,
+			// 进入安全模式
+			this.enterSafeMode(errorData.message, {
+				type: errorData.type,
+				stack: errorData.stack,
+				info: errorData.info,
 			});
 
-			// 通过 electron API 记录错误
-			if (window.electronAPI?.logError) {
-				window.electronAPI.logError({
-					...errorData,
-					type: "Worker" as const,
-				});
-			}
-		};
+	};
 	}
-
 	private async handleGameOver() {
 		await setRoomStarted(this.getRoomId(), false);
 		Array.from(this.userList.values()).forEach((u) => {
@@ -779,5 +808,759 @@ export class Room {
 
 	public destory() {
 		this.gameProcessWorker && this.gameProcessWorker.terminate();
+	}
+
+	// ==================== 状态管理方法 ====================
+
+	/**
+	 * 状态转换方法
+	 * @param newState 新状态
+	 * @param reason 状态转换原因
+	 */
+	private transitionTo(newState: WorkerState, reason?: string): void {
+		const previousState = this.workerState;
+		if (previousState === newState) return;
+
+		this.workerState = newState;
+
+		// 记录状态转换日志
+		logService.info({
+			category: ErrorCategory.WORKER,
+			type: "StateTransition",
+			message: `Worker状态转换: ${previousState} -> ${newState}`,
+			info: reason ? `原因: ${reason}` : undefined,
+		});
+
+		// 如果进入安全模式，记录原因
+		if (newState === WorkerState.SafeMode && reason) {
+			this.safeModeReason = reason;
+		}
+
+		// 根据状态更新心跳超时时间
+		if (newState === WorkerState.Running) {
+			this.resetHeartbeatTimer();
+		}
+
+		// 通知 Worker 状态变化（如果 Worker 还在运行）
+		if (this.gameProcessWorker && newState !== WorkerState.Crashed && newState !== WorkerState.Terminated) {
+			this.gameProcessWorker.postMessage(<WorkerCommMsg>{
+				type: WorkerCommType.WorkerStateChanged,
+				data: {
+					previousState,
+					currentState: newState,
+					reason,
+				},
+			});
+		}
+	}
+
+	/**
+	 * 获取当前 Worker 状态
+	 */
+	public getWorkerState(): WorkerState {
+		return this.workerState;
+	}
+
+	// ==================== 心跳监控方法 ====================
+
+	/**
+	 * 启动心跳监控
+	 */
+	private startHeartbeatMonitor(): void {
+		this.resetHeartbeatTimer();
+	}
+
+	/**
+	 * 重置心跳定时器
+	 */
+	private resetHeartbeatTimer(): void {
+		this.clearHeartbeatTimer();
+
+		// 根据游戏状态选择超时时间
+		const timeout = this.lastKnownGameState?.isBusy
+			? Room.HEARTBEAT_BUSY_TIMEOUT
+			: Room.HEARTBEAT_NORMAL_TIMEOUT;
+
+		this.heartbeatTimeout = window.setTimeout(() => {
+			this.handleWorkerCrashed("心跳超时");
+		}, timeout);
+	}
+
+	/**
+	 * 清除心跳定时器
+	 */
+	private clearHeartbeatTimer(): void {
+		if (this.heartbeatTimeout !== null) {
+			window.clearTimeout(this.heartbeatTimeout);
+			this.heartbeatTimeout = null;
+		}
+	}
+
+	/**
+	 * 处理 Worker 心跳消息
+	 */
+	private handleWorkerHeartbeat(data: HeartbeatData): void {
+		this.lastKnownGameState = data.gameState;
+
+		// 只有在运行状态下才重置心跳定时器
+		if (this.workerState === WorkerState.Running) {
+			this.resetHeartbeatTimer();
+		}
+	}
+
+	/**
+	 * 处理 Worker 崩溃
+	 */
+	private handleWorkerCrashed(reason: string): void {
+		logWorkerError({
+			message: `Worker崩溃: ${reason}`,
+			type: "WorkerCrashed",
+			workerState: this.workerState,
+		});
+
+		this.transitionTo(WorkerState.Crashed, reason);
+
+		// 通知用户
+		FPMessage({
+			type: "error",
+			message: `游戏进程无响应 (${reason})，请尝试重新开始游戏`,
+		});
+
+		// 清理资源
+		this.terminateWorker();
+	}
+
+	// ==================== 初始化超时方法 ====================
+
+	/**
+	 * 启动初始化超时定时器
+	 */
+	private startInitTimeout(): void {
+		this.clearInitTimeout();
+
+		this.initTimeoutTimer = window.setTimeout(() => {
+			this.handleInitTimeout();
+		}, Room.INIT_TIMEOUT);
+	}
+
+	/**
+	 * 清除初始化超时定时器
+	 */
+	private clearInitTimeout(): void {
+		if (this.initTimeoutTimer !== null) {
+			window.clearTimeout(this.initTimeoutTimer);
+			this.initTimeoutTimer = null;
+		}
+	}
+
+	/**
+	 * 处理初始化超时
+	 */
+	private handleInitTimeout(): void {
+		logWorkerError({
+			message: `Worker初始化超时 (${Room.INIT_TIMEOUT}ms)`,
+			type: "InitTimeout",
+			workerState: this.workerState,
+		});
+
+		this.handleInitializationFailed("初始化超时");
+	}
+
+	// ==================== 初始化失败处理 ====================
+
+	/**
+	 * 处理初始化失败
+	 */
+	private handleInitializationFailed(reason?: string): void {
+		const failureReason = reason || "未知错误";
+
+		logWorkerError({
+			message: `Worker初始化失败: ${failureReason}`,
+			type: "InitFailed",
+			workerState: this.workerState,
+		});
+
+		this.transitionTo(WorkerState.Failed, failureReason);
+
+		// 清理资源
+		this.terminateWorker();
+
+		// 通知用户
+		FPMessage({
+			type: "error",
+			message: `游戏初始化失败: ${failureReason}`,
+		});
+
+		// 重置游戏状态
+		this.isStarted = false;
+		useLoading().hideLoading();
+	}
+
+	// ==================== Worker 终止方法 ====================
+
+	/**
+	 * 终止 Worker 并清理资源
+	 */
+	private terminateWorker(): void {
+		this.clearHeartbeatTimer();
+		this.clearInitTimeout();
+
+		if (this.gameProcessWorker) {
+			this.gameProcessWorker.terminate();
+			this.gameProcessWorker = null;
+		}
+
+		this.transitionTo(WorkerState.Terminated, "主动终止");
+	}
+
+	// ==================== Worker 消息处理器 ====================
+
+		/**
+		 * 处理 Worker 状态变化消息
+		 */
+		private handleWorkerStateChanged(data: WorkerStateChangedData): void {
+			const { previousState, currentState, reason } = data;
+			this.workerState = currentState;
+
+			logService.info({
+				category: ErrorCategory.WORKER,
+				type: "StateChangeReceived",
+				message: `收到Worker状态变化: ${previousState} -> ${currentState}`,
+				info: reason,
+			});
+
+			// 如果进入安全模式，记录原因
+			if (currentState === WorkerState.SafeMode && reason) {
+				this.safeModeReason = reason;
+			}
+
+			// 如果进入运行状态，启动心跳监控
+			if (currentState === WorkerState.Running) {
+				this.startHeartbeatMonitor();
+			}
+		}
+
+		/**
+		 * 处理组件验证错误消息
+		 */
+		private handleValidationError(errors: Array<{
+			componentType: string;
+			componentId: string;
+			componentName: string;
+			errorType: string;
+			errorMessage: string;
+		}>): void {
+			logErrorWithOptions({
+				category: ErrorCategory.COMPONENT_VALIDATION,
+				type: "ComponentValidationError",
+				message: `组件验证错误: ${errors.length} 个错误`,
+				extraInfo: { errors },
+			});
+
+			// 通知用户
+			const errorMessages = errors.map(e => `${e.componentName}: ${e.errorMessage}`).join("\n");
+			FPMessage({
+				type: "error",
+				message: `地图组件验证失败:\n${errorMessages}`,
+			});
+		}
+
+		/**
+		 * 处理详细错误消息
+		 */
+		private handleDetailedError(data: {
+			category: string;
+			type: string;
+			component?: string;
+			message: string;
+			technical?: {
+				message: string;
+				stack?: string;
+				mapInfo?: any;
+			};
+		}): void {
+			logErrorWithOptions({
+				category: ErrorCategory.WORKER,
+				type: data.type,
+				message: data.message,
+				stack: data.technical?.stack,
+				extraInfo: {
+					technical: data.technical,
+				},
+			});
+
+			// 通知用户
+			FPMessage({
+				type: "error",
+				message: `游戏错误: ${data.message}\n日志已记录，请查看日志面板`,
+			});
+		}
+
+		/**
+		 * 处理进入安全模式消息
+		 */
+		private handleEnterSafeMode(data: { reason?: string }): void {
+			const reason = data.reason || "未知原因";
+			this.transitionTo(WorkerState.SafeMode, reason);
+
+			logService.warn({
+				category: ErrorCategory.WORKER,
+				type: "EnterSafeMode",
+				message: `Worker进入安全模式: ${reason}`,
+			});
+
+			// 通知用户
+			FPMessage({
+				type: "warning",
+				message: `进程遇到错误: ${reason}`,
+			});
+		}
+
+		/**
+		 * 处理退出安全模式消息
+		 */
+		private handleExitSafeMode(): void {
+			this.transitionTo(WorkerState.Ready, "退出安全模式");
+			this.safeModeReason = "";
+
+			logService.info({
+				category: ErrorCategory.WORKER,
+				type: "ExitSafeMode",
+				message: "Worker退出安全模式",
+			});
+
+			// 通知用户
+			FPMessage({
+				type: "success",
+				message: "游戏已恢复正常模式",
+			});
+		}
+
+		/**
+		 * 处理从安全模式重试消息
+		 */
+		private handleRetryFromSafeMode(): void {
+			logService.info({
+				category: ErrorCategory.WORKER,
+				type: "RetryFromSafeMode",
+				message: "Worker从安全模式重试",
+			});
+
+			// 重试时先转换到 Ready 状态
+			this.transitionTo(WorkerState.Ready, "从安全模式重试");
+		}
+
+	// ==================== 安全模式相关方法 ====================
+
+	/**
+	 * 进入安全模式
+	 * @param reason 进入安全模式的原因
+	 * @param technicalDetails 技术细节（可选）
+	 */
+	public enterSafeMode(reason: string, technicalDetails?: Record<string, any>): void {
+		// 如果已经在安全模式，不再重复进入
+		if (this.workerState === WorkerState.SafeMode) {
+			logService.warn({
+				category: ErrorCategory.WORKER,
+				type: "AlreadyInSafeMode",
+				message: "尝试进入安全模式，但已在安全模式中",
+				info: reason,
+			});
+			return;
+		}
+
+		this.transitionTo(WorkerState.SafeMode, reason);
+
+		// 通知 Worker 进入安全模式
+		if (this.gameProcessWorker) {
+			this.gameProcessWorker.postMessage(<WorkerCommMsg>{
+				type: WorkerCommType.EnterSafeMode,
+				data: { reason },
+			});
+		}
+
+		// 记录详细错误
+			logWorkerError({
+				message: `进程遇到错误: ${reason}`,
+				type: "EnterSafeMode",
+				workerState: this.workerState,
+				extraInfo: technicalDetails,
+			});
+
+
+		// 向房主发送选项提示
+		this.notifySafeModeOptions(reason);
+	}
+
+	/**
+	 * 格式化用户友好的错误原因
+	 * @param reason 原始错误原因
+	 * @returns 用户友好的错误描述
+	 */
+	private formatUserFriendlyReason(reason: string): string {
+		const reasonMap: Record<string, string> = {
+			"地图验证失败": "地图数据存在问题，可能缺少必需组件或数据格式错误",
+			"组件初始化失败": "游戏组件加载失败，请检查地图配置",
+			"脚本执行错误": "游戏脚本运行时发生错误",
+			"心跳超时": "游戏进程无响应",
+			"初始化超时": "游戏启动超时",
+			"Worker崩溃": "游戏进程意外终止",
+		};
+
+		return reasonMap[reason] || reason;
+	}
+
+	/**
+	 * 判断是否可以从安全模式重试
+	 * @param reason 进入安全模式的原因
+	 * @returns 是否可以重试
+	 */
+	private canRetryFromSafeMode(reason: string): boolean {
+		// 以下情况允许重试
+		const retryableReasons = [
+			"地图验证失败",
+			"组件初始化失败",
+			"脚本执行错误",
+			"心跳超时",
+		];
+
+		return retryableReasons.some(r => reason.includes(r));
+	}
+
+	/**
+	 * 获取技术细节
+	 * @param error 错误对象
+	 * @returns 格式化的技术细节
+	 */
+	private getTechnicalDetails(error: any): Record<string, any> {
+		return {
+			message: error.message || "未知错误",
+			stack: error.stack,
+			component: error.component || "未知组件",
+			timestamp: new Date().toISOString(),
+			workerState: this.workerState,
+		};
+	}
+
+	/**
+	 * 向房主发送安全模式选项通知
+	 * @param reason 进入安全模式的原因
+	 */
+	private notifySafeModeOptions(reason: string): void {
+		const owner = this.userList.get(this.ownerId);
+		if (!owner) return;
+
+		const canRetry = this.canRetryFromSafeMode(reason);
+		const userFriendlyReason = this.formatUserFriendlyReason(reason);
+
+		this.sendToClient(owner.socketClient, SocketMsgType.ConfirmDialog, {
+			playerId: this.ownerId,
+			option: {
+				title: "进程遇到错误",
+				content: `<color:red>${userFriendlyReason}</color>\n\n请房主选择处理方式：`,
+				confirmText: canRetry ? "重试" : "放弃游戏",
+				cancelText: canRetry ? "放弃游戏" : undefined,
+			},
+		});
+
+		// 监听房主选择
+		this.operationListener.onceAsync(this.ownerId, OperateType.ConfirmDialogResult)
+			.then((result) => {
+				logService.info({
+					category: ErrorCategory.WORKER,
+					type: "SafeModeUserChoice",
+					message: `房主选择: confirm=${result.confirm}, canRetry=${canRetry}`,
+				});
+				if (result.confirm && canRetry) {
+					this.retryFromSafeMode();
+				} else {
+					this.abandonGame();
+				}
+			});
+	}
+
+	/**
+	 * 房主从安全模式重试
+	 */
+	public retryFromSafeMode(): void {
+		if (this.workerState !== WorkerState.SafeMode) {
+			logService.warn({
+				category: ErrorCategory.WORKER,
+				type: "RetryNotInSafeMode",
+				message: "尝试从安全模式重试，但当前不在安全模式",
+			});
+			return;
+		}
+
+		logService.info({
+			category: ErrorCategory.WORKER,
+			type: "RetryFromSafeMode",
+			message: "房主选择从安全模式重试",
+		});
+
+		// 通知 Worker 重试
+		if (this.gameProcessWorker) {
+			this.gameProcessWorker.postMessage(<WorkerCommMsg>{
+				type: WorkerCommType.RetryFromSafeMode,
+				data: undefined,
+			});
+		} else {
+			// Worker 已不存在，需要重新初始化
+			this.startGameInternal();
+		}
+
+		// 转换到 Ready 状态
+		this.transitionTo(WorkerState.Ready, "从安全模式重试");
+
+		// 通知所有玩家
+		this.roomBroadcast({
+			type: SocketMsgType.MsgNotify,
+			source: SocketMsgSource.Server,
+			data: undefined,
+			msg: { type: "info", content: "房主正在重试启动游戏..." },
+		});
+	}
+
+	/**
+	 * 房主放弃游戏
+	 */
+	public abandonGame(): void {
+		logService.info({
+			category: ErrorCategory.WORKER,
+			type: "AbandonGame",
+			message: "房主放弃游戏",
+		});
+
+		// 终止 Worker
+		this.terminateWorker();
+
+		// 重置游戏状态
+		this.isStarted = false;
+		this.transitionTo(WorkerState.Terminated, "房主放弃游戏");
+
+		// 通知所有玩家
+		this.roomBroadcast({
+			type: SocketMsgType.MsgNotify,
+			source: SocketMsgSource.Server,
+			data: undefined,
+			msg: { type: "warning", content: "房主放弃了当前游戏" },
+		});
+
+		// 通知所有玩家游戏结束
+		this.roomBroadcast({
+			type: SocketMsgType.GameOver,
+			source: SocketMsgSource.Server,
+			data: undefined,
+		});
+
+		// 重置所有玩家准备状态
+		Array.from(this.userList.values()).forEach((u) => {
+			u.isReady = false;
+		});
+		this.roomInfoBroadcast();
+	}
+
+	/**
+	 * 内部启动游戏方法（用于重试）
+	 */
+	private startGameInternal(): void {
+		if (this.gameProcessWorker) {
+			this.gameProcessWorker.terminate();
+			this.gameProcessWorker = null;
+		}
+
+		this.transitionTo(WorkerState.Initializing, "重新初始化游戏进程");
+
+		// 启动初始化超时定时器
+		this.startInitTimeout();
+
+		// 创建新的 Worker
+		this.gameProcessWorker = new GameProcessWorker();
+
+		// 设置消息处理器
+		this.setupWorkerMessageHandler();
+
+		// 监听 Worker 错误事件
+		this.gameProcessWorker.addEventListener("error", (event) => {
+			console.error("[Worker Error Event]:", event);
+			this.enterSafeMode("Worker初始化失败", {
+				message: event.message || "Unknown Worker Error",
+			});
+		});
+	}
+
+	/**
+	 * 设置 Worker 消息处理器
+	 */
+	private setupWorkerMessageHandler(): void {
+		if (!this.gameProcessWorker) return;
+
+		this.gameProcessWorker.addEventListener("message", (ev) => {
+			// 处理 Worker 内部错误消息
+			const rawData = ev.data as any;
+			if (rawData?.type === "worker-error") {
+				this.handleWorkerErrorInternal(rawData.data);
+				return;
+			}
+
+			const msg: WorkerCommMsg = ev.data;
+			switch (msg.type) {
+				case WorkerCommType.WorkerReady:
+					this.handleWorkerReadyInternal();
+					break;
+				case WorkerCommType.SendToUsers:
+					this.handleSendToUsersInternal(msg.data);
+					break;
+				case WorkerCommType.GameStart:
+					// 游戏开始，不做特殊处理
+					break;
+				case WorkerCommType.GameOver:
+					this.handleGameOver();
+					break;
+				case WorkerCommType.GameProcessReady:
+					this.handleGameProcessReady();
+					break;
+				case WorkerCommType.WorkerStateChanged:
+					this.handleWorkerStateChanged(msg.data);
+					break;
+				case WorkerCommType.WorkerHeartbeat:
+					this.handleWorkerHeartbeat(msg.data);
+					break;
+				case WorkerCommType.ValidationError:
+					this.handleValidationError(msg.data);
+					break;
+				case WorkerCommType.DetailedError:
+					this.handleDetailedError(msg.data);
+					break;
+				case WorkerCommType.EnterSafeMode:
+					this.handleEnterSafeMode(msg.data);
+					break;
+				case WorkerCommType.ExitSafeMode:
+					this.handleExitSafeMode();
+					break;
+				case WorkerCommType.RetryFromSafeMode:
+					this.handleRetryFromSafeMode();
+					break;
+				default:
+					console.warn("[Room] Unknown Worker message type:", msg.type);
+			}
+		});
+	}
+
+	/**
+	 * 处理 Worker 内部错误
+	 */
+	private handleWorkerErrorInternal(errorData: {
+		type: string;
+		message: string;
+		stack?: string;
+		info?: string;
+		timestamp?: string;
+		additionalData?: Record<string, any>;
+	}): void {
+		console.error("[GameProcess Worker Error]:", errorData);
+
+			logWorkerError({
+				message: errorData.message,
+				type: errorData.type,
+				error: errorData.stack ? { message: errorData.message, stack: errorData.stack } as Error : undefined,
+				workerState: this.workerState,
+				extraInfo: { info: errorData.info },
+			});
+
+		// 进入安全模式
+		this.enterSafeMode(errorData.message, {
+			type: errorData.type,
+			stack: errorData.stack,
+			info: errorData.info,
+		});
+	}
+
+	/**
+	 * 内部处理 Worker 就绪消息
+	 */
+	private async handleWorkerReadyInternal(): Promise<void> {
+		if (!this.mapInfo || !this.gameProcessWorker) return;
+
+		useLoading().showLoading("正在获取地图信息...");
+
+		const mapData = JSON.parse(
+			JSON.stringify(useMapData().$state, (key, value) => {
+				if (value === Infinity) return "Infinity";
+				if (value === -Infinity) return "-Infinity";
+				return value;
+			}),
+		);
+
+		useLoading().showLoading("正在加载地图...");
+
+		this.gameProcessWorker.postMessage(<WorkerCommMsg>{
+			type: WorkerCommType.LoadGameInfo,
+			data: {
+				setting: this.gameSetting,
+				mapInfo: mapData,
+				userList: Array.from(this.userList.values()).map((u) => {
+					const { socketClient, ...userInfo } = u;
+					return userInfo;
+				}),
+				roomOwnerId: this.ownerId,
+				saveData: this.pendingSaveData ?? undefined,
+			},
+		});
+
+		this.pendingSaveData = null;
+
+		// 订阅设备状态
+		const deviceStatusStore = useDeviceStatus();
+		deviceStatusStore.$subscribe((mutation, state) => {
+			if (this.gameProcessWorker)
+				this.gameProcessWorker.postMessage(<WorkerCommMsg>{
+					type: WorkerCommType.EmitOperation,
+					data: {
+						userId: this.ownerId,
+						operateType: state.isFocus ? OperateType.ResumeGame : OperateType.PauseGame,
+					},
+				});
+		});
+	}
+
+	/**
+	 * 内部处理发送消息给用户
+	 */
+	private handleSendToUsersInternal(data: {
+		userIdList: string[];
+		data: ServerSocketMessage;
+	}): void {
+		for (const userId of data.userIdList) {
+			const user = this.userList.get(userId);
+			if (user) {
+				this.sendToClient(user.socketClient, data.data.type, data.data.data, data.data.msg);
+			}
+		}
+	}
+
+	/**
+	 * 处理 GameProcessReady 消息
+	 */
+	private handleGameProcessReady(): void {
+		console.log("GameProcess已就绪");
+
+		// 清除初始化超时定时器
+		this.clearInitTimeout();
+
+		// 转换到 Running 状态
+		this.transitionTo(WorkerState.Running, "游戏进程就绪");
+
+		// 隐藏加载状态
+		useLoading().hideLoading();
+
+		// 启动心跳监控
+		this.startHeartbeatMonitor();
+
+		logService.info({
+			category: ErrorCategory.WORKER,
+			type: "GameProcessReady",
+			message: "游戏进程就绪，游戏开始",
+		});
 	}
 }
