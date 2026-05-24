@@ -3,6 +3,7 @@ import { useChat, useGameLog, useLoading, useRoomInfo, useUserInfo, useUtil } fr
 import { useGameData } from "@src/store/game";
 import { emitHostPeerId, joinRoomApi } from "@src/utils/api/room-router";
 import { PeerClient } from "./PeerClient";
+import { ReconnectionManager } from "./ReconnectionManager";
 import { DataConnection } from "peerjs";
 import {
 	RoomMapInfo,
@@ -47,6 +48,8 @@ export class MonopolyClient {
 	private intervalList: any[] = [];
 	private handleNoHeartTimer: ReturnType<typeof debounce> | null = null;
 	private heartBeatPaused = false;
+	private reconnectionManager: ReconnectionManager | null = null;
+	private currentHostPeerId: string | null = null; // 保存当前主机 PeerId 用于重连
 
 	public static getInstance(): MonopolyClient;
 	public static getInstance(options: MonopolyClientOptions): Promise<MonopolyClient>;
@@ -116,11 +119,20 @@ export class MonopolyClient {
 
 	private async linkToGameHost(hostPeerId: string) {
 		try {
+			// 保存主机 PeerId 用于重连
+			this.currentHostPeerId = hostPeerId;
+
 			// 清理旧的连接和事件监听器
 			if (this.conn) {
 				this.conn.removeAllListeners();
 				this.conn.close();
 				this.conn = null;
+			}
+
+			// 停止旧的重连管理器
+			if (this.reconnectionManager) {
+				this.reconnectionManager.destroy();
+				this.reconnectionManager = null;
 			}
 
 			// 清理所有定时器
@@ -188,26 +200,14 @@ export class MonopolyClient {
 			this.conn.on("close", () => {
 				if (this.isOnline) {
 					this.isOnline = false;
-					FPMessage({
-						type: "error",
-						message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
-						onClosed: () => {
-							this.handleDisconnect();
-						},
-					});
+					this.startReconnection();
 				}
 			});
 
 			this.conn.on("error", (err) => {
 				if (this.isOnline && err.type === "not-open-yet") {
 					this.isOnline = false;
-					FPMessage({
-						type: "error",
-						message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
-						onClosed: () => {
-							this.handleDisconnect();
-						},
-					});
+					this.startReconnection();
 				}
 			});
 		} catch (e: any) {
@@ -219,6 +219,110 @@ export class MonopolyClient {
 		}
 	}
 
+	/**
+	 * 启动自动重连
+	 */
+	private startReconnection() {
+		// 如果没有主机 PeerId，无法重连
+		if (!this.currentHostPeerId) {
+			this.handleDisconnect();
+			return;
+		}
+
+		// 停止心跳
+		this.pauseHeartBeat();
+
+		// 创建重连管理器
+		this.reconnectionManager = new ReconnectionManager(
+			async () => {
+				// 重连函数：尝试重新连接主机
+				await this.performReconnect();
+			},
+			{
+				retryInterval: 3000,
+				maxRetries: Number.POSITIVE_INFINITY, // 无限重试
+				showCountdown: true,
+				onRetry: (attempt, maxRetries) => {
+					console.log(`[MonopolyClient] 重连尝试 ${attempt}/${maxRetries === Number.POSITIVE_INFINITY ? '∞' : maxRetries}`);
+				},
+				onSuccess: () => {
+					console.log('[MonopolyClient] 重连成功');
+					// isOnline 状态已由 ReconnectionManager 管理
+					this.resumeHeartBeat();
+				},
+				onFail: (error) => {
+					console.error('[MonopolyClient] 重连失败:', error);
+					FPMessage({
+						type: "error",
+						message: `重连失败: ${error.message}`,
+						onClosed: () => {
+							this.handleDisconnect();
+						},
+					});
+				},
+				onCancel: () => {
+					console.log('[MonopolyClient] 用户取消重连');
+					this.handleDisconnect();
+				}
+			}
+		);
+
+		// 开始重连
+		this.reconnectionManager.start();
+	}
+
+	/**
+	 * 执行重连操作
+	 */
+	private async performReconnect(): Promise<void> {
+		if (!this.currentHostPeerId) {
+			throw new Error('无法重连：主机 PeerId 丢失');
+		}
+
+		// 清理旧连接
+		if (this.conn) {
+			this.conn.removeAllListeners();
+			this.conn.close();
+			this.conn = null;
+		}
+
+		// 使用现有的 peerClient 重新连接
+		if (!this.peerClient) {
+			throw new Error('无法重连：PeerClient 不存在');
+		}
+
+		const { conn } = await this.peerClient.linkToHost(this.currentHostPeerId);
+		this.conn = conn;
+
+		// 重新发送加入房间消息
+		const { userId, username, color, avatar } = useUserInfo();
+		const user: User = {
+			userId,
+			username,
+			color,
+			avatar,
+			isReady: useRoomInfo().isReady, // 恢复准备状态
+		};
+		this.sendMsg({ type: SocketMsgType.JoinRoom, source: SocketMsgSource.Client, data: user });
+	}
+
+	/**
+	 * 取消重连
+	 */
+	public cancelReconnection(): void {
+		if (this.reconnectionManager) {
+			this.reconnectionManager.cancel();
+			this.reconnectionManager = null;
+		}
+	}
+
+	/**
+	 * 是否正在重连
+	 */
+	public isReconnecting(): boolean {
+		return this.reconnectionManager?.isReconnecting() ?? false;
+	}
+
 	public handleHeartReply() {
 		useUtil().ping = Math.round((Date.now() - this.sendHeartTime) / 2);
 		this.handleNoHeartTimer?.fn();
@@ -227,13 +331,7 @@ export class MonopolyClient {
 	private handleNoHeart = debounce(
 		() => {
 			this.isOnline = false;
-			FPMessage({
-				type: "error",
-				message: "与主机断开连接, 即将返回主页, 输入id进入房间即可重新连接",
-				onClosed: () => {
-					this.handleDisconnect();
-				},
-			});
+			this.startReconnection();
 		},
 		5000,
 		true,
@@ -415,30 +513,36 @@ export class MonopolyClient {
 		// 1. 防止竞态条件，先设置离线状态
 		this.isOnline = false;
 
-		// 2. 清理所有心跳定时器
+		// 2. 清理重连管理器
+		if (this.reconnectionManager) {
+			this.reconnectionManager.destroy();
+			this.reconnectionManager = null;
+		}
+
+		// 3. 清理所有心跳定时器
 		this.intervalList.forEach((timer) => clearInterval(timer));
 		this.intervalList = [];
 
-		// 3. 取消心跳超时的 debounce 定时器
+		// 4. 取消心跳超时的 debounce 定时器
 		if (this.handleNoHeartTimer) {
 			this.handleNoHeartTimer.cancel();
 			this.handleNoHeartTimer = null;
 		}
 
-		// 4. 移除连接事件监听器并关闭连接
+		// 5. 移除连接事件监听器并关闭连接
 		if (this.conn) {
 			this.conn.removeAllListeners();
 			this.conn.close();
 			this.conn = null;
 		}
 
-		// 5. 销毁 Peer 客户端
+		// 6. 销毁 Peer 客户端
 		if (this.peerClient) {
 			this.peerClient.destory();
 			this.peerClient = null;
 		}
 
-		// 6. 清理游戏主机（如果存在）
+		// 7. 清理游戏主机（如果存在）
 		if (this.gameHost) {
 			this.gameHost.destory();
 			this.gameHost = null;
