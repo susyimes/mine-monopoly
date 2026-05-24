@@ -31,12 +31,18 @@ export class GamePhase implements IGamePhase<GameContext> {
 		this.eventKey = eventKey;
 		const fullTypes = extraLibs ? `${GameProcessTypes}\n${extraLibs}` : GameProcessTypes;
 		const codeCompiled = compileTsToJs(this.initEventCode, fullTypes);
-		const gameEventGenerator = new Function(codeCompiled);
-		const gameEvent: GameEvent<GameContext> = {
-			fn: gameEventGenerator(),
-			key: eventKey,
-		};
-		this.eventQueue.push(gameEvent);
+		try {
+			const gameEventGenerator = new Function(codeCompiled);
+			const gameEvent: GameEvent<GameContext> = {
+				fn: gameEventGenerator(),
+				key: eventKey,
+			};
+			this.eventQueue.push(gameEvent);
+		} catch (e: any) {
+			const error = new Error(`游戏阶段代码编译失败 (${this.name}): ${e.message}`);
+			error.stack = e.stack;
+			throw error;
+		}
 	}
 
 	use(tiggerTime: ModifierTiming, gameEventFn: GameEventFunction<GameContext>, key?: string): void {

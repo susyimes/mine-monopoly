@@ -120,8 +120,14 @@ export class Player implements IPlayer {
 		this.initCommandBus();
 
 		const fullTypes = extraLibs ? `${GameProcessTypes}\n${extraLibs}` : GameProcessTypes;
-		const codeCompiled = compileTsToJs(role.initCode, fullTypes);
-		this.roleInitFunction = new Function(codeCompiled)();
+		try {
+			const codeCompiled = compileTsToJs(role.initCode, fullTypes);
+			this.roleInitFunction = new Function(codeCompiled)();
+		} catch (e: any) {
+			const error = new Error(`角色代码编译失败 (${role.name}): ${e.message}`);
+			error.stack = e.stack;
+			throw error;
+		}
 	}
 
 	public getInitRoleFunction() {

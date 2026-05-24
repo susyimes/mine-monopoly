@@ -57,8 +57,14 @@ export class Property implements IProperty {
 
 		if (property.custom) {
 			const fullTypes = extraLibs ? `${GameProcessTypes}\n${extraLibs}` : GameProcessTypes;
-			const codeCompiled = compileTsToJs(property.custom.effectCode, fullTypes);
-			this.customPropertyInitFunction = new Function(codeCompiled)();
+			try {
+				const codeCompiled = compileTsToJs(property.custom.effectCode, fullTypes);
+				this.customPropertyInitFunction = new Function(codeCompiled)();
+			} catch (e: any) {
+				const error = new Error(`地皮自定义代码编译失败 (${property.name}): ${e.message}`);
+				error.stack = e.stack;
+				throw error;
+			}
 		}
 	}
 
