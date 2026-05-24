@@ -1,5 +1,6 @@
 @use '@mine-monopoly/style/variables' as fp;
 @use './variables' as *; // 导入 mixins
+@use 'sass:color';
 
 %form-control {
   @include felt-cutout;
@@ -60,7 +61,7 @@ input[type="submit"] {
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
   margin-bottom: 0.25rem;
-  border-radius: inherit;
+  border-radius: 0.6rem; // 默认圆角，与 ::after 的 border-radius 一致
   // 阴影颜色基于 --btn-bg 变量自适应
   box-shadow:
     0 0.25rem 0 color-mix(in srgb, var(--btn-bg), black 20%),
@@ -137,6 +138,30 @@ input[type="submit"] {
     }
   }
 }
+
+// 预设按钮颜色类
+// 使用 mixin 生成，只需定义颜色和 hover/active 变暗比例
+@mixin btn-color($name, $color, $hover-darken: 10%, $active-darken: 15%) {
+  .btn-#{$name} {
+    --btn-bg: #{$color};
+
+    &:hover {
+      --btn-bg: #{color.adjust($color, $lightness: -$hover-darken)};
+    }
+    &:active {
+      --btn-bg: #{color.adjust($color, $lightness: -$active-darken)};
+    }
+  }
+}
+
+@include btn-color('purple', #6c5ce7);
+@include btn-color('red', #e74c3c);
+@include btn-color('green', #10b981);
+@include btn-color('blue', #3498db);
+@include btn-color('yellow', #f1c40f);
+@include btn-color('gray', #95a5a6);
+@include btn-color('dark', #34495e);
+@include btn-color('danger', #ff4d4f, 5%, 0%);
 
 // 毛毡卡片容器
 .felt-card {

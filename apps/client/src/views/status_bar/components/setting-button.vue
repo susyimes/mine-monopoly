@@ -423,7 +423,7 @@
 				<div class="setting-item">
 					<div class="label">开发者</div>
 					<div class="content">
-						<button @click="openInspector" class="dev-button">打开 GameProcess Inspector</button>
+						<button @click="openInspector" class="btn-purple">打开 GameProcess Inspector</button>
 					</div>
 				</div>
 
@@ -431,7 +431,7 @@
 				<div class="setting-item" v-if="route.name === 'game'">
 					<div class="label">游戏</div>
 					<div class="content">
-						<button @click="handleExitGame" class="exit-button">
+						<button @click="handleExitGame" class="btn-red">
 							<FontAwesomeIcon icon="right-from-bracket" style="margin-right: 0.3rem" />
 							退出游戏
 						</button>
@@ -669,41 +669,11 @@
 				}
 			}
 		}
-	}
-	.dev-button {
-		width: 100%;
-		--btn-bg: #6c5ce7; // 使用 --btn-bg 变量让阴影颜色自适应
-		background: var(--btn-bg);
-		color: white;
-		border: none;
-		border-radius: 0.5rem;
-		padding: 0.6rem;
-		font-size: 0.9rem;
-		cursor: pointer;
-		transition: all 0.3s;
-	}
-	.dev-button:hover {
-		opacity: 0.85;
-		transform: translateY(-2px);
-	}
 
-	.exit-button {
-		width: 100%;
-		--btn-bg: #e74c3c;
-		background: var(--btn-bg);
-		color: white;
-		border: none;
-		border-radius: 0.5rem;
-		padding: 0.6rem;
-		font-size: 0.9rem;
-		cursor: pointer;
-		transition: all 0.3s;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	.exit-button:hover {
-		opacity: 0.85;
-		transform: translateY(-2px);
+		// 设置面板中的按钮字体大小
+		.content .btn-purple,
+		.content .btn-red {
+			font-size: 0.9rem;
+		}
 	}
 </style>

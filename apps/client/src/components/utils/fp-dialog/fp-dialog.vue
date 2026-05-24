@@ -68,8 +68,8 @@ function closeDialog() {
 					</div>
 
 					<div class="fp-dialog-footer" v-if="!hiddenFooter">
-						<button v-if="cancelText" class="btn-cancel" @click="closeDialog">{{ cancelText }}</button>
-						<button class="btn-confirm" :disabled="submitDisable" @click="handleSubmit">{{ confirmText }}</button>
+						<button v-if="cancelText" class="btn-gray" @click="closeDialog">{{ cancelText }}</button>
+						<button :disabled="submitDisable" @click="handleSubmit">{{ confirmText }}</button>
 					</div>
 				</div>
 			</div>
@@ -170,31 +170,6 @@ function closeDialog() {
 			border: none;
 			transition: filter 0.2s;
 
-			&.btn-confirm {
-				background-color: var(--fp-color-tertiary);
-				color: white;
-
-				&:disabled {
-					opacity: 0.5;
-					cursor: not-allowed;
-				}
-
-				&:not(:disabled):hover {
-					filter: brightness(0.9);
-				}
-			}
-
-			&.btn-cancel {
-				border: 1px solid #b0b1b3;
-				background-color: #ffffff;
-				color: var(--fp-color-tertiary);
-				border-color: var(--fp-color-tertiary);
-				text-shadow: none;
-
-				&:hover {
-					filter: brightness(0.95);
-				}
-			}
 		}
 	}
 }

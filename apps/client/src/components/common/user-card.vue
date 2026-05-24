@@ -47,6 +47,7 @@ const avatarSrc = computed(() => {
 		min-height: $icon-size;
 		line-height: $icon-size;
 		text-align: center;
+		background-color: rgba(255, 255, 255, 0.5);
 		border: 0.3rem solid #ffffff;
 		border-radius: 50%;
 		font-size: 2.5rem;

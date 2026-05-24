@@ -120,7 +120,7 @@ watch(
 
 					<!-- 错误详情（可折叠） -->
 					<div v-if="safeModeData.errorDetails" class="error-details-section">
-						<button class="details-toggle" @click="showDetails = !showDetails">
+						<button class="btn-gray btn-small details-toggle" @click="showDetails = !showDetails">
 							<span>{{ showDetails ? "隐藏" : "显示" }}错误详情</span>
 							<FontAwesomeIcon :icon="showDetails ? 'fa-angle-up' : 'fa-angle-down'" />
 						</button>
@@ -146,7 +146,7 @@ watch(
 					<div class="action-buttons">
 						<!-- 非房主玩家只能关闭面板 -->
 						<template v-if="!isRoomOwner">
-							<button class="btn-close" @click="handleClose">
+							<button class="btn-gray" @click="handleClose">
 								关闭
 							</button>
 							<p class="waiting-text">等待房主处理...</p>
@@ -155,11 +155,11 @@ watch(
 						<!-- 房主可以选择存档退出或放弃 -->
 						<template v-else>
 							<!-- 只有游戏有进度时才显示存档并退出按钮 -->
-							<button v-if="safeModeData.canSave" class="btn-save-exit" @click="handleSaveAndExit">
+							<button v-if="safeModeData.canSave" class="btn-green" @click="handleSaveAndExit">
 								<FontAwesomeIcon icon="fa-floppy-disk" />
 								<span>存档并退出</span>
 							</button>
-							<button class="btn-abort" @click="handleAbort">
+							<button class="btn-red" @click="handleAbort">
 								<FontAwesomeIcon :icon="safeModeData.canSave ? 'fa-right-from-bracket' : 'fa-house'" />
 								<span>{{ safeModeData.canSave ? '放弃游戏' : '返回房间' }}</span>
 							</button>
@@ -254,18 +254,7 @@ watch(
 	justify-content: center;
 	gap: 0.5rem;
 	width: 100%;
-	padding: 0.5rem 1rem;
-	background-color: #f3f4f6;
-	border: 1px solid #e5e7eb;
-	border-radius: 0.5rem;
 	font-size: 0.875rem;
-	color: #4b5563;
-	cursor: pointer;
-	transition: all 0.2s;
-
-	&:hover {
-		background-color: #e5e7eb;
-	}
 }
 
 .error-details {
@@ -336,34 +325,6 @@ button {
 	}
 }
 
-.btn-save-exit {
-	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-	color: #ffffff;
-
-	&:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
-	}
-}
-
-.btn-abort {
-	background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-	color: #ffffff;
-
-	&:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-	}
-}
-
-.btn-close {
-	background-color: #6b7280;
-	color: #ffffff;
-
-	&:hover {
-		background-color: #4b5563;
-	}
-}
 
 /* 过渡动画 */
 .fade-enter-active,

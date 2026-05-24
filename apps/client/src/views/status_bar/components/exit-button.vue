@@ -44,24 +44,17 @@ async function handleExitGame() {
 </script>
 
 <template>
-	<button v-if="visible" @click="handleExitGame" class="exit-button btn-small" title="退出游戏">
+	<button v-if="visible" @click="handleExitGame" class="btn-red btn-small exit-btn" title="退出游戏">
 		<FontAwesomeIcon icon="right-from-bracket" />
 	</button>
 </template>
 
 <style lang="scss" scoped>
-.exit-button {
+.exit-btn {
 	height: 2.5rem;
 	width: 2.5rem;
-	border-radius: 0.5rem;
-	font-size: 1.1rem;
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	gap: 0.4rem;
-	--btn-bg: #e74c3c; // 红色背景，box-shadow 自动适配
-	background-color: var(--btn-bg);
-	color: #ffffff;
-	// box-shadow 已在 ui.scss 中基于 --btn-bg 自适应
 }
 </style>

@@ -114,7 +114,6 @@ const handleDialogClose = () => {
 
 <style lang="scss" scoped>
 .message-content {
-	padding: 10px 0 20px 0;
 	font-size: 1rem;
 	color: var(--fp-color-text-regular, #333);
 	line-height: 1.5;

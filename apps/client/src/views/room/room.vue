@@ -378,7 +378,7 @@
 								读取
 							</button>
 							<button
-								class="btn-small save-delete-btn"
+								class="btn-small btn-red"
 								@click="handleDeleteSave(record)"
 							>
 								<FontAwesomeIcon style="font-size: 0.8rem; margin-right: 0.25rem" icon="trash-can" />
@@ -761,14 +761,6 @@
 					align-items: center;
 				}
 
-				.save-delete-btn {
-					--btn-bg: #e74c3c; // 红色背景，box-shadow 自动适配
-					background-color: var(--btn-bg);
-					color: white;
-					display: flex;
-					justify-content: center;
-					align-items: center;
-				}
 			}
 		}
 	}

@@ -81,7 +81,6 @@ defineExpose({ open, close });
 
 <style lang="scss" scoped>
 .message-content {
-	padding: 10px 0 20px 0;
 	font-size: 1rem;
 	color: #333;
 	line-height: 1.5;

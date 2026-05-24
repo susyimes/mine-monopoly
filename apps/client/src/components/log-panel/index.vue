@@ -524,17 +524,6 @@ function toggleExpand(logId: string) {
 	display: flex;
 	gap: 0.5rem;
 	justify-content: flex-end;
-
-	.btn-danger {
-		--btn-bg: #ff4d4f;
-		background-color: #ff4d4f;
-		color: white;
-		border: none;
-
-		&:hover {
-			background-color: #ff7875;
-		}
-	}
 }
 
 .log-list {
