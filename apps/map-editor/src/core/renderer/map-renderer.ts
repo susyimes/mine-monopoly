@@ -319,6 +319,10 @@ export class MapRenderer {
 
 		console.log('[渲染器初始化] 批量操作事件监听器已设置完成');
 
+		eventBus.on("change-model", async (modelId: string) => {
+			await this.handleModelChanged(modelId);
+		});
+
 		this.initMouseListener();
 		this.initKeyBoardListener();
 	}
@@ -1082,6 +1086,59 @@ export class MapRenderer {
 		if (mapItem && object) {
 			this.setItemPositionOnMap(object, mapItem.x, mapItem.y, mapItem.rotation);
 		}
+	}
+
+	private async handleModelChanged(modelId: string) {
+		console.log('[渲染器] 检测到模型变化:', modelId);
+
+		// 1. 清除受影响的物块类型缓存
+		const affectedItemTypes: string[] = [];
+		this.itemTypesCache.forEach((value, key) => {
+			if (value.modelId === modelId) {
+				this.itemTypesCache.delete(key);
+				affectedItemTypes.push(key);
+			}
+		});
+
+		// 2. 重新渲染使用该模型的 MapItem
+		const mapDataStore = useMapDataStore();
+		const affectedMapItems = mapDataStore.mapItems.filter(
+			item => item.type.modelId === modelId
+		);
+
+		console.log('[渲染器] 重新渲染', affectedMapItems.length, '个受影响的 MapItem');
+
+		for (const mapItem of affectedMapItems) {
+			await this.rerenderMapItem(mapItem.id);
+		}
+
+		// 3. 如果当前预览框正在显示该模型，更新预览框
+		const currentItemTypeId = useEditorStore().currentMapItemTypeId;
+		if (currentItemTypeId) {
+			const currentItemType = mapDataStore.findMapItemTypeById(currentItemTypeId);
+			if (currentItemType && currentItemType.modelId === modelId) {
+				await this.updatePreviewBox(currentItemTypeId);
+			}
+		}
+	}
+
+	private async rerenderMapItem(mapItemId: string) {
+		// 1. 从场景中移除旧的模型
+		const oldObject = this.mapItemsInScene.get(mapItemId);
+		if (oldObject) {
+			this.mapItemGroup.remove(oldObject);
+			this.mapItemsInScene.delete(mapItemId);
+		}
+
+		// 2. 从 mapDataStore 获取最新的 MapItem 数据
+		const mapItem = useMapDataStore().findMapItemById(mapItemId);
+		if (!mapItem) {
+			console.warn('[渲染器] 找不到 MapItem:', mapItemId);
+			return;
+		}
+
+		// 3. 重新渲染该 MapItem
+		await this.renderMapItemToMap(mapItem);
 	}
 
 	private async handleBatchMoveMapItems(ids: string[], deltaX: number, deltaY: number) {

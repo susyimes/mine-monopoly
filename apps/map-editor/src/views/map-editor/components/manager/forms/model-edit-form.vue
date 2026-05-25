@@ -8,6 +8,7 @@ import TransformPanel from "./TransformPanel.vue";
 import { bakeModelTransform } from "@src/utils/file/model-bake";
 import { reactive, ref, watch } from "vue";
 import { useResourceStore } from "@src/stores";
+import { eventBus } from "@src/utils/event-bus";
 import { message } from "ant-design-vue";
 import { generateShortId } from "@src/utils/short-id";
 
@@ -88,6 +89,7 @@ async function handleConfirm() {
         fileType: oldModel.fileType,
         url: oldModel.url,
       });
+      eventBus.emit("change-model", props.editModelId);
       message.success(`编辑模型 "${formState.name}" 成功`, 1);
     } else {
       const sourcePath = formState.tempFilePath;
