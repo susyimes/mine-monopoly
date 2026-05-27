@@ -175,6 +175,18 @@ export function evalExpression(context: any, expression: string): any {
 	const exprStr = expression.trim();
 	if (!exprStr) return undefined;
 
+	// CSS 值快速检测：匹配常见的纯 CSS 值模式，避免将纯 CSS 值当作表达式解析
+	// 例如: 0.85rem, 100px, 50%, 1.5s, auto, #fff, rgb(0,0,0)
+	// 检测1: CSS 关键字
+	if (/^(auto|inherit|none|transparent)$/.test(exprStr)) return exprStr;
+	// 检测2: 颜色值 (#fff, #ffffff)
+	if (/^#[0-9a-fA-F]{3,8}$/.test(exprStr)) return exprStr;
+	// 检测3: rgb/rgba/hsl/hsla 颜色
+	if (/^rgba?\([^)]+\)$/.test(exprStr)) return exprStr;
+	if (/^hsla?\([^)]+\)$/.test(exprStr)) return exprStr;
+	// 检测4: 带单位的数值 (0.85rem, 100px, 50%, 1.5s, etc.)
+	if (/^-?\d*\.?\d+(px|em|rem|vw|vh|%|cm|mm|in|pt|pc|ch|ex|vmin|vmax|s|ms|deg|rad|grad|turn|fr)?$/.test(exprStr)) return exprStr;
+
 	// 1. 尝试从缓存获取 AST
 	let ast = astCache.get(exprStr);
 
