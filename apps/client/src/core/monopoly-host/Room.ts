@@ -665,7 +665,12 @@ export class Room {
 	}
 
 	public destory() {
-		this.gameProcessWorker && this.gameProcessWorker.terminate();
+		this.clearHeartbeatTimer();
+		this.clearInitTimeout();
+		if (this.gameProcessWorker) {
+			this.gameProcessWorker.terminate();
+			this.gameProcessWorker = null;
+		}
 	}
 
 	// ==================== 状态管理方法 ====================
