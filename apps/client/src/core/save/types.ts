@@ -10,7 +10,6 @@ export interface PlayerSnapshot {
 	isBankrupted: boolean;
 	isOffline: boolean;
 	isAI: boolean;
-	exportData: Record<string, any>;
 	dices: DiceInfo[];
 	chanceCards: { instanceId: string; sourceId: string }[];
 	buffs: Buff[];
@@ -23,8 +22,9 @@ export interface PlayerSnapshot {
 export interface PropertySnapshot {
 	level: number;
 	ownerId: string | undefined;
-	exportData: Record<string, any>;
 	modifiers: ModifierSnapshot[];
+	/** 自定义地图脚本可能挂载到 Property 上的额外数据属性 */
+	[key: string]: unknown;
 }
 
 /** 单次游戏快照 */

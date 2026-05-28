@@ -30,6 +30,7 @@ import { clone } from "lodash";
 
 import type { PlayerSnapshot } from "@src/core/save/types";
 import { ChanceCard } from "./ChanceCard";
+import { pickSerializableFields } from "../utils/serialize";
 
 export class Player implements IPlayer {
 	public id: string;
@@ -51,8 +52,6 @@ export class Player implements IPlayer {
 	public buffManager: IBuffManager;
 	public commandBus: ICommandBus<PlayerCommandMap>;
 	public dices: IDice[];
-
-	public exportData: Record<string, any> = {};
 
 	private user: UserInRoomInfo;
 	private roleInitFunction: (player: IPlayer, gameProcess: IGameProcess) => void;
@@ -266,9 +265,18 @@ export class Player implements IPlayer {
 		return this.roundPhases;
 	}
 
-	public getPlayerInfo(): PlayerInfo {
+	public getPlayerInfo(): PlayerInfo & Record<string, any> {
 		const userInfo = this.user;
-		const playerInfo: PlayerInfo = {
+		const excludeKeys = new Set([
+			"modifierManager", "buffManager", "commandBus", "roundPhases",
+			"id", "user", "dices", "money", "properties", "chanceCards",
+			"positionIndex", "isStop", "stop", "isBankrupted", "isOffline",
+			"isAI", "infoDisplay",
+			"name", "roleId",
+			"exportData",
+		]);
+
+		const playerInfo: PlayerInfo & Record<string, any> = {
 			id: this.user.userId,
 			user: userInfo,
 			dices: this.dices.map((d) => d.getInfo()),
@@ -282,8 +290,9 @@ export class Player implements IPlayer {
 			isOffline: this.isOffline,
 			isAI: this.isAI,
 			infoDisplay: this.infoDisplay,
-			exportData: this.exportData,
+			...pickSerializableFields(this, excludeKeys),
 		};
+
 		return playerInfo;
 	}
 
@@ -338,30 +347,16 @@ export class Player implements IPlayer {
 		return (await this.commandBus.execute({ type: "player.dice.remove", payload: { diceId: id } })).removeDice;
 	}
 
-	// 排除列表：这些字段不参与通用序列化（由专门逻辑处理或不可序列化）
 	private static readonly SNAPSHOT_EXCLUDE_KEYS = new Set([
-		// 不可序列化 / 由专门逻辑处理
 		"modifierManager", "buffManager", "commandBus", "roundPhases",
 		"infoDisplay", "user", "roleInitFunction",
-		// 由 Property 快照处理，不在此处保存
 		"properties", "chanceCards",
-		// 由专门字段处理
 		"dices", "stop",
+		"exportData",
 	]);
 
 	private collectSerializableFields(): Record<string, any> {
-		const result: Record<string, any> = {};
-		for (const key of Object.keys(this)) {
-			if (Player.SNAPSHOT_EXCLUDE_KEYS.has(key)) continue;
-			const value = (this as any)[key];
-			if (typeof value === "function") continue;
-			try {
-				result[key] = JSON.parse(JSON.stringify(value));
-			} catch {
-				// 无法序列化的值跳过
-			}
-		}
-		return result;
+		return pickSerializableFields(this, Player.SNAPSHOT_EXCLUDE_KEYS, { deep: true });
 	}
 
 	public getSnapshot(): PlayerSnapshot {
@@ -385,6 +380,7 @@ export class Player implements IPlayer {
 		// 排除列表中的不可序列化字段
 		"modifierManager", "buffManager", "commandBus", "roundPhases",
 		"infoDisplay", "user", "roleInitFunction", "properties",
+		"exportData",
 	]);
 
 	public restoreFromSnapshot(snapshot: PlayerSnapshot, gameProcess: any): void {
@@ -398,12 +394,25 @@ export class Player implements IPlayer {
 				// 只读属性等跳过
 			}
 		}
+
+		// 兼容旧存档格式：将 exportData 桶展开为实例直接属性
+		const legacyExportData = (snapshot as any).exportData;
+		if (legacyExportData && typeof legacyExportData === "object") {
+			for (const [key, value] of Object.entries(legacyExportData)) {
+				if (typeof (this as any)[key] === "function") continue;
+				try { (this as any)[key] = value; } catch { /* skip */ }
+			}
+		}
+
 		// stop 字段映射到 isStop
 		this.isStop = snapshot.stop;
 
 		// 同步 roleId 到 user 对象（客户端通过 PlayerInfo.user.roleId 渲染角色模型）
-		if (this.roleId) {
-			(this.user as any).roleId = this.roleId;
+		// 直接使用快照中的 roleId，避免被 backward compat 或其他逻辑覆盖
+		const savedRoleId = (snapshot as any).roleId;
+		if (savedRoleId) {
+			this.roleId = savedRoleId;
+			(this.user as any).roleId = savedRoleId;
 		}
 
 		// 清空旧属性列表（会在 Property.restoreFromSnapshot 的 setOwner 中重新填充）

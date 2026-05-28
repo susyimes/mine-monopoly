@@ -1,4 +1,4 @@
-import { ResourcesType, GameMap, PlayerInfo, PropertyInfo, GameData } from "@mine-monopoly/types";
+import { ResourcesType, GameMap, PlayerInfo, PropertyInfo, GameData, IGameProcessExportData } from "@mine-monopoly/types";
 import { defineStore } from "pinia";
 import { useUserInfo } from ".";
 import useEventBus from "@src/utils/event-bus";
@@ -107,7 +107,7 @@ export const useMapData = defineStore("map-data", {
 export const useGameData = defineStore("game-data", {
 	state: (): GameData => {
 		return {
-			exportData: {},
+			exportData: {} as IGameProcessExportData,
 			currentPlayerIdInRound: "",
 			currentRound: 0,
 			currentMultiplier: 0,

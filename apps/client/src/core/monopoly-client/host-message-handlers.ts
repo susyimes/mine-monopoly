@@ -323,6 +323,7 @@ const handleGameInit: ServerMessageHandler<SocketMsgType.GameInit> = (msg) => {
 	const gameData = msg.data;
 	if (gameData) {
 		gameDataStore.$patch((state) => {
+			state.exportData = gameData.exportData;
 			state.currentPlayerIdInRound = gameData.currentPlayerIdInRound;
 			state.currentRound = gameData.currentRound;
 			state.currentMultiplier = gameData.currentMultiplier;

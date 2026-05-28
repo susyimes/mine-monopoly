@@ -9,6 +9,7 @@ import {
 } from "@mine-monopoly/types";
 import { GameProcess } from "../GameProcessWorker";
 import { randomString } from "@src/utils";
+import { pickSerializableFields } from "../utils/serialize";
 
 export class ChanceCard implements IChanceCard {
 	private id: string;
@@ -55,8 +56,13 @@ export class ChanceCard implements IChanceCard {
 		}
 	}
 
-	public getChanceCardInfo(): ChanceCardClientInfo {
-		const chanceCardInfo: ChanceCardClientInfo = {
+	public getChanceCardInfo(): ChanceCardClientInfo & Record<string, any> {
+		const excludeKeys = new Set([
+			'effectCode', 'effectFunction',
+			'id', 'sourceId', 'name', 'type', 'color', 'icon',
+		]);
+
+		const chanceCardInfo: ChanceCardClientInfo & Record<string, any> = {
 			id: this.id,
 			sourceId: this.sourceId,
 			name: this.name,
@@ -64,7 +70,9 @@ export class ChanceCard implements IChanceCard {
 			color: this.color,
 			type: this.type,
 			iconId: this.icon,
+			...pickSerializableFields(this, excludeKeys),
 		};
+
 		return chanceCardInfo;
 	}
 }

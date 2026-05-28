@@ -2,14 +2,15 @@ import { TargetSelectType } from "../../../../types/enums/game/game";
 import { UserInRoomInfo } from "../item";
 import { DiceInfo } from "../util";
 import { UISchema } from "./ui";
+import { IGameProcessExportData } from "./core";
 
 /**
  * 游戏数据接口
  * 用于同步游戏状态到客户端
  */
 export interface GameData {
-	/** 导出数据（自定义扩展） */
-	exportData: { [key: string]: any };
+	/** 导出数据（游戏进程扩展数据） */
+	exportData: IGameProcessExportData;
 
 	/** 当前回合玩家 ID */
 	currentPlayerIdInRound: string;
@@ -75,9 +76,6 @@ export interface PlayerInfo {
 
 	/** 玩家信息展示 UI Schema */
 	infoDisplay: UISchema;
-
-	/** 导出数据（自定义扩展） */
-	exportData: Record<string, any>;
 }
 
 /**
@@ -114,9 +112,6 @@ export interface PropertyInfo {
 
 	/** 自定义效果配置 */
 	custom?: PropertyCustom;
-
-	/** 导出数据（自定义扩展） */
-	exportData: Record<string, any>;
 
 	/** 自定义 UI */
 	customUI: string | undefined;

@@ -55,9 +55,6 @@ export interface IPlayer {
 	/** 玩家信息展示 UI Schema */
 	infoDisplay: UISchema;
 
-	/** 导出数据（用于序列化和自定义扩展） */
-	exportData: Record<string, any>;
-
 	// ===== 获取器方法 =====
 
 	/**
@@ -251,9 +248,6 @@ export interface IProperty {
 
 	/** 地产所有者 */
 	owner: IPlayer | undefined;
-
-	/** 导出数据（用于序列化和自定义扩展） */
-	exportData: Record<string, any>;
 
 	// ===== 获取器方法 =====
 

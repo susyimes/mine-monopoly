@@ -11,6 +11,7 @@ import {
 import { ModifierManager } from "./action-system/ModifiersManager";
 import type { PropertySnapshot } from "@src/core/save/types";
 import { CommandBus } from "./action-system/CommandBus";
+import { pickSerializableFields } from "../utils/serialize";
 import GameProcessTypes from "../editor-lib.d.ts?raw";
 import { compileTsToJs } from "@src/utils";
 
@@ -31,8 +32,6 @@ export class Property implements IProperty {
 	public commandBus: ICommandBus<PropertyCommandMap>;
 	private originalData: PropertyInfo;
 
-	public exportData: Record<string, any> = {};
-
 	private customPropertyInitFunction: ((property: IProperty, gameProcess: IGameProcess) => void) | undefined;
 
 	constructor(property: PropertyInfo, extraLibs?: string) {
@@ -47,7 +46,14 @@ export class Property implements IProperty {
 		this.custom = property.custom;
 		this.originalData = property;
 		this.customUI = property.customUI;
-		this.exportData = property.exportData;
+
+		// 将地图编辑器中定义的扩展字段（如 company）合并到实例
+		const propExportData = (property as any).exportData;
+		if (propExportData) {
+			for (const [key, value] of Object.entries(propExportData)) {
+				(this as any)[key] = value;
+			}
+		}
 
 		this.modifierManager = new ModifierManager();
 		(this.modifierManager as any).setOwner(this);
@@ -135,9 +141,16 @@ export class Property implements IProperty {
 		});
 	}
 
-	public getPropertyInfo(): PropertyInfo {
+	public getPropertyInfo(): PropertyInfo & Record<string, any> {
 		const owner = this.owner;
-		const propertyInfo: PropertyInfo = {
+		const excludeKeys = new Set([
+			"modifierManager", "commandBus", "originalData",
+			"id", "name", "level", "maxLevel", "buildCost", "sellCost",
+			"costList", "owner", "buildingModelIdList", "custom", "customUI",
+			"exportData",
+		]);
+
+		const propertyInfo: PropertyInfo & Record<string, any> = {
 			id: this.id,
 			name: this.name,
 			level: this.level,
@@ -148,17 +161,28 @@ export class Property implements IProperty {
 			owner: owner ? owner.getUser() : undefined,
 			buildingModelIdList: this.buildingModelIdList,
 			custom: this.custom ? { effectCode: "", description: this.custom.description } : undefined,
-			exportData: this.exportData,
 			customUI: this.customUI,
+			...pickSerializableFields(this, excludeKeys),
 		};
+
 		return propertyInfo;
+	}
+
+	private static readonly SNAPSHOT_EXCLUDE_KEYS = new Set([
+		"modifierManager", "commandBus", "originalData",
+		"customPropertyInitFunction", "owner",
+		"exportData",
+	]);
+
+	private collectSerializableFields(): Record<string, any> {
+		return pickSerializableFields(this, Property.SNAPSHOT_EXCLUDE_KEYS, { deep: true });
 	}
 
 	public getSnapshot(): PropertySnapshot {
 		return {
+			...this.collectSerializableFields(),
 			level: this.level,
 			ownerId: this.owner?.id,
-			exportData: { ...this.exportData },
 			modifiers: this.modifierManager.getSerializableModifiers(),
 		};
 	}
@@ -168,6 +192,27 @@ export class Property implements IProperty {
 		players: Map<string, any>,
 		gameProcess: any,
 	): Promise<void> {
+		// 通用恢复：遍历快照中所有字段，跳过由专门逻辑处理的
+		const specialKeys = new Set(["level", "ownerId", "modifiers", "exportData"]);
+		for (const key of Object.keys(snapshot)) {
+			if (specialKeys.has(key)) continue;
+			if (typeof (this as any)[key] === "function") continue;
+			try {
+				(this as any)[key] = (snapshot as any)[key];
+			} catch {
+				// 只读属性等跳过
+			}
+		}
+
+		// 兼容旧存档格式：将 exportData 桶展开为实例直接属性
+		const legacyExportData = (snapshot as any).exportData;
+		if (legacyExportData && typeof legacyExportData === "object") {
+			for (const [key, value] of Object.entries(legacyExportData)) {
+				if (typeof (this as any)[key] === "function") continue;
+				try { (this as any)[key] = value; } catch { /* skip */ }
+			}
+		}
+
 		await this.setLevel(snapshot.level);
 		if (snapshot.ownerId) {
 			const owner = players.get(snapshot.ownerId);
@@ -175,7 +220,6 @@ export class Property implements IProperty {
 		} else {
 			await this.setOwner(undefined);
 		}
-		this.exportData = { ...snapshot.exportData };
 
 		// 修饰器恢复 — 新签名: restoreModifiers(snaps, mapData)
 		(this.modifierManager as any).restoreModifiers(snapshot.modifiers, gameProcess?.mapData);

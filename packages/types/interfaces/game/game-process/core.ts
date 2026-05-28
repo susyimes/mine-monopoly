@@ -53,9 +53,6 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	/** 事件总线（使用 mitt） */
 	eventBus: Emitter<GameRuntimeEvent>;
 
-	/** 导出数据（用于序列化和自定义扩展） */
-	exportData: IGameProcessExportData;
-
 	/** 游戏地图数据 */
 	mapData: GameMap;
 

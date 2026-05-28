@@ -15,6 +15,7 @@ import {
 	GameSetting,
 	IGamePhase,
 	IGameProcess,
+	IGameProcessExportData,
 	IPlayer,
 	IProperty,
 	MapEvent,
@@ -262,7 +263,7 @@ function sendToUsers(userIdList: string[], msg: ServerSocketMessage) {
 export class GameProcess implements IGameProcess {
 	public eventBus: Emitter<GameRuntimeEvent> = mitt<GameRuntimeEvent>();
 	public customData: Record<string, any> = {};
-	public exportData: Record<string, any> = {};
+	public exportData: IGameProcessExportData = {} as IGameProcessExportData;
 
 	private pendingSaveData: { snapshot: SaveSnapshot; aiPlayerIds: string[] } | null = null;
 
@@ -2004,7 +2005,7 @@ export class GameProcess implements IGameProcess {
 
 	public getGameData() {
 		const gameInfo: GameData = {
-			exportData: this.exportData,
+			exportData: this.exportData || {},
 			currentPlayerIdInRound: this.currentRoundPlayer ? this.currentRoundPlayer.id : "",
 			currentRound: this.currentRound,
 			currentMultiplier: this.currentMultiplier,
@@ -2036,8 +2037,8 @@ export class GameProcess implements IGameProcess {
 			mapItems: Array.from(this.mapItems.entries()).map(([id, item]) => [id, item]),
 			mapEvents: Array.from(this.mapEvents.entries()).map(([id, evt]) => [id, evt]),
 			gameLogList: this.gameLogList,
-			customData: { ...this.customData },
 			exportData: { ...this.exportData },
+			customData: { ...this.customData },
 			gameSetting: this.gameSetting,
 			playerButtons: Array.from(this.playerButtons.entries()).map(
 				([playerId, buttons]) => [playerId, Array.from(buttons.entries())]

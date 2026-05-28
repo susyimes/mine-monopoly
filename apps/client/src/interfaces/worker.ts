@@ -115,8 +115,8 @@ export interface GameProcessDebugState {
 	mapItems: Array<[string, any]>;
 	mapEvents: Array<[string, any]>;
 	gameLogList: Array<Record<string, any>>;
-	customData: Record<string, any>;
 	exportData: Record<string, any>;
+	customData: Record<string, any>;
 	gameSetting: GameSetting;
 	playerButtons: Array<[string, Array<[string, any]>]>;
 	animationCompletionHandlers: string[];
