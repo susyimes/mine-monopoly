@@ -4,6 +4,8 @@ let currentState = null;
 let autoRefresh = false;
 let autoTimer = null;
 let activeTab = 'overview';
+// Track expanded paths: Set of JSON path strings like "players.0.modifiers.1"
+const expandedPaths = new Set();
 const content = document.getElementById('content');
 const status = document.getElementById('status');
 const refreshBtn = document.getElementById('refreshBtn');
@@ -124,7 +126,7 @@ function renderCards(items, type) {
         // Display all fields
         for (const [key, val] of Object.entries(item)) {
             if (key === idKey) continue; // Skip title field
-            html += renderField(key, val, 0);
+            html += renderField(key, val, 0, titleKey + '.' + key);
         }
 
         html += '</div></div>';
@@ -134,9 +136,13 @@ function renderCards(items, type) {
 
     // Attach toggle listeners after rendering (only to new triggers)
     attachToggleListeners();
+
+    // Expand nodes that were previously expanded
+    restoreExpandedState();
 }
 // Render a single field (handles nested objects)
-function renderField(key, val, depth) {
+// path: JSON path string for tracking expand state
+function renderField(key, val, depth, path) {
     const showKey = key !== '';
     const keyHtml = showKey ? '<span class="field-key">' + esc(key) + ':</span> ' : '';
 
@@ -157,15 +163,16 @@ function renderField(key, val, depth) {
             return '<div class="field" style="padding-left:' + (depth * 12) + 'px">' + keyHtml + '<span class="text-dim">[]</span></div>';
         }
         const childId = 'child-' + Math.random().toString(36).substr(2, 9);
+        const isExpanded = expandedPaths.has(path);
         // Store JSON data as base64 to avoid encoding issues
         const jsonB64 = btoa(unescape(encodeURIComponent(JSON.stringify(val))));
         let html = '<div class="field-group collapsible" style="padding-left:' + (depth * 12) + 'px">';
-        html += '<div class="toggle-trigger" data-target="' + childId + '">';
-        html += '<span class="arrow">▶</span>';
+        html += '<div class="toggle-trigger" data-target="' + childId + '" data-path="' + esc(path) + '">';
+        html += '<span class="arrow">' + (isExpanded ? '▼' : '▶') + '</span>';
         if (showKey) html += '<span class="field-key">' + esc(key) + ':</span> ';
         html += '<span class="text-dim">Array(' + val.length + ')</span>';
         html += '</div>';
-        html += '<div class="nested hidden" id="' + childId + '" data-json="' + esc(jsonB64) + '"></div>';
+        html += '<div class="nested' + (isExpanded ? '' : ' hidden') + '" id="' + childId + '" data-json="' + esc(jsonB64) + '"></div>';
         html += '</div>';
         return html;
     }
@@ -175,15 +182,16 @@ function renderField(key, val, depth) {
             return '<div class="field" style="padding-left:' + (depth * 12) + 'px">' + keyHtml + '<span class="text-dim">{}</span></div>';
         }
         const childId = 'child-' + Math.random().toString(36).substr(2, 9);
+        const isExpanded = expandedPaths.has(path);
         // Store JSON data as base64 to avoid encoding issues
         const jsonB64 = btoa(unescape(encodeURIComponent(JSON.stringify(val))));
         let html = '<div class="field-group collapsible" style="padding-left:' + (depth * 12) + 'px">';
-        html += '<div class="toggle-trigger" data-target="' + childId + '">';
-        html += '<span class="arrow">▶</span>';
+        html += '<div class="toggle-trigger" data-target="' + childId + '" data-path="' + esc(path) + '">';
+        html += '<span class="arrow">' + (isExpanded ? '▼' : '▶') + '</span>';
         if (showKey) html += '<span class="field-key">' + esc(key) + ':</span> ';
         html += '<span class="text-dim">Object {' + keys.length + '}</span>';
         html += '</div>';
-        html += '<div class="nested hidden" id="' + childId + '" data-json="' + esc(jsonB64) + '"></div>';
+        html += '<div class="nested' + (isExpanded ? '' : ' hidden') + '" id="' + childId + '" data-json="' + esc(jsonB64) + '"></div>';
         html += '</div>';
         return html;
     }
@@ -197,6 +205,7 @@ function attachToggleListeners() {
             e.stopPropagation();
             const targetId = this.getAttribute('data-target');
             const target = document.getElementById(targetId);
+            const path = this.getAttribute('data-path');
             const arrow = this.querySelector('.arrow');
 
             if (!target) return;
@@ -205,6 +214,7 @@ function attachToggleListeners() {
                 // Expand - render children
                 target.classList.remove('hidden');
                 arrow.textContent = '▼';
+                if (path) expandedPaths.add(path);
 
                 // Only render if not already rendered
                 if (!target.hasAttribute('data-rendered')) {
@@ -214,12 +224,12 @@ function attachToggleListeners() {
                         const val = JSON.parse(jsonStr);
                         let html = '';
                         if (Array.isArray(val)) {
-                            for (const item of val) {
-                                html += '<div class="nested-item">' + renderField('', item, 1) + '</div>';
+                            for (let i = 0; i < val.length; i++) {
+                                html += '<div class="nested-item">' + renderField('', val[i], 1, path + '[' + i + ']') + '</div>';
                             }
                         } else {
                             for (const [k, v] of Object.entries(val)) {
-                                html += '<div class="nested-item">' + renderField(k, v, 1) + '</div>';
+                                html += '<div class="nested-item">' + renderField(k, v, 1, path + '.' + k) + '</div>';
                             }
                         }
                         target.innerHTML = html;
@@ -236,8 +246,42 @@ function attachToggleListeners() {
                 // Collapse
                 target.classList.add('hidden');
                 arrow.textContent = '▶';
+                if (path) expandedPaths.delete(path);
             }
         });
+    });
+}
+// Restore expanded state from expandedPaths set
+function restoreExpandedState() {
+    expandedPaths.forEach(path => {
+        // Find the trigger with matching data-path
+        const trigger = document.querySelector('.toggle-trigger[data-path="' + esc(path).replace(/"/g, '\\"') + '"]');
+        if (!trigger) return;
+        const targetId = trigger.getAttribute('data-target');
+        const target = document.getElementById(targetId);
+        if (!target || target.hasAttribute('data-rendered')) return;
+        // Render the content
+        try {
+            const jsonB64 = target.getAttribute('data-json');
+            const jsonStr = decodeURIComponent(escape(atob(jsonB64)));
+            const val = JSON.parse(jsonStr);
+            let html = '';
+            if (Array.isArray(val)) {
+                for (let i = 0; i < val.length; i++) {
+                    html += '<div class="nested-item">' + renderField('', val[i], 1, path + '[' + i + ']') + '</div>';
+                }
+            } else {
+                for (const [k, v] of Object.entries(val)) {
+                    html += '<div class="nested-item">' + renderField(k, v, 1, path + '.' + k) + '</div>';
+                }
+            }
+            target.innerHTML = html;
+            target.setAttribute('data-rendered', 'true');
+            // Attach listeners to newly created triggers
+            attachToggleListeners();
+        } catch (err) {
+            console.error('Restore expanded state error:', err);
+        }
     });
 }
 function renderEvents() {
