@@ -14,19 +14,19 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@mine-monopoly/types": "workspace:*",
-		"@mine-monopoly/ui": "workspace:*",
-		"@mine-monopoly/utils": "workspace:*",
-		"@mine-monopoly/env": "workspace:*",
 		"@modelcontextprotocol/sdk": "^1.0.4",
+		"electron-log": "^5.4.3",
 		"electron-updater": "^6.6.2",
 		"express": "^4.18.2",
 		"zod": "^3.24.2"
 	},
 	"devDependencies": {
+		"@mine-monopoly/env": "workspace:*",
+		"@mine-monopoly/types": "workspace:*",
+		"@mine-monopoly/ui": "workspace:*",
+		"@mine-monopoly/utils": "workspace:*",
 		"electron": "37.2.6",
 		"electron-builder": "26.0.12",
-		"electron-log": "^5.4.3",
 		"ts-morph": "26.0.0"
 	}
 }

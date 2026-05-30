@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 import viteCompression from "vite-plugin-compression";
+import { visualizer } from "rollup-plugin-visualizer";
 import electron from "vite-plugin-electron/simple";
 import pkg from "./package.json";
 import generateMonacoDTS from "./plugins/vite-plugin-generate-monaco-dts";
@@ -25,7 +26,9 @@ export default defineConfig(({ command, mode }) => {
 		plugins: [
 			vue(),
 			generateMonacoDTS(),
-			viteCompression(),
+			viteCompression({
+					threshold: 10240, // 只压缩大于 10KB 的文件
+				}),
 			envPlugin({
 				exclude: ['MYSQL_PASSWORD', 'TC_KEY'],
 				envPath: '../../.env',
@@ -39,11 +42,38 @@ export default defineConfig(({ command, mode }) => {
 				},
 				renderer: process.env.NODE_ENV === "test" ? undefined : {},
 			}),
-		],
+			!isCheck && command === 'build' && visualizer({
+				filename: 'dist/frontend/stats.html',
+				open: false,
+				gzipSize: true,
+				brotliSize: true,
+			}),
+		].filter(Boolean),
 		build: {
 			outDir: isCheck ? "dist/check" : "dist/frontend",
 			minify: isCheck ? false : 'terser',
 			sourcemap: isCheck ? 'inline' : false,
+			rollupOptions: {
+				output: {
+					manualChunks: isCheck ? undefined : (id: string) => {
+						if (id.includes('node_modules/vue') || id.includes('node_modules/pinia') || id.includes('node_modules/vue-router')) {
+							return 'vue-vendor';
+						}
+						if (id.includes('node_modules/three')) {
+							return 'three-vendor';
+						}
+						if (id.includes('node_modules/gsap')) {
+							return 'gsap-vendor';
+						}
+						if (id.includes('node_modules/@fortawesome')) {
+							return 'fa-vendor';
+						}
+						if (id.includes('packages/ui') || id.includes('packages/components')) {
+							return 'ui-common';
+						}
+					},
+				},
+			},
 		},
 		css: {
 			preprocessorOptions: {
