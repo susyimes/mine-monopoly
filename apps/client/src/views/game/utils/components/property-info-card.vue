@@ -150,6 +150,7 @@ defineExpose({ updateProperty });
 	flex-direction: column;
 	gap: 0.8rem;
 	padding: 1rem 1.5rem;
+	background-color: #fff;
 
 	// 头部区域
 	.property-header {

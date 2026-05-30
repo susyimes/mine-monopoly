@@ -5,7 +5,7 @@
 		</div>
 		<div class="chance-card-content">
 			<div class="chance-card-name">{{ chanceCard.name }}</div>
-			<div class="chance-card-description">{{ chanceCard.description }}</div>
+			<div class="chance-card-description">{{ formattedDescription }}</div>
 		</div>
 	</div>
 </template>
@@ -24,6 +24,11 @@ const resourceStore = useResourceStore();
 const iconUrl = computed(() => {
 	const resource = resourceStore.getRecourceById(props.chanceCard.iconId);
 	return resource?.url || "";
+});
+
+// 转换 \n 为真实换行符
+const formattedDescription = computed(() => {
+	return props.chanceCard.description.replace(/\\n/g, "\n");
 });
 </script>
 
@@ -83,5 +88,6 @@ const iconUrl = computed(() => {
 	display: -webkit-box;
 	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
+	white-space: pre-wrap;
 }
 </style>
