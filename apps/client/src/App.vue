@@ -6,7 +6,6 @@ import StatusBar from "@src/views/status_bar/status_bar.vue";
 import { computed, nextTick, onBeforeMount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import Chat from "@src/views/chat_log/chat_log.vue";
-import MusicPlayer from "@src/views/music_player/music_player.vue";
 import DanmakuContainer from "@src/views/danmaku/danmaku_container.vue";
 import { isFullScreen, isMobileDevice } from "@src/utils";
 import { TitleBar } from "@mine-monopoly/ui";
@@ -46,7 +45,6 @@ const isMobile = isMobileDevice();
 const router = useRoute();
 const isInGame = computed(() => router.name === "game");
 const canChat = computed(() => router.name === "room" || router.name === "game");
-const isMusicPlayerVisiable = computed(() => router.name !== "login");
 const version = __APP_VERSION__;
 const isTitleBarShow = computed(() => isPC() && !useDeviceStatus().isFullScreen);
 
