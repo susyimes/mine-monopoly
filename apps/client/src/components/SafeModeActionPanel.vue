@@ -276,7 +276,6 @@ watch(
 
 .detail-label {
 	font-size: 0.75rem;
-	font-weight: 600;
 	color: #991b1b;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
@@ -327,7 +326,6 @@ button {
 	padding: 0.875rem 1.5rem;
 	border-radius: 0.75rem;
 	font-size: 1rem;
-	font-weight: 600;
 	cursor: pointer;
 	transition: all 0.2s;
 	border: none;
