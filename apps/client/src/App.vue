@@ -137,7 +137,7 @@ const backgroundSvgList: string[] = [
 <template>
 	<TitleBar style="z-index: var(--z-topbar)" v-if="isTitleBarShow" :bg-color="'#f38b11'">
 		<template #title>
-			<span style="font-size: 12px">FatPaper-Monopoly v{{ version }}</span>
+			<span style="font-size: 12px">Mine Monopoly v{{ version }}</span>
 		</template>
 	</TitleBar>
 	<div class="main-container-wrapper">
