@@ -51,20 +51,18 @@ function onEnter(el: Element, done: () => void) {
 	const modal = el.querySelector(".fp-dialog-modal") as HTMLElement;
 	const main = el.querySelector(".fp-dialog-main") as HTMLElement;
 	const tl = gsap.timeline({ onComplete: done });
-	tl.fromTo(modal, { opacity: 0 }, { opacity: 1, duration: 0.15 });
+	tl.fromTo(modal, { opacity: 0 }, { opacity: 1, duration: 0.06 });
 	tl.fromTo(
 		main,
-		{ scale: 0, opacity: 0 },
-		{ scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.2)" },
-		"-=0.08",
+		{ scale: 0.85, opacity: 0 },
+		{ scale: 1, opacity: 1, duration: 0.12, ease: "power2.out" },
+		"<",
 	);
 }
 
 function onLeave(el: Element, done: () => void) {
-	const main = el.querySelector(".fp-dialog-main") as HTMLElement;
 	const tl = gsap.timeline({ onComplete: done });
-	tl.to(el, { opacity: 0, duration: 0.2 });
-	tl.to(main, { scale: 0.9, duration: 0.2 }, "<");
+	tl.to(el, { opacity: 0, duration: 0.08 });
 }
 </script>
 
@@ -74,7 +72,7 @@ function onLeave(el: Element, done: () => void) {
 			<div class="fp-dialog" v-if="visible">
 				<div class="fp-dialog-modal" @click="closeDialog"></div>
 
-				<div class="fp-dialog-main" :style="props.style" v-stagger="300">
+				<div class="fp-dialog-main" :style="props.style" v-stagger="50">
 					<div class="fp-dialog-header">
 						<div class="title">
 							<span v-if="title">{{ title }}</span>

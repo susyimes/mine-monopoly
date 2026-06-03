@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, shallowRef, watch } from "vue";
+import { onMounted, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 
-// --- 类型定义 (省略，与之前保持一致) ---
-type GridCell = {
-	content: string | object;
+type CellData = {
+	imgIndex: number;
 	scale: number;
 	opacity: number;
 };
@@ -32,137 +31,241 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const containerRef = ref<HTMLElement | null>(null);
-const gridLayout = shallowRef<GridCell[][]>([]);
+const canvasRef = ref<HTMLCanvasElement | null>(null);
+const iconImages = shallowRef<HTMLImageElement[]>([]);
+const cellGrid = shallowRef<CellData[][]>([]);
 const rows = ref(0);
 const cols = ref(0);
 
-// --- 核心逻辑：动态计算网格覆盖面积 (保持不变，确保覆盖整个视口) ---
-const calculateGridDimensions = () => {
+let animationId = 0;
+let resolvedColor = "";
+let resizeObserver: ResizeObserver | null = null;
+let isPageVisible = true;
+
+function resolveColorValue(colorStr: string): string {
+	const el = document.createElement("div");
+	el.style.color = colorStr;
+	el.style.display = "none";
+	document.body.appendChild(el);
+	const c = getComputedStyle(el).color;
+	document.body.removeChild(el);
+	return c;
+}
+
+function svgToDataUri(svgHtml: string): string {
+	const colored = svgHtml.replace(/currentColor/g, resolvedColor);
+	return `data:image/svg+xml,${encodeURIComponent(colored)}`;
+}
+
+function loadIconImage(svgHtml: string): Promise<HTMLImageElement> {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => resolve(img);
+		img.onerror = () => reject(new Error("Failed to load icon image"));
+		img.src = svgToDataUri(svgHtml);
+	});
+}
+
+async function loadIcons() {
+	if (!props.icons.length) return;
+	resolvedColor = resolveColorValue(props.color);
+	const images = await Promise.all(
+		props.icons.map((icon) => {
+			if (typeof icon === "string") {
+				return loadIconImage(icon);
+			}
+			console.warn("[Background] Non-string icons are not supported in canvas mode");
+			return loadIconImage("");
+		}),
+	);
+	iconImages.value = images;
+}
+
+function calculateGridDimensions() {
+	const w = containerRef.value?.clientWidth ?? window.innerWidth;
+	const h = containerRef.value?.clientHeight ?? window.innerHeight;
+	const diagonal = Math.sqrt(w * w + h * h);
 	const unitSize = props.iconSize + props.gap;
-	const vmax = typeof window !== "undefined" ? Math.max(window.innerWidth, window.innerHeight) : 1080;
-	// 使用 2.5倍 vmax 保证覆盖旋转后的巨大容器
-	const coverage = vmax * 2.5;
 
-	const calculatedCount = Math.ceil(coverage / unitSize);
+	const count = Math.ceil(diagonal / unitSize) + 2;
+	rows.value = Math.max(count, 2);
+	cols.value = Math.max(count, 2);
+}
 
-	rows.value = Math.max(calculatedCount, 2);
-	cols.value = Math.max(calculatedCount, 2);
-};
-
-// --- 生成网格数据 (保持不变) ---
-const generateGrid = () => {
+function generateGrid() {
 	if (!props.icons.length || rows.value === 0) return;
 
-	const newLayout: GridCell[][] = [];
+	const grid: CellData[][] = [];
 	for (let r = 0; r < rows.value; r++) {
-		const rowData: GridCell[] = [];
+		const rowData: CellData[] = [];
 		for (let c = 0; c < cols.value; c++) {
-			const iconContent = props.icons[Math.floor(Math.random() * props.icons.length)];
 			rowData.push({
-				content: iconContent,
+				imgIndex: Math.floor(Math.random() * props.icons.length),
 				scale: props.scaleRange[0] + Math.random() * (props.scaleRange[1] - props.scaleRange[0]),
 				opacity: props.opacityRange[0] + Math.random() * (props.opacityRange[1] - props.opacityRange[0]),
 			});
 		}
-		newLayout.push(rowData);
+		grid.push(rowData);
 	}
-	gridLayout.value = newLayout;
-};
+	cellGrid.value = grid;
+}
 
-// --- 样式计算：新增 --pattern-width CSS 变量 ---
-const rotatorStyle = computed(() => ({
-	transform: `translate(-50%, -50%) rotate(${props.angle}deg)`,
-	width: "200vmax",
-	height: "200vmax",
-}));
+function setupCanvas() {
+	const canvas = canvasRef.value;
+	const container = containerRef.value;
+	if (!canvas || !container) return;
 
-const scrollerStyle = computed(() => {
-	const unitSize = props.iconSize + props.gap;
-	const patternWidth = cols.value * unitSize;
-	const duration = props.speed > 0 ? patternWidth / props.speed : 0;
+	const dpr = Math.max(window.devicePixelRatio || 1, 2);
+	const w = container.clientWidth;
+	const h = container.clientHeight;
 
-	return {
-		// 动画移动的距离
-		"--move-distance": `${patternWidth}px`,
-		// 传递给 grid-pattern 的实际宽度
-		"--pattern-width": `${patternWidth}px`,
-		"--anim-duration": `${duration}s`,
-		"--cols": `${cols.value}`,
-	};
-});
+	if (canvas.width === w * dpr && canvas.height === h * dpr) return;
 
-// 辅助函数 (保持不变)
-const isComponent = (item: any) => typeof item === "object" || typeof item === "function";
+	canvas.width = w * dpr;
+	canvas.height = h * dpr;
 
-// --- 生命周期与监听 (包含 ResizeObserver) ---
-let resizeObserver: ResizeObserver | null = null;
-
-onMounted(() => {
 	calculateGridDimensions();
 	generateGrid();
+}
 
-	if (typeof window !== "undefined" && containerRef.value) {
-		resizeObserver = new ResizeObserver(() => {
-			calculateGridDimensions();
-			generateGrid();
-		});
-		resizeObserver.observe(document.body);
+function draw() {
+	const canvas = canvasRef.value;
+	const container = containerRef.value;
+	if (!canvas || !container) return;
+
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return;
+
+	const images = iconImages.value;
+	const grid = cellGrid.value;
+	if (!images.length || !grid.length) return;
+
+	const dpr = Math.max(window.devicePixelRatio || 1, 2);
+	const w = container.clientWidth;
+	const h = container.clientHeight;
+	const diagonal = Math.sqrt(w * w + h * h);
+	const unitSize = props.iconSize + props.gap;
+	const patternWidth = cols.value * unitSize;
+	const iconSize = props.iconSize;
+
+	ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+	ctx.clearRect(0, 0, w, h);
+
+	ctx.save();
+	ctx.translate(w / 2, h / 2);
+	ctx.rotate((props.angle * Math.PI) / 180);
+
+	const elapsed = performance.now() / 1000;
+	const offset = props.speed > 0 ? (elapsed * props.speed) % patternWidth : 0;
+
+	const halfCoverage = diagonal / 2;
+	const startCol = Math.floor((-halfCoverage + offset) / unitSize);
+	const endCol = Math.ceil((halfCoverage + offset) / unitSize);
+	const startRow = Math.floor(-halfCoverage / unitSize);
+	const endRow = Math.ceil(halfCoverage / unitSize);
+
+	for (let r = startRow; r <= endRow; r++) {
+		const rowIdx = ((r % rows.value) + rows.value) % rows.value;
+		const rowData = grid[rowIdx];
+		if (!rowData) continue;
+
+		for (let c = startCol; c <= endCol; c++) {
+			const colIdx = ((c % cols.value) + cols.value) % cols.value;
+			const cell = rowData[colIdx];
+			if (!cell || cell.imgIndex >= images.length) continue;
+
+			const x = c * unitSize - offset;
+			const y = r * unitSize;
+			const img = images[cell.imgIndex];
+			const imgAspect = img.naturalWidth / img.naturalHeight;
+			const maxSize = iconSize * cell.scale;
+			let drawW: number, drawH: number;
+			if (imgAspect >= 1) {
+				drawW = maxSize;
+				drawH = maxSize / imgAspect;
+			} else {
+				drawW = maxSize * imgAspect;
+				drawH = maxSize;
+			}
+			const cx = x + iconSize / 2;
+			const cy = y + iconSize / 2;
+
+			ctx.save();
+			ctx.translate(cx, cy);
+			ctx.rotate((-props.angle * Math.PI) / 180);
+			ctx.globalAlpha = cell.opacity;
+			ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+			ctx.restore();
+		}
 	}
+
+	ctx.globalAlpha = 1;
+	ctx.restore();
+
+	animationId = requestAnimationFrame(draw);
+}
+
+function startAnimation() {
+	stopAnimation();
+	if (isPageVisible) {
+		animationId = requestAnimationFrame(draw);
+	}
+}
+
+function stopAnimation() {
+	if (animationId) {
+		cancelAnimationFrame(animationId);
+		animationId = 0;
+	}
+}
+
+function handleVisibilityChange() {
+	isPageVisible = !document.hidden;
+	if (isPageVisible) {
+		startAnimation();
+	} else {
+		stopAnimation();
+	}
+}
+
+onMounted(async () => {
+	await loadIcons();
+	setupCanvas();
+	startAnimation();
+
+	if (containerRef.value) {
+		resizeObserver = new ResizeObserver(() => {
+			setupCanvas();
+		});
+		resizeObserver.observe(containerRef.value);
+	}
+
+	document.addEventListener("visibilitychange", handleVisibilityChange);
 });
 
 onBeforeUnmount(() => {
+	stopAnimation();
 	if (resizeObserver) resizeObserver.disconnect();
+	document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 
-watch([() => props.iconSize, () => props.gap, () => props.icons], () => {
-	calculateGridDimensions();
-	generateGrid();
+watch([() => props.iconSize, () => props.gap], () => {
+	setupCanvas();
+});
+
+watch(() => props.icons, async () => {
+	await loadIcons();
+	setupCanvas();
 });
 </script>
 
 <template>
-	<div class="dynamic-bg-container" :style="{ backgroundColor: backgroundColor }" ref="containerRef">
-		<div class="bg-rotator" :style="rotatorStyle">
-			<div class="bg-scroller" :style="scrollerStyle">
-				<div class="grid-pattern" v-for="n in 3" :key="`pattern-${n}`" :style="{ width: 'var(--pattern-width)' }">
-					<div
-						class="grid-row"
-						v-for="(rowItem, rIndex) in gridLayout"
-						:key="`row-${rIndex}`"
-						:style="{ marginBottom: `${gap}px` }"
-					>
-						<div
-							class="grid-cell"
-							v-for="(cellItem, cIndex) in rowItem"
-							:key="`cell-${rIndex}-${cIndex}`"
-							:style="{
-								width: `${iconSize}px`,
-								height: `${iconSize}px`,
-								marginRight: `${gap}px`,
-								fontSize: `${iconSize}px`,
-							}"
-						>
-							<div
-								class="icon-inner"
-								:style="{
-									transform: `rotate(${-props.angle}deg) scale(${cellItem.scale})`,
-									opacity: cellItem.opacity,
-									color: color,
-								}"
-							>
-								<component v-if="isComponent(cellItem.content)" :is="cellItem.content" class="svg-content" />
-								<div v-else v-html="cellItem.content" class="svg-content"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+	<div class="dynamic-bg-container" :style="{ backgroundColor: props.backgroundColor }" ref="containerRef">
+		<canvas ref="canvasRef" class="bg-canvas" />
 	</div>
 </template>
 
 <style scoped>
-/* 容器 */
 .dynamic-bg-container {
 	position: absolute;
 	top: 0;
@@ -174,71 +277,11 @@ watch([() => props.iconSize, () => props.gap, () => props.icons], () => {
 	pointer-events: none;
 }
 
-.bg-rotator {
+.bg-canvas {
 	position: absolute;
-	top: 50%;
-	left: 50%;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
-
-/* 滚动器：执行动画 */
-.bg-scroller {
-	display: flex;
-	flex-direction: row;
-	animation: scroll-linear var(--anim-duration) linear infinite;
-	will-change: transform;
-}
-
-/* FIX 关键点：
-  这里强制设定宽度为 JS 计算出的精确值，
-  防止 Flexbox 布局计算导致的一像素偏差。
-*/
-.grid-pattern {
-	display: flex;
-	flex-direction: column;
-	flex-shrink: 0;
-	/* width: var(--pattern-width) 由模板中的内联 style 绑定 */
-}
-
-.grid-row {
-	display: flex;
-	flex-direction: row;
-	flex-shrink: 0;
-}
-
-.grid-cell {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	flex-shrink: 0;
-	box-sizing: border-box;
-}
-
-.icon-inner {
-	display: flex;
-	justify-content: center;
-	align-items: center;
+	top: 0;
+	left: 0;
 	width: 100%;
 	height: 100%;
-	transform-origin: center center;
-}
-
-.svg-content {
-	width: 100%;
-	height: 100%;
-	fill: currentColor;
-	display: block;
-}
-
-/* 动画定义：平移距离精确等于 Pattern 宽度 */
-@keyframes scroll-linear {
-	0% {
-		transform: translateX(0);
-	}
-	100% {
-		transform: translateX(calc(var(--move-distance) * -1));
-	}
 }
 </style>
