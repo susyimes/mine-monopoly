@@ -20,6 +20,8 @@ export enum SoundName {
 	ERROR = "error",
 	INFO = "info",
 
+	BOB = "bob",
+
 	// 游戏音效
 	DICE_ROLL = "dice-roll",
 	GAIN_MONEY = "gain-money",

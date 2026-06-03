@@ -72,7 +72,7 @@ function onLeave(el: Element, done: () => void) {
 			<div class="fp-dialog" v-if="visible">
 				<div class="fp-dialog-modal" @click="closeDialog"></div>
 
-				<div class="fp-dialog-main" :style="props.style" v-stagger="50">
+				<div class="fp-dialog-main" :style="props.style" v-stagger.sound="50">
 					<div class="fp-dialog-header">
 						<div class="title">
 							<span v-if="title">{{ title }}</span>

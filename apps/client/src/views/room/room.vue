@@ -226,7 +226,7 @@ import { vStagger } from "@src/directives";
 
 <template>
 	<FpErrorBoundary>
-		<div class="room-page" v-stagger>
+		<div class="room-page" v-stagger.sound>
 			<div class="left-container">
 				<div v-stagger="300" class="left-inner">
 				<div class="room-topbar">

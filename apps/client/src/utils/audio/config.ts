@@ -47,6 +47,12 @@ export const audioConfig: AudioManagerConfig = {
 			type: SoundType.UI,
 			volume: 0.5,
 		},
+		{
+			name: SoundName.BOB,
+			src: ["/sfx/bob.mp3"],
+			type: SoundType.UI,
+			volume: 0.5,
+		},
 
 		// 游戏音效
 		{
