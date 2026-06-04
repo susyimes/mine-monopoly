@@ -22,7 +22,6 @@ import { loadUpdateSources, type UpdateSource } from "./update-config.js";
 // ============================================================
 // 更新源配置
 // ============================================================
-const UPDATE_CHANNEL = "monopoly-client";
 let currentUpdateSource: UpdateSource | null = null;
 let isFallbackInProgress = false;
 
@@ -187,7 +186,6 @@ async function writeErrorLog(error: LogErrorData): Promise<string | null> {
 }
 
 autoUpdater.logger = log;
-autoUpdater.channel = UPDATE_CHANNEL;
 autoUpdater.autoDownload = false; // 关键：设为 false，防止游戏过程中自动抢网速
 autoUpdater.autoInstallOnAppQuit = true; // 退出时自动安装
 
@@ -523,7 +521,6 @@ async function checkForUpdatesWithFallback() {
 		return;
 	}
 
-	autoUpdater.channel = UPDATE_CHANNEL;
 	isFallbackInProgress = true;
 
 	let lastError: string | null = null;

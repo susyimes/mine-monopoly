@@ -54,7 +54,6 @@ autoUpdater.autoInstallOnAppQuit = true; // 退出时自动安装
 // ============================================================
 // 更新源配置
 // ============================================================
-const UPDATE_CHANNEL = "map-editor";
 let currentUpdateSource: UpdateSource | null = null;
 let isFallbackInProgress = false;
 
@@ -427,7 +426,6 @@ async function checkForUpdatesWithFallback() {
 		return;
 	}
 
-	autoUpdater.channel = UPDATE_CHANNEL;
 	isFallbackInProgress = true;
 
 	let lastError: string | null = null;
