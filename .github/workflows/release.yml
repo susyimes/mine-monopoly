@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - '@mine-monopoly/client@*'
+      - '@mine-monopoly/map-editor@*'
 
 permissions:
   contents: write
@@ -15,6 +16,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Parse Tag
+        id: tag
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          PKG_NAME=$(echo "$TAG" | sed -E 's/@mine-monopoly\/(.+)@.+/\1/')
+          VERSION=$(echo "$TAG" | sed -E 's/@mine-monopoly\/.+@(.+)/\1/')
+          echo "pkg_name=$PKG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Tag: $TAG → pkg=$PKG_NAME, ver=$VERSION"
 
       - uses: pnpm/action-setup@v4
 
@@ -46,65 +58,55 @@ jobs:
           EOF
 
       - name: Build Client
+        if: steps.tag.outputs.pkg_name == 'client'
         shell: bash
         run: pnpm --filter @mine-monopoly/client run build -- --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Rename Client Update Manifest
-        shell: bash
-        run: |
-          for yml in apps/client/dist/electron/*/latest.yml; do
-            mv "$yml" "$(dirname "$yml")/monopoly-client.yml"
-          done
-
       - name: Build Map Editor
+        if: steps.tag.outputs.pkg_name == 'map-editor'
         shell: bash
         run: pnpm --filter @mine-monopoly/map-editor run build -- --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Rename Editor Update Manifest
-        shell: bash
-        run: |
-          for yml in apps/map-editor/dist/electron/*/latest.yml; do
-            mv "$yml" "$(dirname "$yml")/map-editor.yml"
-          done
-
       - name: Upload Client Artifacts
+        if: steps.tag.outputs.pkg_name == 'client'
         uses: actions/upload-artifact@v4
         with:
           name: client-win
           path: |
             apps/client/dist/electron/*/*-Setup.exe
             apps/client/dist/electron/*/*-Setup.exe.blockmap
-            apps/client/dist/electron/*/monopoly-client.yml
+            apps/client/dist/electron/*/latest.yml
           if-no-files-found: error
 
       - name: Upload Editor Artifacts
+        if: steps.tag.outputs.pkg_name == 'map-editor'
         uses: actions/upload-artifact@v4
         with:
           name: editor-win
           path: |
             apps/map-editor/dist/electron/*/*-Setup.exe
             apps/map-editor/dist/electron/*/*-Setup.exe.blockmap
-            apps/map-editor/dist/electron/*/map-editor.yml
+            apps/map-editor/dist/electron/*/latest.yml
           if-no-files-found: error
 
-      - name: Merge Release Notes
+      - name: Prepare Release Notes
+        id: notes
         shell: bash
         run: |
-          {
-            echo "## MineMonopoly Client"
-            echo ""
-            cat apps/client/build/release-notes.md
-            echo ""
-            echo "---"
-            echo ""
-            echo "## MineMonopoly Map Editor"
-            echo ""
-            cat apps/map-editor/build/release-notes.md
-          } > release-notes.md
+          PKG_NAME="${{ steps.tag.outputs.pkg_name }}"
+          NOTES_FILE="apps/${PKG_NAME}/build/release-notes.md"
+
+          if [ -f "$NOTES_FILE" ]; then
+            cp "$NOTES_FILE" release-notes.md
+            echo "has_notes=true" >> $GITHUB_OUTPUT
+          else
+            echo "暂无详细更新日志" > release-notes.md
+            echo "has_notes=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Upload Release Notes
         uses: actions/upload-artifact@v4
@@ -118,6 +120,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Parse Tag
+        id: tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          PKG_NAME=$(echo "$TAG" | sed -E 's/@mine-monopoly\/(.+)@.+/\1/')
+          VERSION=$(echo "$TAG" | sed -E 's/@mine-monopoly\/.+@(.+)/\1/')
+          echo "pkg_name=$PKG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -126,6 +137,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          name: "${{ steps.tag.outputs.pkg_name }} v${{ steps.tag.outputs.version }}"
           body_path: artifacts/release-notes.md
           draft: false
           files: |
@@ -137,6 +149,13 @@ jobs:
     environment: build
 
     steps:
+      - name: Parse Tag
+        id: tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          PKG_NAME=$(echo "$TAG" | sed -E 's/@mine-monopoly\/(.+)@.+/\1/')
+          echo "pkg_name=$PKG_NAME" >> $GITHUB_OUTPUT
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -145,16 +164,15 @@ jobs:
       - name: Flatten & Upload to Cloudflare R2
         run: |
           mkdir -p r2-flat
+          PKG_NAME="${{ steps.tag.outputs.pkg_name }}"
 
-          # 收集所有 exe / blockmap / yml 文件并展平到同一目录
           find artifacts -type f \( -name "*.exe" -o -name "*.blockmap" -o -name "*.yml" \) \
             -exec cp {} r2-flat/ \;
 
-          echo "=== 准备上传到 R2 的文件 ==="
+          echo "=== 准备上传到 R2 的文件（${PKG_NAME}） ==="
           ls -lh r2-flat/
 
-          # 同步到 R2 (S3-compatible API)
-          aws s3 sync r2-flat/ "s3://${R2_BUCKET_NAME}/releases/latest/download/" \
+          aws s3 sync r2-flat/ "s3://${R2_BUCKET_NAME}/releases/${PKG_NAME}/download/" \
             --endpoint-url "${R2_ENDPOINT_URL}" \
             --no-progress \
             --delete
