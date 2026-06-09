@@ -75,7 +75,21 @@ function resizeContainer() {
 
 	const container = document.querySelector(".main-container") as HTMLElement;
 
-	if (availableWidth / availableHeight > ratio) {
+	// 手机横屏：使用 16:12（4:3）比例，font-size 取宽度/高度计算的中间值
+	if (isMobileDevice() && availableWidth / availableHeight > ratio) {
+		const mobileRatio = 16 / 9;
+		const containerStyle = {
+			height: `${availableHeight}px`,
+			width: `${availableHeight * mobileRatio}px`,
+		};
+		Object.assign(container.style, containerStyle);
+		container.setAttribute("out-of-width", "");
+		container.removeAttribute("out-of-height");
+		// 取宽度基准和高度基准的中间值，比纯宽度小但比纯高度大
+		const fontSizeByWidth = availableWidth * fontSizeBase;
+		const fontSizeByHeight = availableHeight * fontSizeBase * ratio;
+		document.documentElement.style.fontSize = `${(fontSizeByWidth + fontSizeByHeight) / 2}px`;
+	} else if (availableWidth / availableHeight > ratio) {
 		const containerStyle = {
 			height: `${availableHeight}px`,
 			width: `${availableHeight * ratio}px`,
@@ -138,7 +152,7 @@ const backgroundSvgList: string[] = [
 <template>
 	<TitleBar style="z-index: var(--z-topbar)" v-if="isTitleBarShow" :bg-color="'#f38b11'">
 		<template #title>
-			<span style="font-size: 12px">Mine Monopoly v{{ version }}</span>
+			<span style="font-size: 0.75rem">Mine Monopoly v{{ version }}</span>
 		</template>
 	</TitleBar>
 	<div class="main-container-wrapper">
@@ -184,10 +198,6 @@ const backgroundSvgList: string[] = [
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	background-color: #f7d088;
-	background-image: url(../public/images/oak_planks_512x512.png);
-	background-repeat: repeat;
-	background-size: 12%;
 }
 .main-container {
 	position: relative;
@@ -204,7 +214,7 @@ const backgroundSvgList: string[] = [
 	@mixin transitional-border-base {
 		content: "";
 		position: absolute;
-		border: solid #7e6237;
+		border: solid #e7dab2;
 		pointer-events: none;
 	}
 
