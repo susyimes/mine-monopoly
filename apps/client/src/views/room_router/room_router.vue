@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onMounted, computed, ref, onUpdated } from "vue";
+import { onBeforeMount, onMounted, computed, ref, onUpdated, nextTick } from "vue";
 import { useUserInfo, useUserList, useRoomList, useRoomInfo, useLoading } from "@src/store";
 import { useMonopolyClient } from "@src/core/monopoly-client/MonopolyClient";
 import userCard from "@src/components/common/user-card.vue";
@@ -15,7 +15,7 @@ import { throttle } from "@src/utils";
 import { useResourceStore } from "@src/store/game";
 import FpErrorBoundary from "@src/components/utils/fp-error-boundary/index.vue";
 import HeroTitle from "@src/components/hero-title";
-import { vStagger } from "@src/directives";
+import gsap from "gsap";
 
 const userInfoStore = useUserInfo();
 const userListStore = useUserList();
@@ -23,8 +23,49 @@ const roomListStore = useRoomList();
 
 const user = computed(() => userInfoStore);
 const roomId = ref("");
+const roomRouterRef = ref<HTMLElement | null>(null);
 
 onMounted(async () => {
+	// 入场动画
+	nextTick(() => {
+		if (!roomRouterRef.value) return;
+
+		const userContainer = roomRouterRef.value.querySelector(".user-container");
+		const joinRoom = roomRouterRef.value.querySelector(".join-room");
+
+		if (!userContainer || !joinRoom) return;
+
+		// 创建 timeline
+		const tl = gsap.timeline({ defaults: { ease: "back.out(1.5)" } });
+
+		// 1. 左边容器弹出
+		tl.fromTo(
+			userContainer,
+			{ scale: 0, opacity: 0 },
+			{ scale: 1, opacity: 1, duration: 0.4 },
+		);
+
+		// 2. 左边容器内容依次弹出
+		tl.fromTo(
+			userContainer.querySelectorAll(":scope > *"),
+			{ y: 20, opacity: 0 },
+			{ y: 0, opacity: 1, stagger: 0.1, duration: 0.3 },
+		);
+
+		// 3. 右边容器弹出
+		tl.fromTo(
+			joinRoom,
+			{ scale: 0, opacity: 0 },
+			{ scale: 1, opacity: 1, duration: 0.4 },
+		);
+
+		// 4. 右边容器内容依次弹出
+		tl.fromTo(
+			joinRoom.querySelectorAll(":scope > *"),
+			{ y: 20, opacity: 0 },
+			{ y: 0, opacity: 1, stagger: 0.1, duration: 0.3 },
+		);
+	});
 	// 清除缓存
 	useResourceStore().clear();
 	roomListStore.$reset();
@@ -125,15 +166,15 @@ async function handleGetRandomPublicRoom(e: Event) {
 		<LoginExtra></LoginExtra>
 		<div class="hall-page">
 			<HeroTitle text="Mine Monopoly" />
-			<div class="room-router" v-stagger>
-				<div class="user-container" v-stagger.sound="350">
+			<div class="room-router" ref="roomRouterRef">
+				<div class="user-container">
 					<userCard :avatar="user.avatar" :username="user.username" :color="user.color" />
 
 					<div class="side-bar">
 						<button class="quit btn-small" @click="handleLogout">登出</button>
 					</div>
 				</div>
-				<div class="join-room" v-stagger.sound="380">
+				<div class="join-room">
 					<div class="title">游戏大厅</div>
 					<div class="describe">
 						·输入房间号可加入房间，第一个使用房间号的将成为主机(房主)<br />
