@@ -450,8 +450,8 @@ import { vStagger } from "@src/directives";
 			display: grid;
 			grid-template-rows: 1fr 1fr;
 			grid-template-columns: 1fr 1fr 1fr;
-			row-gap: 8px;
-			column-gap: 8px;
+			row-gap: 0.5rem;
+			column-gap: 0.5rem;
 		}
 	}
 }
@@ -724,7 +724,7 @@ import { vStagger } from "@src/directives";
 			justify-content: space-between;
 			align-items: center;
 			padding: 0.6rem 0.8rem;
-			border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+			border-bottom: 0.0625rem solid rgba(0, 0, 0, 0.06);
 
 			.save-map-name {
 				font-weight: bold;

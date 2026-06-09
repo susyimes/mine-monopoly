@@ -130,7 +130,7 @@ const handleCancel = () => {
 	/* 限制高度，防止弹窗过长 */
 	max-height: 60vh;
 	overflow-y: auto;
-	padding: 10px;
+	padding: 0.625rem;
 }
 
 .dialog-content {
@@ -146,7 +146,7 @@ const handleCancel = () => {
 }
 
 .default-item-content {
-	padding: 20px;
+	padding: 1.25rem;
 	text-align: center;
 	font-weight: bold;
 }

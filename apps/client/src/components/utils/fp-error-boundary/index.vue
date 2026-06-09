@@ -180,7 +180,7 @@ const formattedStack = computed(() => {
 	flex-direction: column;
 	align-items: center;
 	padding: 1rem;
-	min-width: 300px;
+	min-width: 18.75rem;
 }
 
 .error-icon {
@@ -204,8 +204,8 @@ const formattedStack = computed(() => {
 .error-details {
 	width: 100%;
 	margin-top: 1rem;
-	border: 1px solid var(--fp-color-border, #ddd);
-	border-radius: 6px;
+	border: 0.0625rem solid var(--fp-color-border, #ddd);
+	border-radius: 0.375rem;
 	overflow: hidden;
 }
 
@@ -215,14 +215,14 @@ const formattedStack = computed(() => {
 	align-items: center;
 	padding: 0.5rem 1rem;
 	background-color: var(--fp-color-bg-light, #f5f5f5);
-	border-bottom: 1px solid var(--fp-color-border, #ddd);
+	border-bottom: 0.0625rem solid var(--fp-color-border, #ddd);
 	font-weight: bold;
 
 	.copy-button {
 		padding: 0.25rem 0.75rem;
 		font-size: 0.875rem;
-		border-radius: 4px;
-		border: 1px solid var(--fp-color-tertiary);
+		border-radius: 0.25rem;
+		border: 0.0625rem solid var(--fp-color-tertiary);
 		background-color: white;
 		cursor: pointer;
 		transition: filter 0.2s;
@@ -235,7 +235,7 @@ const formattedStack = computed(() => {
 
 .error-details-content {
 	padding: 1rem;
-	max-height: 300px;
+	max-height: 18.75rem;
 	overflow-y: auto;
 }
 
@@ -256,7 +256,7 @@ const formattedStack = computed(() => {
 .section-content {
 	padding: 0.5rem;
 	background-color: var(--fp-color-bg-light, #f9f9f9);
-	border-radius: 4px;
+	border-radius: 0.25rem;
 	font-family: monospace;
 	font-size: 0.875rem;
 	white-space: pre-wrap;
@@ -265,7 +265,7 @@ const formattedStack = computed(() => {
 
 .stack-trace {
 	margin: 0;
-	max-height: 200px;
+	max-height: 12.5rem;
 	overflow-y: auto;
 }
 </style>

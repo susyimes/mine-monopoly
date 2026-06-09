@@ -24,8 +24,8 @@ const props = withDefaults(defineProps<Props>(), {
 	speed: 50,
 	backgroundColor: "#f5f7fa",
 	color: "currentColor",
-	iconSize: 50,
-	gap: 48,
+	iconSize: 40,
+	gap: 32,
 	scaleRange: () => [0.8, 1.2],
 	opacityRange: () => [0.2, 0.5],
 });
@@ -81,11 +81,16 @@ async function loadIcons() {
 	iconImages.value = images;
 }
 
+function getRemScale(): number {
+	return parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
+}
+
 function calculateGridDimensions() {
 	const w = containerRef.value?.clientWidth ?? window.innerWidth;
 	const h = containerRef.value?.clientHeight ?? window.innerHeight;
 	const diagonal = Math.sqrt(w * w + h * h);
-	const unitSize = props.iconSize + props.gap;
+	const remScale = getRemScale();
+	const unitSize = (props.iconSize + props.gap) * remScale;
 
 	const count = Math.ceil(diagonal / unitSize) + 2;
 	rows.value = Math.max(count, 2);
@@ -144,9 +149,10 @@ function draw() {
 	const w = container.clientWidth;
 	const h = container.clientHeight;
 	const diagonal = Math.sqrt(w * w + h * h);
-	const unitSize = props.iconSize + props.gap;
+	const remScale = getRemScale();
+	const unitSize = (props.iconSize + props.gap) * remScale;
 	const patternWidth = cols.value * unitSize;
-	const iconSize = props.iconSize;
+	const iconSize = props.iconSize * remScale;
 
 	ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 	ctx.clearRect(0, 0, w, h);
@@ -156,7 +162,7 @@ function draw() {
 	ctx.rotate((props.angle * Math.PI) / 180);
 
 	const elapsed = performance.now() / 1000;
-	const offset = props.speed > 0 ? (elapsed * props.speed) % patternWidth : 0;
+	const offset = props.speed > 0 ? (elapsed * props.speed * remScale) % patternWidth : 0;
 
 	const halfCoverage = diagonal / 2;
 	const startCol = Math.floor((-halfCoverage + offset) / unitSize);

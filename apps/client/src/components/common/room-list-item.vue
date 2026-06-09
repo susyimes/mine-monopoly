@@ -28,15 +28,15 @@ const props = defineProps({
 
 <style lang="scss" scoped>
 .room-router-item {
-	height: 100px;
-	margin: 10px;
-	border-radius: 10px;
+	height: 6.25rem;
+	margin: 0.625rem;
+	border-radius: 0.625rem;
 	box-sizing: border-box;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	background-color: #ffffff;
-	box-shadow: 1px 1px 0.2rem rgba(0, 0, 0, 0.1);
+	box-shadow: 0.0625rem 0.0625rem 0.2rem rgba(0, 0, 0, 0.1);
 	overflow: hidden;
 	cursor: pointer;
 	transition: 0.1s;
@@ -48,7 +48,7 @@ const props = defineProps({
 
 	& > .room-info-container {
 		height: 100%;
-		padding: 25px;
+		padding: 1.5625rem;
 		font-size: 1.6em;
 		display: flex;
 		align-items: center;
@@ -67,7 +67,7 @@ const props = defineProps({
 	& > .player-num-contianer {
 		height: 100%;
 		font-size: 1.5em;
-		padding: 10px 20px 10px 40px;
+		padding: 0.625rem 1.25rem 0.625rem 2.5rem;
 		background-color: #ffe02d;
 		display: flex;
 		align-items: center;

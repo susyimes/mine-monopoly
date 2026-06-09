@@ -136,7 +136,7 @@ function handleHideContainer() {
 .list-enter-from,
 .list-leave-to {
 	opacity: 0;
-	transform: translateX(30px);
+	transform: translateX(1.875rem);
 }
 
 .chat_log {

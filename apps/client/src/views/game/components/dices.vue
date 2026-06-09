@@ -199,8 +199,8 @@ const displayDices = computed(() => {
 	height: 3.5rem;
 	background-color: #fff;
 	border-radius: 0.8rem;
-	border: 3px solid #e2e8f0; // 默认淡灰色
-	box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+	border: 0.1875rem solid #e2e8f0; // 默认淡灰色
+	box-shadow: inset 0 0 0.625rem rgba(0, 0, 0, 0.05);
 	overflow: hidden;
 
 	// Flex 居中布局
@@ -212,7 +212,7 @@ const displayDices = computed(() => {
 	&.type-prophecy {
 		border-color: #9333ea; // 更加明显的深紫色
 		background-color: #faf5ff; // 浅紫色背景
-		box-shadow: 0 0 8px rgba(147, 51, 234, 0.3); // 微弱发光
+		box-shadow: 0 0 0.5rem rgba(147, 51, 234, 0.3); // 微弱发光
 	}
 
 	// 占位状态
@@ -249,12 +249,12 @@ const displayDices = computed(() => {
 // 轮播指示器
 .loop-indicator {
 	display: flex;
-	gap: 3px;
-	margin-top: 2px; // 与数字的间距
+	gap: 0.1875rem;
+	margin-top: 0.125rem; // 与数字的间距
 
 	.dot {
-		width: 4px;
-		height: 4px;
+		width: 0.25rem;
+		height: 0.25rem;
 		border-radius: 50%;
 		background-color: #cbd5e1;
 		transition: background-color 0.3s;
@@ -272,17 +272,17 @@ const displayDices = computed(() => {
 
 .fade-scale-enter-from {
 	opacity: 0;
-	transform: scale(0.5) translateY(5px);
+	transform: scale(0.5) translateY(0.3125rem);
 }
 
 .fade-scale-leave-to {
 	opacity: 0;
-	transform: scale(0.5) translateY(-5px);
+	transform: scale(0.5) translateY(-0.3125rem);
 }
 
 .status-text {
 	font-size: 0.85rem;
-	letter-spacing: 1px;
+	letter-spacing: 0.0625rem;
 }
 
 .no-dice-text {

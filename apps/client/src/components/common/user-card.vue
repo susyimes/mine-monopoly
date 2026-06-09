@@ -58,7 +58,7 @@ const avatarSrc = computed(() => {
 		align-items: center;
 		box-shadow:
 			0 0.25rem 0 rgba(0, 0, 0, 0.15),
-			0 0 0 3px rgba(0, 0, 0, 0.05);
+			0 0 0 0.1875rem rgba(0, 0, 0, 0.05);
 
 		& > img {
 			width: calc($icon-size - 0.5rem);

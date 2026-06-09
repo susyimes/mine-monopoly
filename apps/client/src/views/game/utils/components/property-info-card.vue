@@ -184,7 +184,7 @@ defineExpose({ updateProperty });
 			border-radius: 1rem;
 			font-size: 0.85rem;
 			font-weight: bold;
-			box-shadow: 0 2px rgba(0, 0, 0, 0.15);
+			box-shadow: 0 0.125rem rgba(0, 0, 0, 0.15);
 		}
 
 		// 空地价格徽章
@@ -195,7 +195,7 @@ defineExpose({ updateProperty });
 			border-radius: 1rem;
 			font-size: 0.9rem;
 			// font-weight: bold;
-			box-shadow: 0 2px rgba(0, 0, 0, 0.15);
+			box-shadow: 0 0.125rem rgba(0, 0, 0, 0.15);
 			display: flex;
 			align-items: center;
 			gap: 0.25rem;
@@ -222,7 +222,7 @@ defineExpose({ updateProperty });
 			border-radius: 1rem;
 			font-size: 0.9rem;
 			font-weight: bold;
-			box-shadow: 0 2px rgba(0, 0, 0, 0.15);
+			box-shadow: 0 0.125rem rgba(0, 0, 0, 0.15);
 			display: flex;
 			align-items: center;
 			gap: 0.25rem;
@@ -244,7 +244,7 @@ defineExpose({ updateProperty });
 
 	// 分隔线
 	.divider {
-		height: 1px;
+		height: 0.0625rem;
 		background: rgba(0, 0, 0, 0.1);
 	}
 
@@ -325,7 +325,7 @@ defineExpose({ updateProperty });
 			// 当前等级过路费标记
 			&.current-toll {
 				background: rgba(76, 175, 80, 0.15);
-				border: 1px solid #4caf50;
+				border: 0.0625rem solid #4caf50;
 
 				.toll-level,
 				.toll-amount {

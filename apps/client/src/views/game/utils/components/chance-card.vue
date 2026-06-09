@@ -34,23 +34,23 @@ const formattedDescription = computed(() => {
 
 <style scoped>
 .chance-card {
-	width: 120px;
-	height: 160px;
-	border-radius: 8px;
-	padding: 10px;
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+	width: 7.5rem;
+	height: 10rem;
+	border-radius: 0.5rem;
+	padding: 0.625rem;
+	box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	gap: 8px;
+	gap: 0.5rem;
 	pointer-events: none;
 	user-select: none;
 }
 
 .chance-card-icon {
-	width: 60px;
-	height: 60px;
+	width: 3.75rem;
+	height: 3.75rem;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -68,21 +68,21 @@ const formattedDescription = computed(() => {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	gap: 4px;
+	gap: 0.25rem;
 	text-align: center;
 }
 
 .chance-card-name {
-	font-size: 14px;
+	font-size: 0.875rem;
 	font-weight: bold;
 	color: #ffffff;
-	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+	text-shadow: 0.0625rem 0.0625rem 0.125rem rgba(0, 0, 0, 0.5);
 }
 
 .chance-card-description {
-	font-size: 10px;
+	font-size: 0.625rem;
 	color: #ffffff;
-	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+	text-shadow: 0.0625rem 0.0625rem 0.125rem rgba(0, 0, 0, 0.5);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;

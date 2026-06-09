@@ -129,7 +129,7 @@ watch(() => props.visible, (newVal) => {
     :confirm-text="isCompressing ? '处理中...' : '确认'"
     cancel-text="取消"
     title="裁剪头像"
-    :style="{ width: '500px', maxWidth: '90vw' }"
+    :style="{ width: '31.25rem', maxWidth: '90vw' }"
     @submit="handleSubmit"
     @cancel="handleCancel"
   >
@@ -150,7 +150,7 @@ watch(() => props.visible, (newVal) => {
 
 <style lang="scss" scoped>
 .cropper-container {
-  height: 350px;
+  height: 21.875rem;
   border-radius: 0.5rem;
   overflow: hidden;
 

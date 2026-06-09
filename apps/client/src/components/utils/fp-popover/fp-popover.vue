@@ -17,7 +17,7 @@ function init() {
   switch (props.placement) {
     case 'top':
       style = `
-          top: 0px;
+          top: 0;
           left: 50%;
           transform: translate(-50%, -100%);
           `
@@ -38,7 +38,7 @@ function init() {
       break;
     case 'bottom':
       style = `
-          bottom: 0px;
+          bottom: 0;
           left: 50%;
           transform: translate(-50%, 50%);
           `

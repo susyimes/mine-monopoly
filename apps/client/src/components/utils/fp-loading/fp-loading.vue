@@ -52,8 +52,8 @@ watch(loading, (newValue) => {
 }
 
 .spinner {
-  width: 50px;
-  height: 50px;
+  width: 3.125rem;
+  height: 3.125rem;
   border-radius: 50%;
   border: 0.2rem solid white;
   border-top-color: transparent;
@@ -73,14 +73,14 @@ watch(loading, (newValue) => {
   flex-direction: column;
   align-items: center;
   gap: 0.5em;
-  width: 200px;
+  width: 12.5rem;
 }
 
 .progress-bar {
   width: 100%;
-  height: 8px;
+  height: 0.5rem;
   background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   overflow: hidden;
 }
 

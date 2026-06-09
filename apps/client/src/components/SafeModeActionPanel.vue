@@ -181,21 +181,21 @@ watch(
 	align-items: center;
 	justify-content: center;
 	z-index: 9999;
-	backdrop-filter: blur(4px);
+	backdrop-filter: blur(0.25rem);
 }
 
 .safe-mode-panel {
 	position: relative;
 	width: 90%;
-	max-width: 500px;
+	max-width: 31.25rem;
 	background-color: #ffffff;
 	background-image: var(--fp-texture-felt);
 	background-repeat: repeat;
 	border-radius: 1.5rem;
 	padding: 2rem;
 	box-shadow:
-		0 20px 60px rgba(0, 0, 0, 0.3),
-		0 0 0 3px rgba(0, 0, 0, 0.05);
+		0 1.25rem 3.75rem rgba(0, 0, 0, 0.3),
+		0 0 0 0.1875rem rgba(0, 0, 0, 0.05);
 	text-align: center;
 	animation: slideIn 0.3s ease-out;
 }
@@ -203,7 +203,7 @@ watch(
 @keyframes slideIn {
 	from {
 		opacity: 0;
-		transform: translateY(-20px) scale(0.95);
+		transform: translateY(-1.25rem) scale(0.95);
 	}
 	to {
 		opacity: 1;
@@ -259,7 +259,7 @@ watch(
 	margin-top: 0.75rem;
 	padding: 1rem;
 	background-color: #fef2f2;
-	border: 1px solid #fecaca;
+	border: 0.0625rem solid #fecaca;
 	border-radius: 0.5rem;
 }
 
@@ -299,7 +299,7 @@ watch(
 	white-space: pre-wrap;
 	word-break: break-all;
 	line-height: 1.4;
-	max-height: 200px;
+	max-height: 12.5rem;
 	overflow-y: auto;
 }
 
@@ -362,7 +362,7 @@ button {
 
 .expand-enter-to,
 .expand-leave-from {
-	max-height: 200px;
+	max-height: 12.5rem;
 	opacity: 1;
 }
 </style>

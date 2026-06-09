@@ -18,7 +18,7 @@ const tipStyle = computed(() =>
 <style lang="scss" scoped>
 .money-pop-tip-content {
 	font-size: 1.6rem;
-	text-shadow: 1px 1px 0 #ffffff, 0.08rem 0.08rem 0 #ffffff, -1px -1px 0 #ffffff, -0.08rem -0.08rem 0 #ffffff,
-		1px -1px 0 #ffffff, 0.08rem -0.08rem 0 #ffffff, -1px 1px 0 #ffffff, -0.08rem 0.08rem 0 #ffffff;
+	text-shadow: 0.0625rem 0.0625rem 0 #ffffff, 0.08rem 0.08rem 0 #ffffff, -0.0625rem -0.0625rem 0 #ffffff, -0.08rem -0.08rem 0 #ffffff,
+		0.0625rem -0.0625rem 0 #ffffff, 0.08rem -0.08rem 0 #ffffff, -0.0625rem 0.0625rem 0 #ffffff, -0.08rem 0.08rem 0 #ffffff;
 }
 </style>

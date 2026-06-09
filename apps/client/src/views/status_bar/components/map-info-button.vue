@@ -89,7 +89,7 @@ const mapDescriptionHtml = computed(() => {
 		<FontAwesomeIcon icon="book" />
 	</button>
 	<FpDialog
-		:style="'width: 60%; max-width: 600px;'"
+		:style="'width: 60%; max-width: 37.5rem;'"
 		v-model:visible="mapInfoVisible"
 		:cancel-text="undefined"
 		confirm-text="关闭"
@@ -132,7 +132,7 @@ const mapDescriptionHtml = computed(() => {
 		span {
 			background-color: rgba(255, 255, 255, 0.6);
 			padding: 0.3rem 0.8rem;
-			border-radius: 4px;
+			border-radius: 0.25rem;
 		}
 	}
 
@@ -184,7 +184,7 @@ const mapDescriptionHtml = computed(() => {
 		:deep(code) {
 			background-color: rgba(0, 0, 0, 0.05);
 			padding: 0.1em 0.3em;
-			border-radius: 3px;
+			border-radius: 0.1875rem;
 			font-family: monospace;
 			font-size: 0.9em;
 		}
@@ -206,7 +206,7 @@ const mapDescriptionHtml = computed(() => {
 
 		:deep(th),
 		:deep(td) {
-			border: 1px solid #ddd;
+			border: 0.0625rem solid #ddd;
 			padding: 0.5rem 0.8rem;
 			text-align: left;
 		}

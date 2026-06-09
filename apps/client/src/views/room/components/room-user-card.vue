@@ -118,7 +118,7 @@ $top-bar-height: 2.8rem;
 		transform: translateY(0);
 	}
 	50% {
-		transform: translateY(-4px);
+		transform: translateY(-0.25rem);
 	}
 }
 
@@ -282,7 +282,7 @@ $top-bar-height: 2.8rem;
 			height: $avatar-size;
 			text-align: center;
 			line-height: $avatar-size;
-			// border: 4px solid #ffffff;
+			// border: 0.25rem solid #ffffff;
 			font-size: 1.2rem;
 			color: #ffffff;
 			z-index: 20;

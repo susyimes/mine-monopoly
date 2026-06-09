@@ -142,7 +142,7 @@ onUnmounted(() => {
 		:closable="status !== 'downloading'"
 		:hidden-footer="true"
 		append-to-body
-		style="width: 400px; max-width: 90vw"
+		style="width: 25rem; max-width: 90vw"
 	>
 		<div v-if="status === 'available'" class="scene-box">
 			<div class="version-tag">版本: {{ version }}</div>
@@ -200,17 +200,17 @@ onUnmounted(() => {
 	background-color: var(--fp-color-tertiary); // 复用你的主题色
 	color: white;
 	padding: 0.2rem 0.6rem;
-	border-radius: 4px;
+	border-radius: 0.25rem;
 	font-size: 0.9rem;
 	margin-bottom: 1rem;
-	box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+	box-shadow: 0.125rem 0.125rem 0.3125rem rgba(0, 0, 0, 0.2);
 }
 
 .note-box {
 	background-color: rgba(0, 0, 0, 0.03);
-	border-radius: 8px;
+	border-radius: 0.5rem;
 	padding: 1rem;
-	border: 1px solid rgba(0, 0, 0, 0.05);
+	border: 0.0625rem solid rgba(0, 0, 0, 0.05);
 
 	.note-label {
 		margin-bottom: 0.5rem;
@@ -221,7 +221,7 @@ onUnmounted(() => {
 		color: #555;
 		line-height: 1.6;
 		white-space: pre-wrap; // 保留换行符
-		max-height: 150px;
+		max-height: 9.375rem;
 		overflow-y: auto;
 	}
 }
@@ -230,16 +230,16 @@ onUnmounted(() => {
 .progress-wrapper {
 	display: flex;
 	align-items: center;
-	gap: 10px;
+	gap: 0.625rem;
 	margin-bottom: 0.5rem;
 
 	.progress-track {
 		flex: 1;
-		height: 12px;
+		height: 0.75rem;
 		background-color: #eee;
-		border-radius: 6px;
+		border-radius: 0.375rem;
 		overflow: hidden;
-		box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+		box-shadow: inset 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.1);
 
 		.progress-fill {
 			height: 100%;
@@ -285,7 +285,7 @@ onUnmounted(() => {
 	padding-top: 1rem;
 
 	&.has-separator {
-		border-top: 1px solid rgba(0, 0, 0, 0.05);
+		border-top: 0.0625rem solid rgba(0, 0, 0, 0.05);
 	}
 
 	button {

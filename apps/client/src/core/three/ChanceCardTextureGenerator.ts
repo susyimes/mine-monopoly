@@ -81,8 +81,8 @@ export class ChanceCardTextureGenerator {
 		if (!this.renderContainer) {
 			this.renderContainer = document.createElement("div");
 			this.renderContainer.style.position = "absolute";
-			this.renderContainer.style.top = "-9999px";
-			this.renderContainer.style.left = "-9999px";
+			this.renderContainer.style.top = "-9999rem";
+			this.renderContainer.style.left = "-9999rem";
 			this.renderContainer.style.zIndex = "-1";
 			this.renderContainer.style.pointerEvents = "none";
 			document.body.appendChild(this.renderContainer);

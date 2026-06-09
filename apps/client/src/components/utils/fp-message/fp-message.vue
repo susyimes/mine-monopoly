@@ -119,7 +119,7 @@ defineExpose({
 
 .fp-enter-from,
 .fp-leave-to {
-	transform: translate(-50%, -20px);
+	transform: translate(-50%, -1.25rem);
 	opacity: 0;
 }
 </style>

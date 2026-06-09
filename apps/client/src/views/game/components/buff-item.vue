@@ -63,8 +63,8 @@ const formattedDescription = computed(() => {
 	border-radius: 0.6rem;
 
 	// 深度与阴影
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-	border: 1px solid rgba(0, 0, 0, 0.03);
+	box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+	border: 0.0625rem solid rgba(0, 0, 0, 0.03);
 
 	display: flex;
 	margin-bottom: 0.8rem; // 列表项间距
@@ -73,13 +73,13 @@ const formattedDescription = computed(() => {
 		box-shadow 0.2s;
 
 	&:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+		transform: translateY(-0.125rem);
+		box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
 	}
 
 	// 左侧装饰条 (织带风格)
 	.fabric-strip {
-		width: 6px;
+		width: 0.375rem;
 		border-radius: 0.6rem 0 0 0.6rem;
 		background-color: var(--fp-color-primary); // 主色
 		// 模拟斜纹织带纹理
@@ -93,7 +93,7 @@ const formattedDescription = computed(() => {
 			transparent 75%,
 			transparent
 		);
-		background-size: 8px 8px;
+		background-size: 0.5rem 0.5rem;
 		flex-shrink: 0;
 	}
 
@@ -109,7 +109,7 @@ const formattedDescription = computed(() => {
 .header {
 	margin-bottom: 0.5rem;
 	padding-bottom: 0.5rem;
-	border-bottom: 2px dashed rgba(0, 0, 0, 0.06); // 缝线分割
+	border-bottom: 0.125rem dashed rgba(0, 0, 0, 0.06); // 缝线分割
 
 	.title-row {
 		display: flex;
@@ -124,10 +124,10 @@ const formattedDescription = computed(() => {
 		.timing-badge {
 			font-size: 0.75rem;
 			padding: 0.15rem 0.5rem;
-			border-radius: 4px;
+			border-radius: 0.25rem;
 			background-color: var(--fp-color-bg-warning); // 浅橙色背景
 			color: var(--fp-color-warning); // 深橙色文字
-			border: 1px dashed rgba(0, 0, 0, 0.1);
+			border: 0.0625rem dashed rgba(0, 0, 0, 0.1);
 		}
 	}
 }
@@ -158,11 +158,11 @@ const formattedDescription = computed(() => {
 		display: flex;
 		justify-content: space-around;
 		align-items: center;
-		gap: 4px;
+		gap: 0.25rem;
 		background: var(--fp-color-bg-light);
 		color: var(--fp-color-primary);
-		padding: 2px 8px;
-		border-radius: 10px;
+		padding: 0.125rem 0.5rem;
+		border-radius: 0.625rem;
 
 		&.is-infinite {
 			background: var(--fp-color-bg-light);

@@ -181,7 +181,7 @@ function handleMapItemClick(item: MapItemWithContext) {
 
 .mini-map-container {
 	display: grid;
-	gap: 4px;
+	gap: 0.25rem;
 }
 
 .player-placeholder {
@@ -204,8 +204,8 @@ function handleMapItemClick(item: MapItemWithContext) {
 		color: white;
 		font-size: 0.6rem;
 
-		border: 1.5px solid rgba(255, 255, 255, 0.8);
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+		border: 0.0938rem solid rgba(255, 255, 255, 0.8);
+		box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.6);
 	}
 }
 
@@ -222,7 +222,7 @@ function handleMapItemClick(item: MapItemWithContext) {
 	position: relative;
 	transition: transform 0.2s;
 
-	border: 2px solid transparent;
+	border: 0.125rem solid transparent;
 
 	&.is-road {
 		background-color: #5a5a5a;
@@ -249,7 +249,7 @@ function handleMapItemClick(item: MapItemWithContext) {
 		&:hover {
 			transform: scale(1.1);
 			z-index: 50;
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+			box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
 		}
 	}
 
@@ -261,7 +261,7 @@ function handleMapItemClick(item: MapItemWithContext) {
 		&:hover {
 			transform: scale(1.1);
 			z-index: 50;
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+			box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
 		}
 	}
 
@@ -276,7 +276,7 @@ function handleMapItemClick(item: MapItemWithContext) {
 			transform: translate(-50%, -50%);
 			width: 120%;
 			height: 120%;
-			border: 3px solid var(--fp-color-primary, #409eff);
+			border: 0.1875rem solid var(--fp-color-primary, #409eff);
 			border-radius: 20%;
 			pointer-events: none;
 			animation: select-pulse 1s infinite alternate;
@@ -286,7 +286,7 @@ function handleMapItemClick(item: MapItemWithContext) {
 	.owner-initial {
 		z-index: 1;
 		font-weight: bold;
-		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+		text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.5);
 		font-size: 1rem;
 	}
 }

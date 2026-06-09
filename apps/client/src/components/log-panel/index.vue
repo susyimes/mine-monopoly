@@ -337,7 +337,7 @@ function toggleExpand(logId: string) {
 		@update:visible="emits('update:visible', $event)"
 		title="日志管理"
 		:hidden-footer="true"
-		:style="{ width: '800px', maxHeight: '80vh' }"
+		:style="{ width: '50rem', maxHeight: '80vh' }"
 	>
 		<div class="log-panel">
 			<!-- 统计信息 -->
@@ -469,7 +469,7 @@ function toggleExpand(logId: string) {
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
-	min-height: 400px;
+	min-height: 25rem;
 }
 
 .log-stats {
@@ -477,7 +477,7 @@ function toggleExpand(logId: string) {
 	gap: 1rem;
 	padding: 0.5rem 1rem;
 	background-color: var(--fp-color-bg-light, #f5f5f5);
-	border-radius: 4px;
+	border-radius: 0.25rem;
 
 	.stat-item {
 		font-size: 0.875rem;
@@ -505,18 +505,18 @@ function toggleExpand(logId: string) {
 	.filter-select,
 	.filter-input {
 		padding: 0.5rem;
-		border: 1px solid var(--fp-color-border, #ddd);
-		border-radius: 4px;
+		border: 0.0625rem solid var(--fp-color-border, #ddd);
+		border-radius: 0.25rem;
 		font-size: 0.875rem;
 	}
 
 	.filter-select {
-		min-width: 100px;
+		min-width: 6.25rem;
 	}
 
 	.filter-input {
 		flex: 1;
-		min-width: 150px;
+		min-width: 9.375rem;
 	}
 }
 
@@ -529,13 +529,13 @@ function toggleExpand(logId: string) {
 .log-list {
 	flex: 1;
 	overflow-y: auto;
-	max-height: 500px;
-	border: 1px solid var(--fp-color-border, #ddd);
-	border-radius: 4px;
+	max-height: 31.25rem;
+	border: 0.0625rem solid var(--fp-color-border, #ddd);
+	border-radius: 0.25rem;
 }
 
 .log-item {
-	border-left: 4px solid #ddd;
+	border-left: 0.25rem solid #ddd;
 	padding: 0.75rem;
 	margin-bottom: 0.5rem;
 	background-color: white;
@@ -585,7 +585,7 @@ function toggleExpand(logId: string) {
 .log-details {
 	margin-top: 0.75rem;
 	padding-top: 0.75rem;
-	border-top: 1px solid #eee;
+	border-top: 0.0625rem solid #eee;
 }
 
 .log-type,
@@ -619,11 +619,11 @@ function toggleExpand(logId: string) {
 	margin: 0;
 	padding: 0.5rem;
 	background-color: #f5f5f5;
-	border-radius: 4px;
+	border-radius: 0.25rem;
 	font-size: 0.75rem;
 	white-space: pre-wrap;
 	word-break: break-word;
-	max-height: 200px;
+	max-height: 12.5rem;
 	overflow-y: auto;
 }
 

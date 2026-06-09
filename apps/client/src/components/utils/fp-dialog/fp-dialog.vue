@@ -196,7 +196,7 @@ function onLeave(el: Element, done: () => void) {
 
 		button {
 			padding: 0.5em 1.2em;
-			border-radius: 6px;
+			border-radius: 0.375rem;
 			font-size: 1rem;
 			cursor: pointer;
 			border: none;

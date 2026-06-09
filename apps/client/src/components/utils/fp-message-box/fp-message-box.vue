@@ -141,12 +141,12 @@ const handleDialogClose = () => {
 .message-footer {
 	display: flex;
 	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 10px;
+	gap: 0.75rem;
+	margin-top: 0.625rem;
 
 	button {
 		padding: 0.5em 1.2em;
-		border-radius: 6px;
+		border-radius: 0.375rem;
 		font-size: 1rem;
 		cursor: pointer;
 		border: none;
@@ -162,7 +162,7 @@ const handleDialogClose = () => {
 		}
 
 		&.btn-cancel {
-			border: 1px solid #b0b1b3;
+			border: 0.0625rem solid #b0b1b3;
 			background-color: #ffffff;
 			color: var(--fp-color-tertiary);
 			border-color: var(--fp-color-tertiary);

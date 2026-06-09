@@ -579,7 +579,7 @@ const applySettings = () => {
 
 						&:hover {
 							opacity: 0.9;
-							transform: translateY(-1px);
+							transform: translateY(-0.0625rem);
 						}
 					}
 				}
@@ -617,7 +617,7 @@ const applySettings = () => {
 						&:hover:not(.disabled) {
 							transform: scale(1.15);
 							background: rgba(255, 255, 255, 0.8);
-							box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+							box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
 						}
 
 						&:active:not(.disabled) {
@@ -701,8 +701,8 @@ const applySettings = () => {
 
 					&:hover:not(:disabled) {
 						opacity: 0.9;
-						transform: translateY(-2px);
-						box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+						transform: translateY(-0.125rem);
+						box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
 					}
 
 					&:active:not(:disabled) {

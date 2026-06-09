@@ -162,17 +162,17 @@ onUnmounted(() => {
 
 /* 自定义滚动条样式 */
 .dynamic-button-container.layout-vertical::-webkit-scrollbar {
-	width: 4px;
+	width: 0.25rem;
 }
 
 .dynamic-button-container.layout-vertical::-webkit-scrollbar-track {
 	background: var(--fp-color-bg-light);
-	border-radius: 2px;
+	border-radius: 0.125rem;
 }
 
 .dynamic-button-container.layout-vertical::-webkit-scrollbar-thumb {
 	background: var(--fp-color-tertiary);
-	border-radius: 2px;
+	border-radius: 0.125rem;
 }
 
 .dynamic-button-container.layout-vertical::-webkit-scrollbar-thumb:hover {

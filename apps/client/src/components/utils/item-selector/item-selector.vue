@@ -104,14 +104,14 @@ function handleItemClick(item: any) {
 		border: 0.2rem solid #e0e0e0;
 		cursor: pointer;
 		transition: all 0.3s ease-out;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+		box-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.05);
 		// overflow: hidden;
 		padding: 0.5rem;
 
 		// 鼠标悬停效果
 		&:hover {
-			box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-			transform: translateY(-2px);
+			box-shadow: 0 0.375rem 0.75rem rgba(0, 0, 0, 0.1);
+			transform: translateY(-0.125rem);
 		}
 
 		// UISchema 显示模式：不显示边框和背景
@@ -136,8 +136,8 @@ function handleItemClick(item: any) {
 		&.is-selected {
 			border-color: var(--fp-color-primary); // 主题色边框
 			box-shadow:
-				0 4px 8px rgba(0, 0, 0, 0.1),
-				0 0 0 1px var(--fp-color-primary); // 增加主题色外圈
+				0 0.25rem 0.5rem rgba(0, 0, 0, 0.1),
+				0 0 0 0.0625rem var(--fp-color-primary); // 增加主题色外圈
 		}
 
 		// 选中图标角标

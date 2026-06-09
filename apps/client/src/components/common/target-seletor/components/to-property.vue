@@ -69,7 +69,7 @@ const currentSelectedProperty = computed(() => {
 	align-items: flex-start;
 	gap: 2rem;
 	padding: 1rem;
-	min-height: 450px;
+	min-height: 28.125rem;
 
 	.target-container {
 		flex: 1;
@@ -86,11 +86,11 @@ const currentSelectedProperty = computed(() => {
 	}
 
 	.preview-container {
-		width: 320px;
-		min-height: 400px;
+		width: 20rem;
+		min-height: 25rem;
 		display: flex;
 		flex-direction: column;
-		border-left: 2px dashed #e0e0e0;
+		border-left: 0.125rem dashed #e0e0e0;
 		padding-left: 2rem;
 		margin-top: 2.5rem;
 
@@ -131,7 +131,7 @@ const currentSelectedProperty = computed(() => {
 @keyframes fade-in {
 	from {
 		opacity: 0;
-		transform: translateY(10px);
+		transform: translateY(0.625rem);
 	}
 	to {
 		opacity: 1;

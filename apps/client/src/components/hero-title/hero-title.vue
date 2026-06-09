@@ -64,7 +64,7 @@ onMounted(() => {
 <style lang="scss" scoped>
 .hero-title {
 	z-index: 1;
-	margin-top: 30px;
+	margin-top: 1.875rem;
 
 	.text-wrapper {
 		font-size: 6em;
@@ -127,13 +127,13 @@ onMounted(() => {
 	@keyframes rotate2 {
 		0%,
 		100% {
-			-webkit-transform: translate3d(5px, 5px, 5px);
-			transform: translate3d(5px, 5px, 5px);
+			-webkit-transform: translate3d(0.3125rem, 0.3125rem, 0.3125rem);
+			transform: translate3d(0.3125rem, 0.3125rem, 0.3125rem);
 		}
 
 		50% {
-			-webkit-transform: translate3d((-5px, 5px, -5px));
-			transform: translate3d((-5px, 5px, -5px));
+			-webkit-transform: translate3d((-0.3125rem, 0.3125rem, -0.3125rem));
+			transform: translate3d((-0.3125rem, 0.3125rem, -0.3125rem));
 		}
 	}
 }

@@ -132,22 +132,22 @@ export class ReconnectionManager {
 
     // 使用 VNode 创建内容，包含放弃按钮
     const content = h('div', {
-      style: 'text-align: center; padding: 10px;'
+      style: 'text-align: center; padding: 0.625rem;'
     }, [
-      h('div', { style: 'font-size: 24px; margin-bottom: 10px;' }, '⚠️'),
-      h('div', { style: 'font-weight: bold; margin-bottom: 5px;' }, '连接已断开'),
+      h('div', { style: 'font-size: 1.5rem; margin-bottom: 0.625rem;' }, '⚠️'),
+      h('div', { style: 'font-weight: bold; margin-bottom: 0.3125rem;' }, '连接已断开'),
       h('div', {
-        style: 'font-size: 14px; color: #666; margin-bottom: 15px;'
+        style: 'font-size: 0.875rem; color: #666; margin-bottom: 0.9375rem;'
       }, `正在尝试重新连接... (${this.retryCount}/${maxRetriesText})`),
       h('button', {
         style: `
-          padding: 8px 20px;
+          padding: 0.5rem 1.25rem;
           background-color: #ef4444;
           color: white;
           border: none;
-          border-radius: 6px;
+          border-radius: 0.375rem;
           cursor: pointer;
-          font-size: 14px;
+          font-size: 0.875rem;
         `,
         onClick: () => this.cancel()
       }, '放弃重连')

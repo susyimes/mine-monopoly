@@ -46,7 +46,7 @@ defineEmits<{
 	padding-top: 1rem;
 	box-shadow:
 		var(--fp-shadow-depth),
-		0 0 0 3px rgba(0, 0, 0, 0.05);
+		0 0 0 0.1875rem rgba(0, 0, 0, 0.05);
 }
 
 .panel-title {

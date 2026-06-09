@@ -88,23 +88,23 @@ function toRoomList() {
 	font-size: 1.3rem;
 	font-weight: 700;
 	color: #fff;
-	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+	text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.3);
 	background-color: var(--fp-color-primary);
 	flex-shrink: 0;
 
 	&.rank-gold {
 		background: linear-gradient(135deg, #f9d423, #e8a400);
-		box-shadow: 0 0 8px rgba(249, 212, 35, 0.6);
+		box-shadow: 0 0 0.5rem rgba(249, 212, 35, 0.6);
 	}
 
 	&.rank-silver {
 		background: linear-gradient(135deg, #c9ced3, #8e9aab);
-		box-shadow: 0 0 6px rgba(169, 179, 191, 0.5);
+		box-shadow: 0 0 0.375rem rgba(169, 179, 191, 0.5);
 	}
 
 	&.rank-bronze {
 		background: linear-gradient(135deg, #da9b6a, #a0643a);
-		box-shadow: 0 0 6px rgba(205, 127, 50, 0.5);
+		box-shadow: 0 0 0.375rem rgba(205, 127, 50, 0.5);
 	}
 }
 </style>

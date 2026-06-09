@@ -51,14 +51,14 @@ const iconUrl = computed(() => {
 		box-shadow: var(--el-box-shadow);
 		font-size: 1.2rem;
 		font-weight: bold;
-		border-radius: 8px;
+		border-radius: 0.5rem;
 		color: var(--fp-color-primary);
 		margin-bottom: 0.6rem;
 		text-shadow:
-			#fff -1px 0 0,
-			#fff 1px 0 0,
-			#fff 0 1px 0,
-			#fff 0 -1px 0;
+			#fff -0.0625rem 0 0,
+			#fff 0.0625rem 0 0,
+			#fff 0 0.0625rem 0,
+			#fff 0 -0.0625rem 0;
 
 		$icon_size: 1.6em;
 
@@ -72,10 +72,10 @@ const iconUrl = computed(() => {
 	.description {
 		color: #2b2b2b;
 		text-shadow:
-			#fff -1px 0 0,
-			#fff 1px 0 0,
-			#fff 0 1px 0,
-			#fff 0 -1px 0;
+			#fff -0.0625rem 0 0,
+			#fff 0.0625rem 0 0,
+			#fff 0 0.0625rem 0,
+			#fff 0 -0.0625rem 0;
 		white-space: pre-wrap; /* 保留换行和空格 */
 	}
 }
