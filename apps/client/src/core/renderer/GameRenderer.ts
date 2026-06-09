@@ -59,6 +59,7 @@ export class GameRenderer {
 	private chanceCardTargetOutlinePass: OutlinePass;
 	private playerInRoundOutlinePass: OutlinePass;
 	private controls: OrbitControls;
+	private isLowEnd: boolean;
 
 	private mapContainer: THREE.Group = new THREE.Group();
 	private mapModules: Map<string, {
@@ -127,13 +128,16 @@ export class GameRenderer {
 		this.mapData = mapData;
 		this.container = container;
 		this.canvas = canvas;
-		this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-		this.renderer.setClearAlpha(0);
 
-		// 初始化画质设置
+		// 初始化画质设置（必须在 WebGLRenderer 之前，决定 antialias 等）
 		const settingStore = useSettig();
 		settingStore.initGraphicQuality();
+		const isLowEnd = settingStore.graphicQuality === "low";
+		this.isLowEnd = isLowEnd;
+
+		this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !isLowEnd });
+		this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+		this.renderer.setClearAlpha(0);
 
 		// 应用初始像素比
 		const initialPixelRatio = settingStore.getPixelRatio();
@@ -197,7 +201,7 @@ export class GameRenderer {
 		this.popElementRenderer = new CSS2DRenderer();
 		this.popElementRenderer.setSize(container.clientWidth, container.clientHeight);
 		this.popElementRenderer.domElement.style.position = "absolute";
-		this.popElementRenderer.domElement.style.top = "0px";
+		this.popElementRenderer.domElement.style.top = "0";
 		this.popElementRenderer.domElement.style.pointerEvents = "none";
 		this.popElementRenderer.domElement.style.zIndex = "var(--z-ui)";
 		container.appendChild(this.popElementRenderer.domElement);
@@ -328,8 +332,13 @@ export class GameRenderer {
 			// 2. 每一帧开始时，手动清除颜色、深度、模板缓冲区
 			this.renderer.clear();
 
-			// 3. 渲染主场景 (通过 Composer)
-			this.composer.render();
+			// 3. 渲染主场景
+			if (this.isLowEnd) {
+				// 移动端跳过 EffectComposer（省去 3 次全屏后处理 pass）
+				this.renderer.render(this.scene, this.camera);
+			} else {
+				this.composer.render();
+			}
 
 			this.popElementRenderer.render(this.scene, this.camera);
 

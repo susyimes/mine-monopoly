@@ -284,7 +284,8 @@ export const useSettig = defineStore("setting", {
 			if (platform === "capacitor" || platform === "mobile") {
 				this.graphicQuality = "low";
 				this.enableShadow = false;
-				console.log("[画质设置] 移动端强制 low，关闭阴影");
+				this.enableModelAnimation = false;
+				console.log("[画质设置] 移动端强制 low，关闭阴影和模型动画");
 				return;
 			}
 
