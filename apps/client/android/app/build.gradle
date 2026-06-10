@@ -1,8 +1,56 @@
 apply plugin: 'com.android.application'
 
+// ============================================================
+// APK 签名配置
+// 支持两种方式（优先级从高到低）：
+//   1. CI/CD：环境变量 RELEASE_KEYSTORE_BASE64 + RELEASE_STORE_PASSWORD 等
+//   2. 本地开发：根目录下的 keystore.properties 文件
+// ============================================================
+
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasKeystoreProps = keystorePropertiesFile.exists()
+
+if (hasKeystoreProps) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// 判断是否为 CI 环境（通过环境变量传入）
+def hasCIKeystore = System.getenv("RELEASE_KEYSTORE_BASE64") != null
+def keystorePath = null
+
+if (hasCIKeystore) {
+    // CI 模式：从环境变量 base64 解码生成临时 keystore 文件
+    def keystoreBytes = System.getenv("RELEASE_KEYSTORE_BASE64").decodeBase64()
+    keystorePath = rootProject.file("ci-release.keystore")
+    keystorePath.withOutputStream { it.write(keystoreBytes) }
+    logger.info("CI signing: keystore decoded to ${keystorePath}")
+}
+
+def hasSigningConfig = hasKeystoreProps || hasCIKeystore
+
 android {
     namespace = "com.fatpaper.minemonopoly"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    signingConfigs {
+        if (hasSigningConfig) {
+            release {
+                if (hasCIKeystore) {
+                    storeFile file(keystorePath)
+                    storePassword System.getenv("RELEASE_STORE_PASSWORD")
+                    keyAlias     System.getenv("RELEASE_KEY_ALIAS") ?: "release"
+                    keyPassword  System.getenv("RELEASE_KEY_PASSWORD") ?: System.getenv("RELEASE_STORE_PASSWORD")
+                } else {
+                    storeFile file(keystoreProperties['storeFile'])
+                    storePassword keystoreProperties['storePassword']
+                    keyAlias keystoreProperties['keyAlias']
+                    keyPassword keystoreProperties['keyPassword']
+                }
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "com.fatpaper.minemonopoly"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -20,6 +68,8 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // 有签名配置时使用正式签名，否则使用 debug 签名（仅用于本地测试）
+            signingConfig hasSigningConfig ? signingConfigs.release : signingConfigs.debug
         }
     }
 }
