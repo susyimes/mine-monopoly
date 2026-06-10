@@ -52,8 +52,12 @@ export function createCapUpdateAPI(): UpdateAPI {
 				const cur = await CapacitorUpdater.current();
 				const currentVersion = cur?.bundle?.version || __APP_VERSION__;
 				const resp = await fetch(getUpdateCheckUrl());
-				if (!resp.ok) throw new Error(`更新源返回 HTTP ${resp.status}`);
-				const data = await resp.json();
+				if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+				// 先取 text，兼容服务端 releaseNotes 含字面换行符（0x0A）而非 \n 的问题
+				const raw = await resp.text();
+				// 将所有控制字符（0x00-0x1F，除 \t 0x09 外）替换为空格
+				const sanitized = raw.replace(/[\x00-\x08\x0A-\x1F]/g, " ");
+				const data = JSON.parse(sanitized);
 				if (!data.version || !data.url) throw new Error("缺少 version/url");
 
 				if (compareVersions(data.version, currentVersion) <= 0) return null;
@@ -66,8 +70,8 @@ export function createCapUpdateAPI(): UpdateAPI {
 				});
 				return { version: data.version, releaseNotes: data.releaseNotes };
 			} catch (err: any) {
-				statusCallback?.({ status: "error", error: err.message });
-				throw err;
+				console.error("[Updater] 检查更新失败（不影响使用）:", err.message || err);
+				return null;
 			}
 		},
 

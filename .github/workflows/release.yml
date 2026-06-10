@@ -179,13 +179,17 @@ jobs:
           mkdir -p dist/capacitor/ota
           VERSION="${{ steps.tag.outputs.version }}"
           cd dist/frontend && zip -r ../capacitor/ota/dist.zip . && cd ../..
-          cat > dist/capacitor/ota/update.json << JSON
-          {
-            "version": "$VERSION",
-            "url": "https://assets.fatpaper.site/releases/client/download/apk/dist.zip",
-            "releaseNotes": "$NOTES"
-          }
-          JSON
+          # 用 node 生成合法 JSON（转义换行符等控制字符）
+          node -e "
+            const fs = require('fs');
+            const notes = process.env.NOTES;
+            const json = JSON.stringify({
+              version: process.env.VERSION,
+              url: 'https://assets.fatpaper.site/releases/client/download/apk/dist.zip',
+              releaseNotes: notes
+            }, null, 2) + '\n';
+            fs.writeFileSync('dist/capacitor/ota/update.json', json);
+          "
           echo "OTA dist.zip + update.json ready (v$VERSION)"
 
       - name: Capacitor Sync

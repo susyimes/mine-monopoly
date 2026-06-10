@@ -20,7 +20,7 @@ const DIST = resolve(ROOT, "dist", "frontend");
 const OTA = resolve(ROOT, "dist", "capacitor", "ota");
 const ZIP = resolve(OTA, "dist.zip");
 const UPDATE_JSON = resolve(OTA, "update.json");
-const DIST_URL = "https://assets.fatpaper.site/releases/client/capacitor/dist.zip";
+const DIST_URL = "https://assets.fatpaper.site/releases/client/download/apk/dist.zip";
 
 const args = process.argv.slice(2), shouldUpload = args.includes("--upload");
 
