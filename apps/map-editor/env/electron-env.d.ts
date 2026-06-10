@@ -21,8 +21,18 @@ declare namespace NodeJS {
 	}
 }
 
+// 与 packages/components/ui/title-bar/title-bar.vue 约定的统一平台 API
+interface PlatformAPI {
+	minimize: () => void;
+	maximize: () => void;
+	unmaximize: () => void;
+	close: () => void;
+	isMaximized: () => Promise<boolean>;
+}
+
 // Used in Renderer process, expose in `preload.ts`
 interface Window {
+	platformAPI?: PlatformAPI;
 	electronAPI: {
 		minimize: () => void;
 		maximize: () => void;

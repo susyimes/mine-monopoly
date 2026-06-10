@@ -1,3 +1,15 @@
+// 桥接 preload 暴露的 electronAPI → platformAPI（供 TitleBar 等共享组件使用）
+if ((window as any).electronAPI) {
+	const api = (window as any).electronAPI;
+	(window as any).platformAPI = {
+		minimize: () => api.minimize?.(),
+		maximize: () => api.maximize?.(),
+		unmaximize: () => api.unmaximize?.(),
+		close: () => api.close?.(),
+		isMaximized: () => api.isMaximized?.(),
+	};
+}
+
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 
