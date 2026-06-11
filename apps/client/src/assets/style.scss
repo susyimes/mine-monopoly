@@ -18,7 +18,7 @@ body {
 body {
   position: relative;
   // ---- 修改：应用针织纹理背景 ----
-  background-color: var(--fp-color-bg-light); // 使用原本定义的背景色
+  background-color: var(--fp-color-tertiary); // 使用原本定义的背景色
   background-image: var(--fp-texture-knit); // 叠加针织纹理
 }
 

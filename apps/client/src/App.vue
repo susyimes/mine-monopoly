@@ -176,20 +176,14 @@ const backgroundSvgList: string[] = [
 			<StatusBar />
 			<!-- <MusicPlayer v-if="isMusicPlayerVisiable" /> -->
 			<RouterView v-slot="{ Component, route }">
-					<Transition
-						:css="false"
-						mode="out-in"
-						@enter="pageEnter"
-						@leave="pageLeave"
-						appear
-					>
-						<component :is="Component" :key="route.path" />
-					</Transition>
-				</RouterView>
+				<Transition :css="false" mode="out-in" @enter="pageEnter" @leave="pageLeave" appear>
+					<component :is="Component" :key="route.path" />
+				</Transition>
+			</RouterView>
 		</div>
 	</div>
 	<Update />
-<SafeModeActionPanel />
+	<SafeModeActionPanel />
 </template>
 
 <style lang="scss" scoped>
@@ -214,7 +208,7 @@ const backgroundSvgList: string[] = [
 	@mixin transitional-border-base {
 		content: "";
 		position: absolute;
-		border: solid #e7dab2;
+		border: solid color-mix(in srgb, var(--fp-color-tertiary) 95%, #000000);
 		pointer-events: none;
 	}
 
