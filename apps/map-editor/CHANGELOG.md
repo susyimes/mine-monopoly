@@ -1,5 +1,12 @@
 # @mine-monopoly/map-editor
 
+## 1.1.2
+
+### Patch Changes
+
+- - 修饰器系统支持实例级上下文数据传递，effectCode 可通过 `ctx.modifierData` 读取实例数据
+  - 同步客户端修饰器系统类型定义更新（packages/types），消除编译警告
+
 ## 1.1.1
 
 ### Patch Changes

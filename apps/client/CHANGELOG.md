@@ -1,5 +1,12 @@
 # @mine-monopoly/client
 
+## 1.1.2
+
+### Patch Changes
+
+- - 丰富系统接口，角色技能效果更精准
+  - 调整主题色和装饰边框颜色引用，主题表现更统一
+
 ## 1.1.1
 
 ### Patch Changes
