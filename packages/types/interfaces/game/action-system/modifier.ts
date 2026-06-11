@@ -44,6 +44,8 @@ export interface IModifier<C extends ICommandMap, K extends keyof C = keyof C> {
 	descriptor: ModifierDescriptor<C, K>;
 	/** 修饰器执行函数 */
 	fn(command: ICommand<C, K>, context: ICommandContext<C, K>): Promise<void> | void;
+	/** 修饰器实例的上下文数据（创建时传入，运行时通过 ctx.modifierData 读取） */
+	contextData?: Record<string, any>;
 }
 
 /**
@@ -61,6 +63,16 @@ export interface ConsumeResult {
 }
 
 /**
+ * 修饰器添加选项
+ */
+export interface ModifierAddOptions {
+	/** 修饰器结束时的回调函数 */
+	onComplete?: () => void;
+	/** 修饰器实例的上下文数据（运行时通过 ctx.modifierData 读取） */
+	contextData?: Record<string, any>;
+}
+
+/**
  * 修饰器管理器接口
  * 管理修饰器的注册、移除、查询和执行
  * @template C - 命令映射类型
@@ -74,6 +86,13 @@ export interface IModifierManager<C extends ICommandMap, K extends keyof C = key
 	 * @returns 生成的修饰器 ID
 	 */
 	add(template: ModifierTemplate, onComplete?: () => void): string;
+	/**
+	 * 添加修饰器（基于模板对象，带选项）
+	 * @param template - 模板对象
+	 * @param options - 添加选项（包含 onComplete 回调和 contextData 上下文数据）
+	 * @returns 生成的修饰器 ID
+	 */
+	add(template: ModifierTemplate, options?: ModifierAddOptions): string;
 
 	/**
 	 * 根据 ID 移除修饰器
@@ -174,4 +193,6 @@ export interface ModifierTemplate {
 export interface ModifierSnapshot {
 	templateSlug: string;
 	remainingTriggers: number;
+	/** 修饰器实例的上下文数据快照 */
+	contextData?: Record<string, any>;
 }

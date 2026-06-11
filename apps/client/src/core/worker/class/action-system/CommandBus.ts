@@ -47,11 +47,13 @@ export class CommandBus<C extends ICommandMap> implements ICommandBus<C> {
 		// ---------- BEFORE ----------
 		for (const m of beforeModifiers) {
 			ctx.modifierId = m.descriptor.id;
+			ctx.modifierData = m.contextData;
 
 			await m.fn(currentCmd, ctx);
 			executedModifierIds.push(m.descriptor.id);
 
 			delete ctx.modifierId;
+			delete ctx.modifierData;
 
 			if (cancelled) {
 				const idsToDecay = executedModifierIds.filter(id => !skippedModifierIds.has(id));
@@ -75,11 +77,13 @@ export class CommandBus<C extends ICommandMap> implements ICommandBus<C> {
 		// ---------- AFTER ----------
 		for (const m of afterModifiers) {
 			ctx.modifierId = m.descriptor.id;
+			ctx.modifierData = m.contextData;
 
 			await m.fn(currentCmd, ctx);
 			executedModifierIds.push(m.descriptor.id);
 
 			delete ctx.modifierId;
+			delete ctx.modifierData;
 		}
 
 		// ---------- DECAY ----------

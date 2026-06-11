@@ -29,6 +29,8 @@ export type ICommand<C extends ICommandMap, K extends keyof C> = {
 export interface ICommandContext<C extends ICommandMap, K extends keyof C> {
 	/** 当前正在执行的修饰器实例 ID（仅在修饰器 effectCode 执行期间可用） */
 	modifierId?: string;
+	/** 当前修饰器实例的上下文数据（仅在修饰器 effectCode 执行期间可用，通过 modifierManager.add 传入） */
+	modifierData?: Record<string, any>;
 
 	/**
 	 * 取消命令执行

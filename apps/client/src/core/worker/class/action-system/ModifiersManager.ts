@@ -1,4 +1,4 @@
-﻿import { Buff, ICommand, ICommandMap, IModifier, IModifierManager, ModifierTiming, ConsumeResult, ModifierSnapshot, ModifierTemplate, ModifierDescriptor } from "@mine-monopoly/types";
+﻿import { Buff, ICommand, ICommandMap, IModifier, IModifierManager, ModifierTiming, ConsumeResult, ModifierSnapshot, ModifierTemplate, ModifierDescriptor, ModifierAddOptions } from "@mine-monopoly/types";
 
 // 已处理的修饰器模板接口（用于避免重复处理 $ui__ 和 $mod__ 替换）
 interface ProcessedModifierTemplate extends ModifierTemplate {
@@ -21,9 +21,20 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 
 	public add(
 		template: ModifierTemplate,
-		onComplete?: () => void,
+		onCompleteOrOptions?: (() => void) | ModifierAddOptions,
 	): string {
 		const instanceId = generateInstanceId(template.id);
+
+		// 解析参数：兼容旧签名 (template, fn) 和新签名 (template, { onComplete, contextData })
+		let onComplete: (() => void) | undefined;
+		let contextData: Record<string, any> | undefined;
+
+		if (typeof onCompleteOrOptions === 'function') {
+			onComplete = onCompleteOrOptions;
+		} else if (onCompleteOrOptions) {
+			onComplete = onCompleteOrOptions.onComplete;
+			contextData = onCompleteOrOptions.contextData;
+		}
 
 		// 处理 effectCode 中的 $ui__ 和 $mod__ token（仅用于运行时动态创建的 modifier）
 		// 已在 preprocessingEffectCode 中处理的模板会有 _uiProcessed 标记
@@ -73,6 +84,7 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 			effectCode: template.effectCode,
 			templateSlug: template.slug || "",
 			templateId: template.id,
+			contextData,
 		};
 
 		this.modifiers.set(instanceId, modifier as any);
@@ -278,6 +290,7 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 			result.push({
 				templateSlug: mod.templateSlug || "",
 				remainingTriggers: mod.descriptor.remainingTriggers,
+				contextData: mod.contextData,
 			});
 		}
 		return result;
@@ -292,7 +305,7 @@ export class ModifierManager<C extends ICommandMap, K extends keyof C = keyof C>
 				console.warn(`Modifier template not found: ${snap.templateSlug}, skipping`);
 				continue;
 			}
-			const instanceId = this.add(template);
+			const instanceId = this.add(template, { contextData: snap.contextData });
 
 			// Override runtime state
 			const mod = this.modifiers.get(instanceId);
