@@ -19,6 +19,7 @@ export enum WorkerCommType {
 
 	// Debug (dev only)
 	DebugGetState,
+	GMAction,
 
 	//Host Receive
 	WorkerReady,
@@ -34,6 +35,7 @@ export enum WorkerCommType {
 
 	// Debug (dev only)
 	DebugStateResponse,
+	GMActionResponse,
 
 	// 状态同步
 	WorkerStateChanged,

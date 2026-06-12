@@ -3,6 +3,54 @@ import { GameMap, GameSetting, PlayerOperationResult, ServerSocketMessage, UserI
 import { OperateType } from "@mine-monopoly/types";
 import { SaveSnapshot } from "@src/core/save/types";
 
+// GM Action 基础接口
+export interface BaseGMAction {
+	id: string;
+	timestamp: number;
+}
+
+// GM Action 类型
+export interface SetMoneyAction extends BaseGMAction {
+	type: 'setMoney';
+	payload: {
+		playerId: string;
+		operation: 'set' | 'add' | 'subtract';
+		amount: number;
+	};
+}
+
+export interface AddChanceCardAction extends BaseGMAction {
+	type: 'addChanceCard';
+	payload: {
+		cardId: string;
+		targetPlayerId: string;
+	};
+}
+
+export interface SetPropertyOwnerAction extends BaseGMAction {
+	type: 'setPropertyOwner';
+	payload: {
+		propertyId: string;
+		newOwnerId: string | null;
+	};
+}
+
+export type GMAction = SetMoneyAction | AddChanceCardAction | SetPropertyOwnerAction;
+
+// GM Action 响应
+export interface GMActionResponseData {
+	success: boolean;
+	error?: string;
+	data?: {
+		newMoney?: number;
+		cardName?: string;
+		targetPlayerName?: string;
+		propertyName?: string;
+		oldOwner?: string | null;
+		newOwner?: string | null;
+	};
+}
+
 // 组件验证错误
 export interface ComponentValidationError {
 	componentType: 'role' | 'property' | 'phase' | 'chanceCard';
@@ -69,6 +117,7 @@ interface WorkerCommDataTypeMap {
 
 	// Debug (dev only)
 	[WorkerCommType.DebugGetState]: undefined;
+	[WorkerCommType.GMAction]: GMAction;
 
 	//Host Receive
 	[WorkerCommType.WorkerReady]: undefined;
@@ -84,6 +133,7 @@ interface WorkerCommDataTypeMap {
 
 	// Debug (dev only)
 	[WorkerCommType.DebugStateResponse]: { state: GameProcessDebugState | null };
+	[WorkerCommType.GMActionResponse]: { action: GMAction; response: GMActionResponseData };
 
 	// 状态同步
 	[WorkerCommType.WorkerStateChanged]: WorkerStateChangedData;

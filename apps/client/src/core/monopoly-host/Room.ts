@@ -22,7 +22,7 @@ import {
 	MapChunkAbortData,
 } from "@mine-monopoly/types";
 import { WorkerCommType, WorkerState } from "@src/enums/worker";
-import { WorkerCommMsg, HeartbeatData, WorkerStateChangedData } from "@src/interfaces/worker";
+import { WorkerCommMsg, HeartbeatData, WorkerStateChangedData, GMAction, GMActionResponseData } from "@src/interfaces/worker";
 import { useLoading, useDeviceStatus } from "@src/store";
 import { randomString } from "@src/utils";
 import { getGameMapById } from "@src/utils/api/map";
@@ -74,6 +74,8 @@ export class Room {
 	private operationListener: OperateListener;
 	private saveManager: SaveManager = new SaveManager();
 	private pendingSaveData: { snapshot: any; aiPlayerIds: string[] } | null = null;
+	/** GM 操作响应处理 Map */
+	private pendingGMResponses = new Map<string, { resolve: (value: GMActionResponseData) => void, timeout: number }>();
 
 	// 状态管理相关属性
 	private workerState: WorkerState = WorkerState.Uninitialized;
@@ -107,6 +109,8 @@ export class Room {
 		this.userList = new Map();
 		this.gameSetting = {};
 		this.operationListener = new OperateListener();
+		// 暴露 Room 实例给 Inspector 窗口（dev only）
+		(window as any).__roomInstance = this;
 	}
 
 	public getRoomId() {
@@ -1669,6 +1673,32 @@ export class Room {
 	}
 
 	/**
+	 * 处理 GM 操作请求
+	 * @param action - GM 操作
+	 * @returns 操作响应
+	 */
+	public async gmAction(action: GMAction): Promise<GMActionResponseData> {
+		if (!this.gameProcessWorker) {
+			return { success: false, error: "Worker not available" };
+		}
+
+		return new Promise((resolve) => {
+			const timeout = setTimeout(() => {
+				this.pendingGMResponses.delete(action.id);
+				resolve({ success: false, error: "Timeout: Worker did not respond" });
+			}, 5000);
+
+			this.pendingGMResponses.set(action.id, { resolve, timeout });
+
+			// 发送请求
+			this.gameProcessWorker!.postMessage({
+				type: WorkerCommType.GMAction,
+				data: action,
+			} as WorkerCommMsg);
+		});
+	}
+
+	/**
 	 * 设置 Worker 消息处理器
 	 */
 	private setupWorkerMessageHandler(): void {
@@ -1749,6 +1779,17 @@ export class Room {
 						const bridge = (window as any).__gpBridge;
 						if (bridge && typeof bridge.onState === "function") {
 							bridge.onState(msg.data.state);
+						}
+					}
+					break;
+				case WorkerCommType.GMActionResponse:
+					{
+						const actionId = (msg.data as any).action?.id;
+						const pending = this.pendingGMResponses.get(actionId);
+						if (pending) {
+							clearTimeout(pending.timeout);
+							this.pendingGMResponses.delete(actionId);
+							pending.resolve(msg.data.response);
 						}
 					}
 					break;

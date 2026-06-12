@@ -472,7 +472,7 @@ const applySettings = () => {
 				<div v-if="win.platformAPI?.openInspector" class="setting-item">
 					<div class="label">开发者</div>
 					<div class="content">
-						<button @click="openInspector" class="btn-purple">打开 游戏进程观察窗</button>
+						<button @click="openInspector" class="btn-purple">打开 游戏进程控制台</button>
 					</div>
 				</div>
 

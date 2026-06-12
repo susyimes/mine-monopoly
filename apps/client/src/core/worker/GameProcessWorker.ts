@@ -1,5 +1,5 @@
 import { OperateListener } from "./class/OperateListener";
-import { WorkerCommMsg, type GameProcessDebugState } from "@src/interfaces/worker";
+import { WorkerCommMsg, type GameProcessDebugState, GMAction, GMActionResponseData, SetMoneyAction, AddChanceCardAction, SetPropertyOwnerAction } from "@src/interfaces/worker";
 import { WorkerCommType } from "@src/enums/worker";
 import {
 	ChanceCardInfo,
@@ -153,6 +153,114 @@ self.addEventListener("message", async (ev) => {
 	}
 });
 
+// ========== GM Action 处理函数 ==========
+
+async function handleGMAction(action: GMAction, gameProcess: GameProcess | null): Promise<GMActionResponseData> {
+	if (!gameProcess) {
+		return { success: false, error: "无游戏进行中" };
+	}
+
+	switch (action.type) {
+		case "setMoney":
+			return await handleSetMoney(action, gameProcess);
+		case "addChanceCard":
+			return await handleAddChanceCard(action, gameProcess);
+		case "setPropertyOwner":
+			return await handleSetPropertyOwner(action, gameProcess);
+		default:
+			return { success: false, error: "Unknown action type" };
+	}
+}
+
+async function handleSetMoney(action: SetMoneyAction & { type: 'setMoney' }, gameProcess: GameProcess): Promise<GMActionResponseData> {
+	const { playerId, operation, amount } = action.payload;
+	const player = gameProcess.players.get(playerId);
+
+	if (!player) {
+		return { success: false, error: "玩家不存在" };
+	}
+
+	if (typeof amount !== 'number' || isNaN(amount)) {
+		return { success: false, error: "金额无效" };
+	}
+
+	switch (operation) {
+		case "set":
+			player.setMoney(amount);
+			break;
+		case "add":
+			await player.gain(amount);
+			break;
+		case "subtract":
+			await player.cost(amount);
+			break;
+	}
+
+	// 广播游戏状态
+	gameProcess.gameDataBroadcast();
+
+	return {
+		success: true,
+		data: { newMoney: player.money },
+	};
+}
+
+async function handleAddChanceCard(action: AddChanceCardAction & { type: 'addChanceCard' }, gameProcess: GameProcess): Promise<GMActionResponseData> {
+	const { cardId, targetPlayerId } = action.payload;
+	const player = gameProcess.players.get(targetPlayerId);
+
+	if (!player) {
+		return { success: false, error: "玩家不存在" };
+	}
+
+	const cardInfo = gameProcess.chanceCardInfos.get(cardId);
+	if (!cardInfo) {
+		return { success: false, error: "机会卡不存在" };
+	}
+
+	const newCard = gameProcess.createNewChanceCard(cardId);
+	player.chanceCards.push(newCard);
+
+	// 广播游戏状态
+	gameProcess.gameDataBroadcast();
+
+	return {
+		success: true,
+		data: {
+			cardName: cardInfo.name,
+			targetPlayerName: player.name,
+		},
+	};
+}
+
+async function handleSetPropertyOwner(action: SetPropertyOwnerAction & { type: 'setPropertyOwner' }, gameProcess: GameProcess): Promise<GMActionResponseData> {
+	const { propertyId, newOwnerId } = action.payload;
+	const property = gameProcess.properties.get(propertyId);
+
+	if (!property) {
+		return { success: false, error: "地产不存在" };
+	}
+
+	const oldOwner = property.owner;
+	const newOwner = newOwnerId ? gameProcess.players.get(newOwnerId) || undefined : undefined;
+
+	await property.setOwner(newOwner);
+
+	// 广播游戏状态
+	gameProcess.gameDataBroadcast();
+
+	return {
+		success: true,
+		data: {
+			propertyName: property.name,
+			oldOwner: oldOwner?.id || null,
+			newOwner: newOwnerId,
+		},
+	};
+}
+
+// ========== GM Action 处理函数结束 ==========
+
 async function handleMessage(data: WorkerCommMsg) {
 	switch (data.type) {
 		case WorkerCommType.LoadGameInfo:
@@ -241,6 +349,29 @@ async function handleMessage(data: WorkerCommMsg) {
 					self.postMessage(<WorkerCommMsg>{
 						type: WorkerCommType.DebugStateResponse,
 						data: { state: null as any },
+					});
+				}
+			}
+			break;
+		case WorkerCommType.GMAction:
+			{
+				console.log("[GMAction] received:", data.data);
+				try {
+					const action = data.data as GMAction;
+					const response = await handleGMAction(action, gameProcess);
+					self.postMessage(<WorkerCommMsg>{
+						type: WorkerCommType.GMActionResponse,
+						data: { action, response },
+					});
+				} catch (e: any) {
+					console.error("[GMAction ERROR]:", e.message, e.stack);
+					const errorResponse: GMActionResponseData = {
+						success: false,
+						error: e.message || "Unknown error",
+					};
+					self.postMessage(<WorkerCommMsg>{
+						type: WorkerCommType.GMActionResponse,
+						data: { action: data.data, response: errorResponse },
 					});
 				}
 			}

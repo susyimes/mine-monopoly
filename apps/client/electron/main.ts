@@ -18,6 +18,7 @@ import url from "node:url";
 import { autoUpdater } from "electron-updater";
 import log from "electron-log";
 import { loadUpdateSources, type UpdateSource } from "./update-config.js";
+import { GMAction, GMActionResponseData } from "../../src/interfaces/worker";
 
 // ============================================================
 // 更新源配置
@@ -351,7 +352,7 @@ app.on("activate", () => {
 	}
 });
 
-// ===== 游戏进程观察窗 (dev only) =====
+// ===== 游戏进程控制台 (dev only) =====
 let inspectorWin: BrowserWindow | null = null;
 
 ipcMain.handle("open-inspector", async () => {
@@ -364,7 +365,7 @@ ipcMain.handle("open-inspector", async () => {
 	inspectorWin = new BrowserWindow({
 		width: 900,
 		height: 700,
-		title: "游戏进程观察窗",
+		title: "游戏进程控制台",
 		frame: false,
 		webPreferences: {
 			nodeIntegration: true,
@@ -415,7 +416,29 @@ ipcMain.handle("inspector:get-state", async () => {
 		return { __error: e.message };
 	}
 });
-// ===== End 游戏进程观察窗 =====
+
+ipcMain.handle("inspector:gm-action", async (event, action: GMAction) => {
+	if (!win || win.isDestroyed()) {
+		return { success: false, error: "Main window not available" };
+	}
+	try {
+		const result = await win.webContents.executeJavaScript(
+			"(function() {" +
+				"  const room = window.__roomInstance;" +
+				"  if (!room || typeof room.gmAction !== 'function') {" +
+				"    return { success: false, error: 'Room not available or gmAction not supported' };" +
+				"  }" +
+				"  return new Promise((resolve) => {" +
+				"    room.gmAction(" + JSON.stringify(action) + ").then(resolve);" +
+				"  });" +
+				"})()"
+		);
+		return result;
+	} catch (e: any) {
+		return { success: false, error: e.message };
+	}
+});
+// ===== End 游戏进程控制台 =====
 
 app.whenReady().then(async () => {
 	protocol.handle("local", (request) => {
