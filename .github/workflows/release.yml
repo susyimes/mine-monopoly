@@ -180,6 +180,7 @@ jobs:
           VERSION="${{ steps.tag.outputs.version }}"
           cd dist/frontend && zip -r ../capacitor/ota/dist.zip . && cd ../..
           # 用 node 生成合法 JSON（转义换行符等控制字符）
+          export NOTES VERSION
           node -e "
             const fs = require('fs');
             const notes = process.env.NOTES;
