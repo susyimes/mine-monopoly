@@ -115,7 +115,7 @@ function generatePopItem(e: MouseEvent, itemType: GameLogLinkItem, props: any) {
 	switch (itemType) {
 		case GameLogLinkItem.ArrivedEvent:
 			compoentToRender = arrivedEventCard;
-			compoentProps = { arrivedEvent: props };
+			compoentProps = { mapEvent: props };
 			break;
 		case GameLogLinkItem.ChanceCard:
 			compoentToRender = ChanceCard;
@@ -133,8 +133,9 @@ function generatePopItem(e: MouseEvent, itemType: GameLogLinkItem, props: any) {
 	const documentFragment = document.createDocumentFragment();
 	const appInstance = createApp(compoentToRender, compoentProps) as App<any>;
 
-	const vm = appInstance.mount(documentFragment);
-	const el = vm.$el as HTMLElement;
+	appInstance.mount(documentFragment);
+	const el = documentFragment.firstElementChild as HTMLElement | null;
+	if (!el) return;
 	el.style.position = "absolute";
 	el.style.zIndex = "calc(var(--z-chat-log) + 1)";
 	el.style.left = x - 20 + "px";
