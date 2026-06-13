@@ -130,37 +130,7 @@ class LogService implements ILogService {
     level?: ErrorLevel;
     context?: Partial<ErrorContext>;
   }): Promise<void> {
-    const storage = await getStorage();
-    const log: LogErrorData = {
-      id: generateId(),
-      level: data.level || ErrorLevel.WARNING,
-      category: data.category || ErrorCategory.UNKNOWN,
-      type: data.type,
-      message: data.message,
-      stack: data.stack,
-      info: data.info,
-      filename: data.filename,
-      lineno: data.lineno,
-      colno: data.colno,
-      context: {
-        ...createDefaultContext(),
-        ...data.context
-      },
-      createdAt: toLocalISOString(new Date())
-    };
-
-    // 同时发送到 Electron（如果可用）
-    if (window.platformAPI?.logError) {
-      window.platformAPI.logError({
-        type: log.type || 'Runtime',
-        message: log.message,
-        stack: log.stack,
-        timestamp: log.createdAt,
-        additionalData: log.context as any
-      });
-    }
-
-    await storage.add(log);
+    // warn 级别不写入持久存储
   }
 
   /**
@@ -170,36 +140,7 @@ class LogService implements ILogService {
     level?: ErrorLevel;
     context?: Partial<ErrorContext>;
   }): Promise<void> {
-    const storage = await getStorage();
-    const log: LogErrorData = {
-      id: generateId(),
-      level: data.level || ErrorLevel.INFO,
-      category: data.category || ErrorCategory.UNKNOWN,
-      type: data.type,
-      message: data.message,
-      stack: data.stack,
-      info: data.info,
-      filename: data.filename,
-      lineno: data.lineno,
-      colno: data.colno,
-      context: {
-        ...createDefaultContext(),
-        ...data.context
-      },
-      createdAt: toLocalISOString(new Date())
-    };
-
-    // 同时发送到 Electron（如果可用）
-    if (window.platformAPI?.logError) {
-      window.platformAPI.logError({
-        type: log.type || 'Runtime',
-        message: log.message,
-        timestamp: log.createdAt,
-        additionalData: log.context as any
-      });
-    }
-
-    await storage.add(log);
+    // info 级别不写入持久存储
   }
 
   /**

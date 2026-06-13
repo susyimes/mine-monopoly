@@ -25,6 +25,7 @@ document.head.appendChild(fontStyle);
 import router from "./router";
 import { createPinia } from "pinia";
 import { AXIOS_HANDLED_ERROR } from "@src/utils/api";
+import logService, { ErrorLevel, ErrorCategory } from "@src/utils/log";
 
 /* import the fontawesome core */
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -184,6 +185,9 @@ const app = createApp(App);
 
 app.use(pinia).use(router).component("font-awesome-icon", FontAwesomeIcon).directive("sound", soundDirective).mount("#app");
 
+// 标记应用已成功启动，全局错误处理据此切换显示策略
+window.__APP_STARTED__ = true;
+
 // Capacitor 全屏：状态栏透明覆盖 + 自动收回
 if (getPlatformType() === "capacitor") {
 	Promise.all([
@@ -322,7 +326,7 @@ function formatErrorType(errorType: string): string {
 	return errorType;
 }
 
-// 记录错误到平台日志（增强版）
+// 记录错误到平台日志和持久存储
 function logErrorToPlatform(errorData: {
 	type: "Vue" | "Promise" | "Runtime" | "Worker" | "Network" | "Console";
 	message: string;
@@ -337,22 +341,76 @@ function logErrorToPlatform(errorData: {
 	timestamp?: string;
 	additionalData?: Record<string, any>;
 }) {
-	if (window.platformAPI?.logError) {
-		window.platformAPI.logError(errorData);
+	// 将旧版错误类型映射到 ErrorCategory
+	function typeToCategory(type: string): ErrorCategory {
+		const map: Record<string, ErrorCategory> = {
+			Vue: ErrorCategory.GAME_RUNTIME,
+			Promise: ErrorCategory.UNKNOWN,
+			Runtime: ErrorCategory.UI_RENDER,
+			Worker: ErrorCategory.WORKER,
+			Network: ErrorCategory.NETWORK,
+			Console: ErrorCategory.UNKNOWN,
+		};
+		return map[type] || ErrorCategory.UNKNOWN;
 	}
+
+	// 从 additionalData 中提取已知的结构化字段
+	const { componentName, props, config, response, ...restExtra } = errorData.additionalData || {};
+
+	logService.error({
+		level: ErrorLevel.ERROR,
+		category: typeToCategory(errorData.type),
+		type: errorData.type,
+		message: errorData.message,
+		stack: errorData.stack,
+		info: errorData.info,
+		filename: errorData.filename,
+		lineno: errorData.lineno,
+		colno: errorData.colno,
+		context: {
+			timestamp: errorData.timestamp || new Date().toISOString(),
+			url: errorData.url || window.location.pathname,
+			userAgent: navigator.userAgent.substring(0, 200),
+			screenInfo: `${screen.width}x${screen.height}`,
+			memoryUsage: restExtra.memoryUsage as { usedJSHeapSize: string; totalJSHeapSize: string } | undefined,
+			componentName: componentName as string | undefined,
+			componentProps: props as string | undefined,
+			requestConfig: config as { url: string; method: string; data?: any } | undefined,
+			responseInfo: response as { status: number; statusText: string; data?: any } | undefined,
+		},
+	});
 }
 
 // 记录控制台输出
 function logConsoleToPlatform(level: "error" | "warn" | "info", ...args: any[]) {
+	// error 级别的控制台输出也写入持久存储
+	if (level === "error") {
+		const message = args
+			.map(arg => {
+				if (typeof arg === "object") {
+					try { return JSON.stringify(arg, null, 2); }
+					catch { return String(arg); }
+				}
+				return String(arg);
+			})
+			.join(" ");
+		const errorObj = args.find(arg => arg instanceof Error);
+		logService.error({
+			level: ErrorLevel.ERROR,
+			category: ErrorCategory.UNKNOWN,
+			type: "Console",
+			message,
+			stack: errorObj?.stack,
+		}).catch(() => {});
+	}
+
+	// 发送到 Electron 平台（如果可用）
 	if (window.platformAPI?.logConsole) {
 		const message = args
 			.map(arg => {
 				if (typeof arg === "object") {
-					try {
-						return JSON.stringify(arg, null, 2);
-					} catch (e) {
-						return String(arg);
-					}
+					try { return JSON.stringify(arg, null, 2); }
+					catch { return String(arg); }
 				}
 				return String(arg);
 			})

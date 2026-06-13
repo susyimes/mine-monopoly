@@ -50,6 +50,12 @@
 				if (!el) return;
 
 				function showError(type, msg) {
+					// 应用已启动 → 运行时错误，仅输出日志，不显示致命面板
+					if (window.__APP_STARTED__) {
+						console.error('[Fatal Error Panel suppressed] ' + type + ': ' + msg);
+						return;
+					}
+					// 应用尚未启动 → 真正的启动失败，显示面板
 					var app = document.getElementById('app');
 					if (app) app.style.display = 'none';
 					el.style.display = 'block';

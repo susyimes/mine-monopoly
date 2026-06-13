@@ -650,7 +650,8 @@ export class GameRenderer {
 					await this.playChanceCardFlyAnimation(chanceCard, sourcePlayer.model.position, targetPositions);
 
 					// 通知服务器动画完成
-					useMonopolyClient().AnimationComplete(animationId);
+					const monopolyClient = useMonopolyClient();
+					monopolyClient && monopolyClient.AnimationComplete(animationId);
 				} catch (error) {
 					console.error("[机会卡动画] 执行失败:", error);
 				}
@@ -1176,7 +1177,8 @@ export class GameRenderer {
 
 					// 拆散重叠的玩家模型
 					this.breakUpPlayersInSameMapItem();
-					useMonopolyClient().AnimationComplete(walkId);
+					const monopolyClient = useMonopolyClient();
+					monopolyClient && monopolyClient.AnimationComplete(walkId);
 				}
 			},
 		);
@@ -1221,7 +1223,8 @@ export class GameRenderer {
 				this.currentFocusModule = null;
 				this.isLockingRole = false;
 				this.breakUpPlayersInSameMapItem();
-				useMonopolyClient().AnimationComplete(walkId);
+				const monopolyClient = useMonopolyClient();
+				monopolyClient && monopolyClient.AnimationComplete(walkId);
 			}
 		});
 

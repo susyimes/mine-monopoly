@@ -42,7 +42,11 @@ class EventBus {
 		if (fnArr) {
 			for (let index = 0; index < fnArr.length; index++) {
 				const fobj = fnArr[index];
-				fobj.fn.apply(this, args);
+				try {
+					fobj.fn.apply(this, args);
+				} catch (e) {
+					console.error(`[EventBus] 监听器执行失败 (event: ${eventName}):`, e);
+				}
 				if (fobj.isOnce) {
 					fnArr.splice(index, 1);
 					index--;

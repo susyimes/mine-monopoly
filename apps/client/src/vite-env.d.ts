@@ -2,10 +2,10 @@
 
 // ========== 平台 API 类型（源定义见 src/platform/types.ts） ==========
 
-declare global {
-	interface Window {
-		platformAPI?: import("./platform/types").PlatformAPI;
-	}
+interface Window {
+	platformAPI?: import("./platform/types").PlatformAPI;
+	/** 标记 Vue 应用是否已成功挂载，引导全局错误处理显示策略 */
+	__APP_STARTED__?: boolean;
 }
 
 declare module "*.md?raw" {
