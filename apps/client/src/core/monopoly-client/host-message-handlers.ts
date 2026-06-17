@@ -1,4 +1,4 @@
-import { MonopolyClient, useMonopolyClient } from "./MonopolyClient";
+import { isAutomationMode, MonopolyClient, useMonopolyClient } from "./MonopolyClient";
 import {
 	GameEventType,
 	GameSetting,
@@ -600,8 +600,73 @@ const handleGameResume: ServerMessageHandler<SocketMsgType.ResumeGame> = () => {
 	useLoading().hideLoading();
 };
 
+function isPropertyDecisionDialog(title = "") {
+	return /购买|升级|升/.test(title);
+}
+
+function chooseAutomationTarget(type: unknown): string[] {
+	const userId = useUserInfo().userId;
+	const gameData = useGameData();
+	const mapData = useMapData();
+	const typeText = String(type);
+
+	if (/ToSelf/.test(typeText)) return userId ? [userId] : [];
+	if (/ToOtherPlayer/.test(typeText)) {
+		const target = gameData.players.find((player) => player.id !== userId && !player.isBankrupted);
+		return target ? [target.id] : [];
+	}
+	if (/ToPlayer/.test(typeText)) {
+		const target = gameData.players.find((player) => player.id === userId && !player.isBankrupted) ??
+			gameData.players.find((player) => !player.isBankrupted);
+		return target ? [target.id] : [];
+	}
+	if (/ToProperty/.test(typeText)) {
+		const owned = gameData.properties.find((property) => {
+			const owner = property.owner as { id?: string; userId?: string } | undefined;
+			return (owner?.id ?? owner?.userId) === userId;
+		});
+		const fallback = owned ?? gameData.properties[0];
+		return fallback ? [fallback.id] : [];
+	}
+	if (/ToMapItem/.test(typeText)) {
+		const target = mapData.mapIndex[0] ?? mapData.mapItems[0]?.id;
+		return target ? [target] : [];
+	}
+	return [];
+}
+
+function chooseAutomationItems(option: { itemList?: any[]; multiple?: number | boolean; cancelText?: string }) {
+	if (option.cancelText) return [];
+	const items = option.itemList ?? [];
+	let maxCount = 1;
+	if (option.multiple === true) maxCount = items.length;
+	else if (typeof option.multiple === "number") maxCount = Math.max(1, option.multiple);
+	return items.slice(0, maxCount).map((item) => item?.id).filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
+function buildAutomationFormResult(fields: FormField<string, any>[] = []): any {
+	const result: Record<string, unknown> = { submitted: false };
+	for (const field of fields) {
+		result[field.key] = field.defaultValue;
+	}
+	return result;
+}
+
 const handleConfirmDialog: ServerMessageHandler<SocketMsgType.ConfirmDialog> = (msg, client) => {
 	const data = msg.data;
+	if (isAutomationMode()) {
+		const title = data.option?.title ?? "";
+		if (isPropertyDecisionDialog(title)) return;
+		client.sendMsg({
+			type: SocketMsgType.Operation,
+			source: SocketMsgSource.Client,
+			data: {
+				operateType: OperateType.ConfirmDialogResult,
+				data: { id: data.playerId, confirm: true },
+			},
+		});
+		return;
+	}
 	FPMessageBox(data.option)
 		.then(() => {
 			client.sendMsg({
@@ -627,6 +692,17 @@ const handleConfirmDialog: ServerMessageHandler<SocketMsgType.ConfirmDialog> = (
 
 const handleFormDialog: ServerMessageHandler<SocketMsgType.FormDialog> = (msg, client) => {
 	const data = msg.data;
+	if (isAutomationMode()) {
+		client.sendMsg({
+			type: SocketMsgType.Operation,
+			source: SocketMsgSource.Client,
+			data: {
+				operateType: OperateType.FormDialogResult,
+				data: buildAutomationFormResult(data.option.fields),
+			},
+		});
+		return;
+	}
 
 	// 将 FormDialogOption 转换为 FormSchema 格式
 	const formSchema: FormSchema[] = data.option.fields.map((field) => ({
@@ -683,6 +759,17 @@ const handleFormDialog: ServerMessageHandler<SocketMsgType.FormDialog> = (msg, c
 
 const handleTargetSelect: ServerMessageHandler<SocketMsgType.TargetSelectDialog> = (msg, client) => {
 	const data = msg.data;
+	if (isAutomationMode()) {
+		client.sendMsg({
+			type: SocketMsgType.Operation,
+			source: SocketMsgSource.Client,
+			data: {
+				operateType: OperateType.TargetSelectDialogResult,
+				data: { target: chooseAutomationTarget(data.option.type) },
+			},
+		});
+		return;
+	}
 	showTargetSelector(data.option.type)
 		.then((res) => {
 			client.sendMsg({
@@ -708,6 +795,17 @@ const handleTargetSelect: ServerMessageHandler<SocketMsgType.TargetSelectDialog>
 
 const handleItemSelectDialog: ServerMessageHandler<SocketMsgType.ItemSelectDialog> = (msg, client) => {
 	const data = msg.data;
+	if (isAutomationMode()) {
+		client.sendMsg({
+			type: SocketMsgType.Operation,
+			source: SocketMsgSource.Client,
+			data: {
+				operateType: OperateType.ItemSelectDialogResult,
+				data: { selected: chooseAutomationItems(data.option) },
+			},
+		});
+		return;
+	}
 	showItemSelector(data.option)
 		.then((res) => {
 			client.sendMsg({

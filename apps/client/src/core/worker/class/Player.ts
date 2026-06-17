@@ -220,6 +220,24 @@ export class Player implements IPlayer {
 		return this.user;
 	}
 
+	public getName() {
+		return this.name;
+	}
+
+	public getPositionIndex() {
+		return this.positionIndex;
+	}
+
+	public getCardsList() {
+		return this.chanceCards;
+	}
+
+	public addEventListener() {
+		// Legacy map scripts used PlayerEvents hooks. The modern runtime routes
+		// long-lived effects through modifiers, so keep old scripts non-fatal.
+		return undefined;
+	}
+
 	public setIsOffline(isOffline: boolean) {
 		this.isOffline = isOffline;
 	}

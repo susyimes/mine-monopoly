@@ -70,7 +70,8 @@ export class MonopolyHost {
 				clearHeartbeatTimeout();
 				if (!clientUserId) return;
 
-				// 10秒无心跳视为断线
+				// 自动化录制时会同时启动多个浏览器和 3D/卡牌渲染，心跳需要更宽松。
+				const heartbeatTimeoutMs = isAutomationMode() ? 60000 : 10000;
 				const timeoutId = setTimeout(() => {
 					const currentVersion = _this.connectionVersionMap.get(clientUserId);
 					if (clientUserId && isOnline && connectionVersion === currentVersion) {
@@ -79,7 +80,7 @@ export class MonopolyHost {
 						_this.clientList.delete(clientUserId);
 						clearHeartbeatTimeout();
 					}
-				}, 10000);
+				}, heartbeatTimeoutMs);
 
 				heartbeatTimeoutId = timeoutId;
 				_this.heartbeatTimeoutMap.set(clientUserId, timeoutId);
@@ -244,7 +245,12 @@ export class MonopolyHost {
 
 	public broadcast(msg: string) {
 		Array.from(this.clientList.values()).forEach((c) => {
-			c.send(msg);
+			if (!c.open) return;
+			try {
+				c.send(msg);
+			} catch (error) {
+				console.warn("[MonopolyHost] broadcast failed", error);
+			}
 		});
 	}
 
@@ -288,4 +294,12 @@ export class MonopolyHost {
 interface UserInRoom extends UserInRoomInfo {
 	socketClient: DataConnection;
 	isOffLine: boolean;
+}
+
+function isAutomationMode() {
+	return (
+		Boolean((window as typeof window & { __AI_LIVE_AUTOMATION__?: unknown }).__AI_LIVE_AUTOMATION__) ||
+		window.location.search.includes("automation=1") ||
+		window.location.hash.includes("automation=1")
+	);
 }

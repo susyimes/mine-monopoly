@@ -30,11 +30,9 @@ export class GamePhase implements IGamePhase<GameContext> {
 		this.initEventCode = gamePhaseInfo.initEventCode;
 		this.eventKey = eventKey;
 		const fullTypes = extraLibs ? `${GameProcessTypes}\n${extraLibs}` : GameProcessTypes;
-		const codeCompiled = compileTsToJs(this.initEventCode, fullTypes);
 		try {
-			const gameEventGenerator = new Function(codeCompiled);
 			const gameEvent: GameEvent<GameContext> = {
-				fn: gameEventGenerator(),
+				fn: evaluateGameEventFunction(this.initEventCode, fullTypes),
 				key: eventKey,
 			};
 			this.eventQueue.push(gameEvent);
@@ -58,5 +56,31 @@ export class GamePhase implements IGamePhase<GameContext> {
 			gameEvent.key = this.mark + "";
 			return gameEvent;
 		});
+	}
+}
+
+function evaluateGameEventFunction(sourceCode: string, fullTypes: string): GameEventFunction<GameContext> {
+	if (!sourceCode.trim()) return async () => {};
+	const directResult = tryEvaluateCompiledFunction(sourceCode, fullTypes);
+	if (directResult) return directResult;
+
+	const expression = sourceCode.trim().replace(/;\s*$/, "");
+	const returnedResult = tryEvaluateCompiledFunction(`return ${expression};`, fullTypes);
+	if (returnedResult) return returnedResult;
+
+	const expressionResult = tryEvaluateCompiledFunction(`return (${expression});`, fullTypes);
+	if (expressionResult) return expressionResult;
+
+	console.warn("[GamePhase] 阶段代码没有返回可执行函数，已按空阶段处理", sourceCode.slice(0, 160));
+	return async () => {};
+}
+
+function tryEvaluateCompiledFunction(sourceCode: string, fullTypes: string): GameEventFunction<GameContext> | undefined {
+	try {
+		const codeCompiled = compileTsToJs(sourceCode, fullTypes);
+		const result = new Function(codeCompiled)();
+		return typeof result === "function" ? result as GameEventFunction<GameContext> : undefined;
+	} catch {
+		return undefined;
 	}
 }

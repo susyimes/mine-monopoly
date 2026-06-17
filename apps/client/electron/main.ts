@@ -18,7 +18,7 @@ import url from "node:url";
 import { autoUpdater } from "electron-updater";
 import log from "electron-log";
 import { loadUpdateSources, type UpdateSource } from "./update-config.js";
-import { GMAction, GMActionResponseData } from "../../src/interfaces/worker";
+import { GMAction, GMActionResponseData } from "../src/interfaces/worker";
 
 // ============================================================
 // 更新源配置

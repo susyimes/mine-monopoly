@@ -1,19 +1,15 @@
 import { FPMessage } from "@mine-monopoly/ui";
 import { useChat, useGameLog, useLoading, useRoomInfo, useUserInfo, useUtil } from "@src/store";
-import { useGameData } from "@src/store/game";
+import { useGameData, useMapData } from "@src/store/game";
 import { emitHostPeerId, joinRoomApi } from "@src/utils/api/room-router";
 import { PeerClient } from "./PeerClient";
 import { ReconnectionManager } from "./ReconnectionManager";
 import { DataConnection } from "peerjs";
 import {
 	RoomMapInfo,
-	ChangeRoleOperate,
 	GameSetting,
 	OperateType,
-	Role,
 	ServerSocketMessage,
-	SocketMessage,
-	SocketMessageDataType,
 	SocketMsgSource,
 	SocketMsgType,
 	User,
@@ -32,6 +28,18 @@ type MonopolyClientOptions = {
 	};
 };
 
+type AutomationMessageDirection = "in" | "out";
+
+declare global {
+	interface Window {
+		__AI_LIVE_AUTOMATION__?: {
+			user?: unknown;
+			messages?: Array<Record<string, unknown>>;
+		};
+		__AI_LIVE_CLIENT_BRIDGE__?: Record<string, unknown>;
+	}
+}
+
 export class MonopolyClient {
 	private static instance: MonopolyClient | null;
 	private options: MonopolyClientOptions;
@@ -47,6 +55,7 @@ export class MonopolyClient {
 	private sendHeartTime = 0;
 	private intervalList: any[] = [];
 	private handleNoHeartTimer: ReturnType<typeof debounce> | null = null;
+	private heartbeatTimeoutMs = isAutomationMode() ? 60000 : 15000;
 	private heartBeatPaused = false;
 	private reconnectionManager: ReconnectionManager | null = null;
 	private currentHostPeerId: string | null = null; // 保存当前主机 PeerId 用于重连
@@ -55,6 +64,7 @@ export class MonopolyClient {
 	public static getInstance(options: MonopolyClientOptions): Promise<MonopolyClient>;
 	public static getInstance(options?: MonopolyClientOptions) {
 		if (this.instance) {
+			this.instance.installAutomationBridge();
 			return this.instance;
 		}
 		if (options) {
@@ -79,6 +89,7 @@ export class MonopolyClient {
 		this.options = options;
 		this.iceServerHost = iceHost;
 		this.iceServerPort = icePort;
+		this.installAutomationBridge();
 	}
 
 	public async joinRoom(roomId: string) {
@@ -138,12 +149,15 @@ export class MonopolyClient {
 			// 清理所有定时器
 			this.intervalList.forEach((timer) => clearInterval(timer));
 			this.intervalList = [];
+			this.handleNoHeartTimer?.cancel();
+			this.handleNoHeartTimer = null;
 
 			if (!this.peerClient) {
 				this.peerClient = await PeerClient.create(this.iceServerHost, this.iceServerPort, this.currentIceServers);
 			}
-			const { conn, peer } = await this.peerClient.linkToHost(hostPeerId);
+			const { conn } = await this.peerClient.linkToHost(hostPeerId);
 			this.conn = conn;
+			this.bindConnectionHandlers(conn);
 			const { userId, username, color, avatar } = useUserInfo();
 			const user: User = {
 				userId,
@@ -171,45 +185,6 @@ export class MonopolyClient {
 					this.sendMsg({ type: SocketMsgType.Heart, source: SocketMsgSource.Client, data: undefined });
 				}, 3000),
 			);
-
-			this.conn.on("data", (_data: any) => {
-					let data: ServerSocketMessage;
-					try {
-						data = JSON.parse(_data, (key, value) => {
-							if (value === "Infinity") return Infinity;
-							if (value === "-Infinity") return -Infinity;
-							return value;
-						});
-					} catch {
-						console.error("Failed to parse server message:", _data);
-						return;
-					}
-					if (data.msg) {
-					// 在显示通知消息时，隐藏任何正在显示的 loading
-					useLoading().hideLoading();
-					FPMessage({
-						type: data.msg.type,
-						message: data.msg.content,
-					});
-				}
-				// console.log("Client Receive: ", data);
-
-				handleServerSocketMessage(data, this);
-			});
-
-			this.conn.on("close", () => {
-				if (this.isOnline) {
-					this.isOnline = false;
-					this.startReconnection();
-				}
-			});
-
-			this.conn.on("error", (err) => {
-				if (this.isOnline && err.type === "not-open-yet") {
-					this.isOnline = false;
-					this.startReconnection();
-				}
-			});
 		} catch (e: any) {
 			if (this.peerClient) {
 				this.peerClient.destory();
@@ -219,10 +194,54 @@ export class MonopolyClient {
 		}
 	}
 
+	private bindConnectionHandlers(conn: DataConnection) {
+		conn.on("data", (_data: any) => {
+			let data: ServerSocketMessage;
+			try {
+				data = JSON.parse(_data, (key, value) => {
+					if (value === "Infinity") return Infinity;
+					if (value === "-Infinity") return -Infinity;
+					return value;
+				});
+			} catch {
+				console.error("Failed to parse server message:", _data);
+				return;
+			}
+			this.recordAutomationMessage("in", data);
+			if (data.msg) {
+				// 在显示通知消息时，隐藏任何正在显示的 loading
+				useLoading().hideLoading();
+				FPMessage({
+					type: data.msg.type,
+					message: data.msg.content,
+				});
+			}
+			// console.log("Client Receive: ", data);
+
+			handleServerSocketMessage(data, this);
+		});
+
+		conn.on("close", () => {
+			if (this.isOnline) {
+				this.isOnline = false;
+				this.startReconnection();
+			}
+		});
+
+		conn.on("error", (err) => {
+			if (this.isOnline && err.type === "not-open-yet") {
+				this.isOnline = false;
+				this.startReconnection();
+			}
+		});
+	}
+
 	/**
 	 * 启动自动重连
 	 */
 	private startReconnection() {
+		if (this.reconnectionManager?.isReconnecting()) return;
+
 		// 如果没有主机 PeerId，无法重连
 		if (!this.currentHostPeerId) {
 			this.handleDisconnect();
@@ -293,16 +312,19 @@ export class MonopolyClient {
 
 		const { conn } = await this.peerClient.linkToHost(this.currentHostPeerId);
 		this.conn = conn;
+		this.bindConnectionHandlers(conn);
 
 		// 重新发送加入房间消息
 		const { userId, username, color, avatar } = useUserInfo();
+		const roomUser = useRoomInfo().userList.find((user) => user.userId === userId);
 		const user: User = {
 			userId,
 			username,
 			color,
 			avatar,
-			isReady: useRoomInfo().isReady, // 恢复准备状态
+			isReady: Boolean(roomUser?.isReady), // 恢复准备状态
 		};
+		this.isOnline = true;
 		this.sendMsg({ type: SocketMsgType.JoinRoom, source: SocketMsgSource.Client, data: user });
 	}
 
@@ -328,18 +350,18 @@ export class MonopolyClient {
 		this.handleNoHeartTimer?.fn();
 	}
 
-	private handleNoHeart = debounce(
-		() => {
-			this.isOnline = false;
-			this.startReconnection();
-		},
-		5000,
-		true,
-	);
-
 	public initHeartBeat() {
 		// 在首次发送心跳时初始化心跳超时定时器
-		this.handleNoHeartTimer = this.handleNoHeart;
+		this.handleNoHeartTimer?.cancel();
+		this.handleNoHeartTimer = debounce(
+			() => {
+				this.isOnline = false;
+				this.startReconnection();
+			},
+			this.heartbeatTimeoutMs,
+			true,
+		);
+		this.handleNoHeartTimer.fn();
 	}
 
 	public pauseHeartBeat() {
@@ -494,6 +516,7 @@ export class MonopolyClient {
 	}
 
 	public async sendMsg(msg: ClientSocketMessage) {
+		this.recordAutomationMessage("out", msg);
 		if (this.conn?.open) {
 			try {
 				await this.conn.send(
@@ -507,6 +530,115 @@ export class MonopolyClient {
 				console.error("Failed to send message:", msg.type);
 			}
 		}
+	}
+
+	private installAutomationBridge() {
+		if (!isAutomationMode()) return;
+		const automation = window.__AI_LIVE_AUTOMATION__ ?? {};
+		automation.messages ??= [];
+		window.__AI_LIVE_AUTOMATION__ = automation;
+		window.__AI_LIVE_CLIENT_BRIDGE__ = {
+			startGame: () => this.startGame(),
+			changeRole: (roleId: string) => this.changeRole(roleId),
+			changeGameSetting: (gameSetting: GameSetting) => this.changeGameSetting(gameSetting),
+			gameInitFinished: () => this.gameInitFinished(),
+			rollDice: () => this.rollDice(),
+			buyProperty: (accept: boolean) => this.confirmDialog(Boolean(accept)),
+			buildHouse: (accept: boolean) => this.confirmDialog(Boolean(accept)),
+			confirmDialog: (accept: boolean, id?: string) => this.confirmDialog(Boolean(accept), id),
+			sendDynamicButtonClick: (buttonId: string) => this.sendDynamicButtonClick(buttonId),
+			useChanceCard: (cardId: string, target?: string | string[]) => this.useChanceCard(cardId, normalizeTargetList(target)),
+			animationComplete: (animationId?: string) => {
+				if (animationId) this.AnimationComplete(animationId);
+			},
+			getMessages: (cursor = 0) => {
+				const messages = window.__AI_LIVE_AUTOMATION__?.messages ?? [];
+				return {
+					cursor: messages.length,
+					messages: messages.slice(cursor),
+				};
+			},
+			getRoomState: () => {
+				const roomStore = useRoomInfo();
+				return {
+					roomId: roomStore.roomId,
+					mapId: roomStore.mapId,
+					mapInfo: cloneAutomationPayload(roomStore.mapInfo),
+					roleList: cloneAutomationPayload(roomStore.roleList),
+					gameSetting: cloneAutomationPayload(roomStore.gameSetting),
+					gameSettingForm: cloneAutomationPayload(roomStore.gameSettingForm),
+					userList: cloneAutomationPayload(roomStore.userList),
+				};
+			},
+			getSnapshot: () => {
+				const userStore = useUserInfo();
+				const roomStore = useRoomInfo();
+				const gameStore = useGameData();
+				const mapStore = useMapData();
+				const utilStore = useUtil();
+				const players = normalizeAutomationPlayers(gameStore.players);
+				const properties = normalizeAutomationProperties(gameStore.properties);
+				const selfPlayer = players.find((player: any) => player.id === userStore.userId);
+				const mapItems = normalizeAutomationMapItems(mapStore.mapItems);
+				return {
+					userId: userStore.userId,
+					username: userStore.username,
+					roomId: roomStore.roomId,
+					currentPlayerIdInRound: gameStore.currentPlayerIdInRound,
+					currentRound: gameStore.currentRound,
+					currentMultiplier: gameStore.currentMultiplier,
+					cash: selfPlayer?.money,
+					isGameOver: gameStore.isGameOver,
+					canRoll: utilStore.canRoll,
+					canUseCard: utilStore.canUseCard,
+					chanceCards: selfPlayer?.chanceCards ?? [],
+					selfPlayer,
+					players,
+					properties,
+					mapItems,
+					mapIndexList: mapStore.mapIndex,
+					waitingFor: utilStore.waitingFor,
+					gameInfo: {
+						playerList: players,
+						properties,
+					},
+				};
+			},
+		};
+	}
+
+	private confirmDialog(accept: boolean, id = useUserInfo().userId) {
+		this.sendMsg({
+			type: SocketMsgType.Operation,
+			source: SocketMsgSource.Client,
+			data: {
+				operateType: OperateType.ConfirmDialogResult,
+				data: { id, confirm: accept },
+			},
+		});
+	}
+
+	private recordAutomationMessage(
+		direction: AutomationMessageDirection,
+		message: ClientSocketMessage | ServerSocketMessage,
+	) {
+		if (!isAutomationMode() || message.type === SocketMsgType.Heart) return;
+		const automation = window.__AI_LIVE_AUTOMATION__ ?? {};
+		const messages = automation.messages ?? [];
+		automation.messages = messages;
+		window.__AI_LIVE_AUTOMATION__ = automation;
+		messages.push({
+			index: messages.length,
+			at: Date.now(),
+			direction,
+			type: message.type,
+			typeName: message.type,
+			source: message.source,
+			roomId: message.roomId,
+			data: cloneAutomationPayload(message.data),
+			extra: cloneAutomationPayload(message.extra),
+			msg: cloneAutomationPayload(message.msg),
+		});
 	}
 
 	public destory() {
@@ -575,3 +707,71 @@ function destoryMonopolyClient() {
 }
 
 export { useMonopolyClient, destoryMonopolyClient };
+
+export function isAutomationMode() {
+	return (
+		Boolean(window.__AI_LIVE_AUTOMATION__) ||
+		window.location.search.includes("automation=1") ||
+		window.location.hash.includes("automation=1")
+	);
+}
+
+function normalizeTargetList(target?: string | string[]) {
+	if (Array.isArray(target)) return target;
+	if (typeof target === "string" && target) return [target];
+	return [];
+}
+
+function cloneAutomationPayload(value: unknown) {
+	if (typeof value === "undefined") return undefined;
+	try {
+		return JSON.parse(JSON.stringify(value));
+	} catch {
+		return String(value);
+	}
+}
+
+function normalizeAutomationPlayers(players: any[] = []) {
+	return players.map((player) => ({
+		...player,
+		chanceCards: normalizeAutomationChanceCards(player?.chanceCards ?? []),
+		properties: normalizeAutomationProperties(player?.properties ?? []),
+	}));
+}
+
+function normalizeAutomationProperties(properties: any[] = []) {
+	return properties.map((property) => {
+		const owner = property?.owner
+			? {
+					...property.owner,
+					id: property.owner.id ?? property.owner.userId,
+					name: property.owner.name ?? property.owner.username,
+				}
+			: undefined;
+		const costList = Array.isArray(property?.costList) ? property.costList : [];
+		return {
+			...property,
+			owner,
+			buildingLevel: property?.buildingLevel ?? property?.level ?? 0,
+			cost_lv0: property?.cost_lv0 ?? costList[0] ?? 0,
+			cost_lv1: property?.cost_lv1 ?? costList[1] ?? 0,
+			cost_lv2: property?.cost_lv2 ?? costList[2] ?? 0,
+		};
+	});
+}
+
+function normalizeAutomationChanceCards(chanceCards: any[] = []) {
+	return chanceCards.map((card) => ({
+		...card,
+		describe: card?.describe ?? card?.description ?? "",
+		icon: card?.icon ?? card?.iconId ?? "",
+	}));
+}
+
+function normalizeAutomationMapItems(mapItems: any[] = []) {
+	return mapItems.map((mapItem) => ({
+		...mapItem,
+		property: mapItem?.property ? normalizeAutomationProperties([mapItem.property])[0] : undefined,
+		linkto: mapItem?.linkto ? { id: mapItem.linkto.id } : undefined,
+	}));
+}

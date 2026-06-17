@@ -228,6 +228,20 @@ export interface IGameProcess extends IGameProcessCustomFields {
 	createNewChanceCard(sourceId: string): IChanceCard;
 
 	/**
+	 * 创建新的机会卡实例（兼容旧地图脚本）
+	 * @param sourceId - 机会卡源 ID
+	 * @returns 机会卡对象
+	 */
+	getNewChanceCard(sourceId: string): IChanceCard;
+
+	/**
+	 * 随机创建机会卡实例（兼容旧地图脚本）
+	 * @param num - 要创建的机会卡数量
+	 * @returns 机会卡对象列表
+	 */
+	getRandomChanceCard(num: number): IChanceCard[];
+
+	/**
 	 * 创建游戏链接项
 	 * @param type - 链接项类型
 	 * @param id - ID

@@ -107,8 +107,11 @@ class LogService implements ILogService {
 
     // 同时发送到 Electron（如果可用）
     if (window.platformAPI?.logError) {
+      const platformType = ["Vue", "Promise", "Runtime", "Worker", "Network", "Console"].includes(String(log.type))
+        ? log.type as "Vue" | "Promise" | "Runtime" | "Worker" | "Network" | "Console"
+        : "Runtime";
       window.platformAPI.logError({
-        type: log.type || 'Runtime',
+        type: platformType,
         message: log.message,
         stack: log.stack,
         info: log.info,
@@ -178,6 +181,9 @@ class LogService implements ILogService {
           render: '[渲染]',
           worker: '[Worker]',
           auth: '[认证]',
+          component_validation: '[组件]',
+          game_runtime: '[运行]',
+          init_timeout: '[超时]',
           unknown: '[未知]'
         }[log.category];
 

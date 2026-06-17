@@ -92,6 +92,7 @@ export const useRoomInfo = defineStore("roomInfo", {
 			roomId: "",
 			ownerId: "",
 			ownerName: "",
+			isStarted: false,
 			userList: new Array<UserInRoomInfo>(),
 			roleList: new Array<RoleInRoom>(),
 			gameSettingForm: new Array<FormSchema>(),

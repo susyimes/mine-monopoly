@@ -131,7 +131,7 @@
 					:schema="getUiTemplateById(ui.uiSchema)"
 					:context="{
 							...gameDataState,
-							currentPlayer: gameDataState.players?.find(p => p.id === gameDataState.myGameInfo?.id)
+							currentPlayer: gameDataStore.myGameInfo
 						}"
 					:style="{
 						gridArea: `${ui.layout.y + 1} / ${ui.layout.x + 1} / span ${ui.layout.height} / span ${ui.layout.width}`,
