@@ -38,13 +38,10 @@
 	const userInfoStore = useUserInfo();
 	const gameDataStore = useGameData();
 
-	const windowWidth = computed(() => window.innerWidth);
-	const windowHeight = computed(() => window.innerHeight);
-
 	const currentPlayerId = computed(() => userInfoStore.userId);
 	const gameDataState = computed(() => gameDataStore.$state);
 
-	let socketClient: MonopolyClient;
+	let socketClient: MonopolyClient | null = null;
 	let gameRenderer: GameRenderer | null;
 	const islockingCamera = ref(true);
 	const lockCameraIcon = computed(() => (islockingCamera.value ? "fa-video" : "fa-video-slash"));
@@ -61,7 +58,11 @@
 
 	onMounted(async () => {
 		try {
-			socketClient = useMonopolyClient();
+			const currentSocketClient = useMonopolyClient() as MonopolyClient | null;
+			if (!currentSocketClient) {
+				throw new Error("MonopolyClient 未初始化，无法进入游戏页面");
+			}
+			socketClient = currentSocketClient;
 			useLoading().showLoading("加载数据中...");
 
 			// 暂停心跳检测，避免加载期间误判断连
@@ -124,7 +125,7 @@
 <template>
 	<FpErrorBoundary>
 		<div class="game-page">
-			<canvas id="game-canvas" :width="windowWidth" :height="windowHeight"></canvas>
+			<canvas id="game-canvas"></canvas>
 			<div class="ui-container">
 				<UiRenderer
 					v-for="ui in mapDataStore.customUIs"

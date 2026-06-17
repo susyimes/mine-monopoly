@@ -60,6 +60,7 @@ export async function runRulesRoom(config: AiLiveConfig, logger: Logger, recorde
     ...poolOptions,
     headful: config.headful,
     label: "host-live",
+    viewport: config.headful ? null : undefined,
     windowPosition: { x: 0, y: 0 }
   });
   const botPool = new BrowserPool(config, {

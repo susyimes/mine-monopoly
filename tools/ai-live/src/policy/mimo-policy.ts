@@ -54,6 +54,15 @@ export class MimoPolicy implements BotPolicy {
       return this.options.fallback.decide(context);
     }
 
+    if (context.eventType === "RoundTurn" || context.eventType === "RollDiceStart") {
+      return {
+        kind: "roll-dice",
+        reason: `mimo ${this.personality.label}: 当前只有掷骰子一个合法动作，跳过模型请求以避免速率限制`,
+        confidence: 1,
+        fallback: false
+      };
+    }
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.options.timeoutMs);
     try {

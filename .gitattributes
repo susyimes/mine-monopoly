@@ -7,3 +7,5 @@
 *.mp3 binary
 *.glb binary
 *.wav binary
+*.fpmap binary
+*.mmmap binary

@@ -3,7 +3,7 @@ import FullScreenMask from "@src/views/screen_mask/screen_mask.vue";
 import Loading from "@src/components/utils/fp-loading/fp-loading.vue";
 import Background from "@src/views/background/background.vue";
 import StatusBar from "@src/views/status_bar/status_bar.vue";
-import { computed, nextTick, onBeforeMount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { pageEnter, pageLeave } from "@src/utils/gsap/page-transition";
 import Chat from "@src/views/chat_log/chat_log.vue";
@@ -49,9 +49,9 @@ const canChat = computed(() => router.name === "room" || router.name === "game")
 const version = __APP_VERSION__;
 const isTitleBarShow = computed(() => isPC() && !useDeviceStatus().isFullScreen);
 
-const fullScreenWatcherStopHandler = watch(
-	() => useDeviceStatus().isFullScreen,
-	(isFullScreen) => {
+const resizeWatcherStopHandler = watch(
+	[() => useDeviceStatus().isFullScreen, () => router.name],
+	() => {
 		nextTick(resizeContainer);
 	},
 );
@@ -61,9 +61,9 @@ onMounted(() => {
 	resizeContainer();
 });
 
-onBeforeMount(() => {
+onBeforeUnmount(() => {
 	window.removeEventListener("resize", resizeContainer);
-	fullScreenWatcherStopHandler();
+	resizeWatcherStopHandler();
 });
 
 function resizeContainer() {
@@ -74,6 +74,18 @@ function resizeContainer() {
 	const fontSizeBase = 0.0115;
 
 	const container = document.querySelector(".main-container") as HTMLElement;
+	if (!container) return;
+
+	if (router.name === "game") {
+		Object.assign(container.style, {
+			height: `${availableHeight}px`,
+			width: `${availableWidth}px`,
+		});
+		container.removeAttribute("out-of-width");
+		container.removeAttribute("out-of-height");
+		document.documentElement.style.fontSize = `${Math.min(availableWidth, availableHeight * ratio) * fontSizeBase}px`;
+		return;
+	}
 
 	// 手机横屏：使用 16:12（4:3）比例，font-size 取宽度/高度计算的中间值
 	if (isMobileDevice() && availableWidth / availableHeight > ratio) {

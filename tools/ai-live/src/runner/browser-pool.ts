@@ -13,7 +13,7 @@ export interface BrowserSlot {
 export interface BrowserPoolOptions {
   headful?: boolean;
   label?: string;
-  viewport?: { width: number; height: number };
+  viewport?: { width: number; height: number } | null;
   windowPosition?: { x: number; y: number };
   onConsole?: (event: { user: GuestUser; type: string; text: string; location: unknown; at: string }) => void | Promise<void>;
   onPageError?: (event: { user: GuestUser; message: string; stack?: string; at: string }) => void | Promise<void>;
@@ -30,13 +30,13 @@ export class BrowserPool {
   async launch() {
     if (this.browser) return;
     const headful = this.options.headful ?? this.config.headful;
-    const viewport = this.options.viewport ?? { width: 1440, height: 900 };
+    const windowSize = this.options.viewport === null ? { width: 1440, height: 900 } : this.options.viewport ?? { width: 1440, height: 900 };
     this.browser = await chromium.launch({
       headless: !headful,
       channel: resolveBrowserChannel(),
       args: headful
         ? [
-            `--window-size=${viewport.width},${viewport.height}`,
+            `--window-size=${windowSize.width},${windowSize.height}`,
             `--window-position=${this.options.windowPosition?.x ?? 0},${this.options.windowPosition?.y ?? 0}`,
             "--force-device-scale-factor=1"
           ]
@@ -46,22 +46,23 @@ export class BrowserPool {
 
   async createSlot(user: GuestUser): Promise<BrowserSlot> {
     if (!this.browser) throw new Error("BrowserPool.launch() must be called first.");
-    const viewport = this.options.viewport ?? { width: 1440, height: 900 };
+    const viewport = this.options.viewport === undefined ? { width: 1440, height: 900 } : this.options.viewport;
     const context = await this.browser.newContext({
       viewport,
       locale: "zh-CN",
       timezoneId: "Asia/Shanghai",
       ignoreHTTPSErrors: true
     });
-    await context.addInitScript(({ guest, peerHost, peerPort }) => {
+    await context.addInitScript(({ guest, peerHost, peerPort, monopolyApi }) => {
       window.localStorage.removeItem("token");
       window.localStorage.setItem("user", JSON.stringify(guest));
-      (window as typeof window & { __AI_LIVE_AUTOMATION__?: { user: GuestUser; peerHost?: string; peerPort?: number } }).__AI_LIVE_AUTOMATION__ = {
+      (window as typeof window & { __AI_LIVE_AUTOMATION__?: { user: GuestUser; peerHost?: string; peerPort?: number; monopolyApi?: string } }).__AI_LIVE_AUTOMATION__ = {
         user: guest,
         peerHost,
-        peerPort
+        peerPort,
+        monopolyApi
       };
-    }, { guest: user, peerHost: this.config.peerHost, peerPort: this.config.peerPort });
+    }, { guest: user, peerHost: this.config.peerHost, peerPort: this.config.peerPort, monopolyApi: this.config.monopolyApi });
     const page = await context.newPage();
     page.setDefaultTimeout(30000);
     page.setDefaultNavigationTimeout(30000);

@@ -123,6 +123,8 @@ export class GameRenderer {
 	// GLB 模型动画管理
 	private animationManager: AnimationManager = new AnimationManager();
 	private clock: THREE.Clock = new THREE.Clock();
+	private resizeObserver: ResizeObserver | null = null;
+	private resizeHandler: () => void = () => {};
 
 	constructor(canvas: HTMLCanvasElement, container: HTMLDivElement, mapData: GameMap) {
 		this.mapData = mapData;
@@ -151,17 +153,20 @@ export class GameRenderer {
 		this.renderer.shadowMap.enabled = settingStore.enableShadow;
 		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+		const initialWidth = container.clientWidth || canvas.clientWidth || window.innerWidth;
+		const initialHeight = container.clientHeight || canvas.clientHeight || window.innerHeight;
+
 		this.scene = new THREE.Scene();
-		this.camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 0.1, 1000);
+		this.camera = new THREE.PerspectiveCamera(45, initialWidth / initialHeight, 0.1, 1000);
 		this.composer = new EffectComposer(this.renderer);
 		this.renderPass = new RenderPass(this.scene, this.camera);
 		this.chanceCardTargetOutlinePass = new OutlinePass(
-			new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
+			new THREE.Vector2(initialWidth, initialHeight),
 			this.scene,
 			this.camera,
 		);
 		this.playerInRoundOutlinePass = new OutlinePass(
-			new THREE.Vector2(canvas.clientWidth, canvas.clientHeight),
+			new THREE.Vector2(initialWidth, initialHeight),
 			this.scene,
 			this.camera,
 		);
@@ -215,19 +220,29 @@ export class GameRenderer {
 		controls.update();
 		this.controls = controls;
 
-		const handleResize = () => {
-			this.camera.aspect = container.clientWidth / container.clientHeight; //相机视角长宽比
-			this.camera.updateProjectionMatrix();
-			this.renderer.setSize(container.clientWidth, container.clientHeight);
-			this.renderPass.setSize(container.clientWidth, container.clientHeight);
-			this.composer.setSize(container.clientWidth, container.clientHeight);
-			this.popElementRenderer.setSize(container.clientWidth, container.clientHeight);
-			this.diceManager && this.diceManager.updateAspect(container.clientWidth / container.clientHeight);
-		};
+		this.resizeHandler = debounce(() => this.resizeToContainer(), 100);
+		window.addEventListener("resize", this.resizeHandler);
+		this.resizeObserver = new ResizeObserver(this.resizeHandler);
+		this.resizeObserver.observe(container);
 
-		window.addEventListener("resize", debounce(handleResize.bind(this), 500));
+		this.resizeToContainer();
+	}
 
-		handleResize();
+	private resizeToContainer() {
+		const width = this.container.clientWidth;
+		const height = this.container.clientHeight;
+		if (width <= 0 || height <= 0) return;
+
+		const aspect = width / height;
+		this.camera.aspect = aspect;
+		this.camera.updateProjectionMatrix();
+		this.renderer.setSize(width, height, false);
+		this.renderPass.setSize(width, height);
+		this.chanceCardTargetOutlinePass.setSize(width, height);
+		this.playerInRoundOutlinePass.setSize(width, height);
+		this.composer.setSize(width, height);
+		this.popElementRenderer.setSize(width, height);
+		this.diceManager?.updateAspect(aspect);
 	}
 
 	public async init() {
@@ -1347,6 +1362,9 @@ export class GameRenderer {
 
 	public destroy() {
 		cancelAnimationFrame(this.requestAnimationFrameId);
+		window.removeEventListener("resize", this.resizeHandler);
+		this.resizeObserver?.disconnect();
+		this.resizeObserver = null;
 		Array.from(this.playerWatchers.values()).forEach((watchers) => {
 			watchers.InfoWatcher && watchers.InfoWatcher();
 			// watchers.moneyWatcher && watchers.moneyWatcher();
@@ -2113,14 +2131,7 @@ export class GameRenderer {
 		this.renderer.setPixelRatio(newPixelRatio);
 		this.composer.setPixelRatio(newPixelRatio);
 
-		// 更新相机和尺寸
-		this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
-		this.camera.updateProjectionMatrix();
-		this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
-		this.renderPass.setSize(this.container.clientWidth, this.container.clientHeight);
-		this.composer.setSize(this.container.clientWidth, this.container.clientHeight);
-		this.popElementRenderer.setSize(this.container.clientWidth, this.container.clientHeight);
-		this.diceManager && this.diceManager.updateAspect(this.container.clientWidth / this.container.clientHeight);
+		this.resizeToContainer();
 
 		console.log("[画质设置] 设置后 Canvas:", this.canvas.width, "x", this.canvas.height);
 		console.log("[画质设置] 像素比生效:", this.renderer.getPixelRatio());

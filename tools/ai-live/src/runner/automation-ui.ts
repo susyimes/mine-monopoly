@@ -137,7 +137,7 @@ export async function selectMap(page: Page, mapId = "auto"): Promise<MapSelectio
 export async function setRoundTime(page: Page, roundTimeSeconds: number) {
 	const bridgeUpdated = await page
 		.evaluate(async (value) => {
-			type RoomField = { key?: string; label?: string };
+			type RoomField = { key?: string; label?: string; defaultValue?: unknown; type?: string };
 			const bridge = (window as typeof window & {
 				__AI_LIVE_CLIENT_BRIDGE__?: {
 					getRoomState?: () => { gameSetting?: Record<string, unknown>; gameSettingForm?: RoomField[] };
@@ -150,13 +150,23 @@ export async function setRoundTime(page: Page, roundTimeSeconds: number) {
 				item.key === "turnTimeout" || /回合倒计时|回合时间|turnTimeout/.test(`${item.label ?? ""} ${item.key ?? ""}`)
 			);
 			if (!field?.key) return false;
+			const nextSetting: Record<string, unknown> = { ...(roomState.gameSetting ?? {}) };
+			for (const item of roomState.gameSettingForm ?? []) {
+				if (!item.key || nextSetting[item.key]) continue;
+				const defaultValue = item.defaultValue ?? "";
+				nextSetting[item.key] = {
+					label: item.label ?? item.key,
+					value: defaultValue,
+					displayValue: String(defaultValue),
+				};
+			}
+			nextSetting[field.key] = {
+				label: field.label ?? field.key,
+				value,
+				displayValue: String(value),
+			};
 			await bridge.changeGameSetting({
-				...(roomState.gameSetting ?? {}),
-				[field.key]: {
-					label: field.label ?? field.key,
-					value,
-					displayValue: String(value),
-				},
+				...nextSetting,
 			});
 			return true;
 		}, roundTimeSeconds)
@@ -307,6 +317,7 @@ export async function setReady(page: Page, username?: string) {
 
 export async function startGame(page: Page) {
 	await closeBlockingDialogs(page);
+	await waitForHostCanStart(page, 30_000).catch(() => undefined);
 	const bridgeStarted = await page
 		.evaluate(async () => {
 			const bridge = (window as typeof window & {
@@ -324,7 +335,7 @@ export async function startGame(page: Page) {
 			return;
 		}
 	}
-	const startButton = page.locator(READY_BUTTON).filter({ hasText: /开始游戏/ }).first();
+	const startButton = page.locator(`${READY_BUTTON}, button`).filter({ hasText: /开始游戏/ }).first();
 	await startButton.waitFor({ state: "visible" });
 	await page.waitForFunction(
 		(selector) => {
@@ -333,7 +344,7 @@ export async function startGame(page: Page) {
 			);
 			return Boolean(button && !button.disabled);
 		},
-		READY_BUTTON,
+		`${READY_BUTTON}, button`,
 		{ timeout: 30_000 }
 	);
 	await startButton.click().catch(async () => {
@@ -342,6 +353,34 @@ export async function startGame(page: Page) {
 	});
 	await waitForGamePage(page, 60_000);
 	await dispatchGameInitFinished(page);
+}
+
+async function waitForHostCanStart(page: Page, timeoutMs: number) {
+	await page.waitForFunction(
+		() => {
+			const bridge = (window as typeof window & {
+				__AI_LIVE_CLIENT_BRIDGE__?: {
+					getRoomState?: () => {
+						mapInfo?: unknown;
+						ownerId?: string;
+						userList?: Array<{ userId?: string; roleId?: string; isReady?: boolean }>;
+					};
+					getSnapshot?: () => { userId?: string };
+				};
+			}).__AI_LIVE_CLIENT_BRIDGE__;
+			const roomState = bridge?.getRoomState?.();
+			const snapshot = bridge?.getSnapshot?.();
+			const users = roomState?.userList ?? [];
+			const ownerId = roomState?.ownerId ?? snapshot?.userId;
+			return Boolean(
+				roomState?.mapInfo &&
+				users.length > 1 &&
+				users.every((user) => Boolean(user.roleId) || user.userId === ownerId || user.isReady),
+			);
+		},
+		undefined,
+		{ timeout: timeoutMs }
+	);
 }
 
 async function waitForGamePage(page: Page, timeoutMs = 60_000) {
@@ -481,7 +520,12 @@ async function resolveMapIndexFromClient(page: Page, mapId: string): Promise<num
 
 	const apiIndex = await page
 		.evaluate(async (targetMapId) => {
-			const response = await fetch("/game-map/list?page=1&size=1000");
+			const locationUrl = new URL(window.location.href);
+			const automation = (window as typeof window & {
+				__AI_LIVE_AUTOMATION__?: { monopolyApi?: string };
+			}).__AI_LIVE_AUTOMATION__;
+			const apiBaseUrl = automation?.monopolyApi ?? `${locationUrl.protocol}//${locationUrl.hostname}:8181`;
+			const response = await fetch(`${apiBaseUrl.replace(/\/$/, "")}/game-map/list?page=1&size=1000`);
 			const data = await response.json();
 			const mapsList = Array.isArray(data.data?.gameMapList) ? data.data.gameMapList : [];
 			return mapsList.findIndex((map: { id?: string; name?: string }) => map.id === targetMapId || map.name === targetMapId);
