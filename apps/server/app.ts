@@ -31,6 +31,10 @@ async function bootstrap() {
 
 		app.use("/static", express.static("public"));
 
+		app.get("/health", (req, res) => {
+			res.status(200).send("OK");
+		});
+
 		app.use(roleValidation); //身份验证
 
 		// 定时清理超时在线用户
@@ -68,12 +72,6 @@ async function bootstrap() {
 		app.use("/game-map", gameMapRouter);
 		app.use("/coturn", coturnRouter);
 	app.use("/statistics", statisticsRouter);
-
-		app.get("/health", (req, res) => {
-			// 在这里进行服务的健康检查，返回适当的响应
-			// 为了配合docker-compose按顺序启动
-			res.status(200).send("OK");
-		});
 
 		app.use(handleError);
 

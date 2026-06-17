@@ -240,8 +240,8 @@ apiClient.interceptors.response.use(
 			stack: error.stack,
 			context: {
 				requestConfig: originalConfig ? {
-					url: originalConfig.url,
-					method: originalConfig.method,
+					url: originalConfig.url ?? "",
+					method: originalConfig.method ?? "get",
 					data: originalConfig.data
 				} : undefined,
 				responseInfo: error.response ? {

@@ -186,13 +186,18 @@ export class Room {
 	 */
 	public roomBroadcast(msg: ServerSocketMessage) {
 		Array.from(this.userList.values()).forEach((user: UserInRoom) => {
-			user.socketClient.send(
-				JSON.stringify(msg, (key, value) => {
-					if (value === Infinity) return "Infinity";
-					if (value === -Infinity) return "-Infinity";
-					return value;
-				}),
-			);
+			if (!user.socketClient.open) return;
+			try {
+				user.socketClient.send(
+					JSON.stringify(msg, (key, value) => {
+						if (value === Infinity) return "Infinity";
+						if (value === -Infinity) return "-Infinity";
+						return value;
+					}),
+				);
+			} catch (error) {
+				console.warn("[Room] roomBroadcast failed", user.userId, error);
+			}
 		});
 	}
 
@@ -538,7 +543,7 @@ export class Room {
 		// 上报游戏开始状态和地图信息到服务端
 		const mapId = this.mapInfo?.from === "server" ? this.mapInfo.data : useMapData().id;
 		const mapName = useMapData().info?.name || null;
-		setRoomStarted(this.getRoomId(), true, mapId, mapName);
+		void this.syncRoomStarted(true, mapId, mapName);
 
 		// 状态转换: Uninitialized -> Initializing
 		this.transitionTo(WorkerState.Initializing, "开始创建游戏进程");
@@ -585,7 +590,7 @@ export class Room {
 	};
 	}
 	private async handleGameOver() {
-		await setRoomStarted(this.getRoomId(), false);
+		await this.syncRoomStarted(false);
 		Array.from(this.userList.values()).forEach((u) => {
 			u.isReady = false;
 		});
@@ -594,6 +599,18 @@ export class Room {
 		this.gameProcessWorker && this.gameProcessWorker.terminate();
 		this.gameProcessWorker = null;
 		this.isStarted = false;
+	}
+
+	private async syncRoomStarted(started: boolean, mapId?: string | null, mapName?: string | null) {
+		try {
+			await setRoomStarted(this.getRoomId(), started, mapId, mapName);
+		} catch (error) {
+			console.warn("[Room] setRoomStarted failed", {
+				roomId: this.getRoomId(),
+				started,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 	}
 
 	/**
@@ -768,11 +785,13 @@ export class Room {
 		}
 
 		// 隐藏客机端的 loading
-		this.sendToClient(
-			user?.socketClient,
-			SocketMsgType.LoadingControl,
-			{ show: false },
-		);
+		if (user?.socketClient) {
+			this.sendToClient(
+				user.socketClient,
+				SocketMsgType.LoadingControl,
+				{ show: false },
+			);
+		}
 	}
 
 	/**
@@ -1198,7 +1217,9 @@ export class Room {
 				category: ErrorCategory.WORKER,
 				type: data.type,
 				message: data.message,
-				stack: data.technical?.stack,
+				error: data.technical?.stack
+					? Object.assign(new Error(data.technical.message), { stack: data.technical.stack })
+					: undefined,
 				extraInfo: {
 					technical: data.technical,
 				},
@@ -1543,6 +1564,7 @@ export class Room {
 				});
 
 				// 等待快照响应
+				const worker = this.gameProcessWorker;
 				snapshot = await new Promise<SaveSnapshot | null>((resolve) => {
 					const timeout = setTimeout(() => {
 						this.isManuallyRequestingSnapshot = false;
@@ -1559,7 +1581,7 @@ export class Room {
 						}
 					};
 
-					this.gameProcessWorker.addEventListener("message", handler);
+					worker?.addEventListener("message", handler);
 				});
 			}
 
@@ -1683,7 +1705,7 @@ export class Room {
 		}
 
 		return new Promise((resolve) => {
-			const timeout = setTimeout(() => {
+			const timeout = window.setTimeout(() => {
 				this.pendingGMResponses.delete(action.id);
 				resolve({ success: false, error: "Timeout: Worker did not respond" });
 			}, 5000);

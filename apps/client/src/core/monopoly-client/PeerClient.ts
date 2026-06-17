@@ -18,15 +18,25 @@ export class PeerClient {
 		}
 
 		const conn = await new Promise<DataConnection>((resolve, reject) => {
+			let settled = false;
+			let pendingConn: DataConnection | null = null;
 			const timeOutId = setTimeout(() => {
-				reject("连接主机超时, 连不上主机捏😣");
-			}, 5000);
+				if (settled) return;
+				settled = true;
+				pendingConn?.close();
+				reject(new Error("连接主机超时, 连不上主机捏😣"));
+			}, isAutomationMode() ? 15000 : 5000);
 			const conn = this.peer.connect(hostId);
+			pendingConn = conn;
 			conn.on("open", () => {
+				if (settled) return;
+				settled = true;
 				clearTimeout(timeOutId);
 				resolve(conn);
 			});
 			conn.on("error", (e) => {
+				if (settled) return;
+				settled = true;
 				clearTimeout(timeOutId);
 				reject(e);
 			});
@@ -65,4 +75,12 @@ export class PeerClient {
 		this.peer.destroy();
 		this.conn = null;
 	}
+}
+
+function isAutomationMode() {
+	return (
+		Boolean((window as typeof window & { __AI_LIVE_AUTOMATION__?: unknown }).__AI_LIVE_AUTOMATION__) ||
+		window.location.search.includes("automation=1") ||
+		window.location.hash.includes("automation=1")
+	);
 }

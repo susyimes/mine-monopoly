@@ -63,6 +63,16 @@ export interface IPlayer {
 	 */
 	getUser: () => UserInRoomInfo;
 
+	/**
+	 * 获取玩家名称（兼容旧地图脚本）
+	 */
+	getName: () => string;
+
+	/**
+	 * 获取当前位置索引（兼容旧地图脚本）
+	 */
+	getPositionIndex: () => number;
+
 	// ===== 地产相关方法 =====
 
 	/**
@@ -92,6 +102,11 @@ export interface IPlayer {
 	setCardsList: (newChanceCardList: IChanceCard[]) => void;
 
 	/**
+	 * 获取机会卡列表（兼容旧地图脚本）
+	 */
+	getCardsList: () => IChanceCard[];
+
+	/**
 	 * 根据 ID 获取机会卡
 	 * @param cardId - 机会卡 ID
 	 * @returns 机会卡对象或 undefined
@@ -109,6 +124,11 @@ export interface IPlayer {
 	 * @param cardId - 要失去的机会卡 ID
 	 */
 	loseCard: (cardId: string) => Promise<void>;
+
+	/**
+	 * 注册旧版玩家事件监听器（兼容旧地图脚本）
+	 */
+	addEventListener: (...args: unknown[]) => void;
 
 	// ===== 金钱相关方法 =====
 
@@ -257,6 +277,16 @@ export interface IProperty {
 	 */
 	getOriginalData: () => PropertyInfo;
 
+	/**
+	 * 获取地产名称（兼容旧地图脚本）
+	 */
+	getName: () => string;
+
+	/**
+	 * 获取建筑等级（兼容旧地图脚本）
+	 */
+	getBuildingLevel: () => number;
+
 	// ===== 地产操作方法 =====
 
 	/**
@@ -280,6 +310,11 @@ export interface IProperty {
 	 * @param level - 新的等级
 	 */
 	setLevel: (level: number) => Promise<void>;
+
+	/**
+	 * 设置建筑等级（兼容旧地图脚本）
+	 */
+	setBuildingLevel: (level: number) => Promise<void>;
 
 	/**
 	 * 玩家到达地产

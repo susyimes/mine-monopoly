@@ -112,6 +112,32 @@ function reportWorkerError(error: Error | string, context?: string, additionalDa
 	}
 }
 
+function compileExecutableFunctionSource(sourceCode: string, fullTypes: string, label: string): string {
+	if (!sourceCode.trim()) return "return async () => {};";
+	const directCompiled = tryCompileExecutableFunction(sourceCode, fullTypes);
+	if (directCompiled) return directCompiled;
+
+	const expression = sourceCode.trim().replace(/;\s*$/, "");
+	const returnedCompiled = tryCompileExecutableFunction(`return ${expression};`, fullTypes);
+	if (returnedCompiled) return returnedCompiled;
+
+	const expressionCompiled = tryCompileExecutableFunction(`return (${expression});`, fullTypes);
+	if (expressionCompiled) return expressionCompiled;
+
+	console.warn(`[GameProcess] ${label} 没有返回可执行函数，已按空函数处理`, sourceCode.slice(0, 160));
+	return "return async () => {};";
+}
+
+function tryCompileExecutableFunction(sourceCode: string, fullTypes: string): string | undefined {
+	try {
+		const codeCompiled = compileTsToJs(sourceCode, fullTypes);
+		const result = new Function(codeCompiled)();
+		return typeof result === "function" ? codeCompiled : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 // 捕获 Worker 中的未处理错误
 self.addEventListener("error", (event) => {
 	console.error("[Worker Uncaught Error]:", event);
@@ -435,6 +461,10 @@ export class GameProcess implements IGameProcess {
 	private gameLogList: GameLog[] = [];
 
 	public currentMultiplier: number = 1;
+	public roundTimeTimer = {
+		pause: () => operationListener.pause(),
+		resume: () => operationListener.resume(),
+	};
 
 	// 当前事件名称（用于倒计时显示）
 	private currentEventName: string = "";
@@ -481,6 +511,18 @@ export class GameProcess implements IGameProcess {
 		for (const [name, value] of Object.entries(allRuntimeEnums)) {
 			(globalThis as any)[name] = value;
 		}
+		(globalThis as any).utils ??= {
+			randomString,
+			randomInRange: (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min,
+		};
+		(globalThis as any).PlayerEvents ??= {
+			BeforeRound: "BeforeRound",
+			BeforeWalk: "BeforeWalk",
+			BeforeCost: "BeforeCost",
+			AfterCost: "AfterCost",
+			BeforeGain: "BeforeGain",
+			BeforeSetBankrupted: "BeforeSetBankrupted",
+		};
 
 
 		console.dir(gameSetting);
@@ -872,7 +914,7 @@ export class GameProcess implements IGameProcess {
 				processedCode = processedCode.split(token).join(json);
 			}
 
-			return `return ${processedCode}`;
+			return /^\s*return\b/.test(processedCode) ? processedCode : `return ${processedCode}`;
 		};
 
 		// --- 2. 批量应用 ---
@@ -923,8 +965,8 @@ export class GameProcess implements IGameProcess {
 	private initGameOverRuleFunction() {
 		const { phases } = this.mapData;
 		const gameOverRule = phases.gameOverRule;
-		const compiledCode = compileTsToJs(gameOverRule[0].initEventCode, this.fullTypes);
-		this.gameOverRuleFunction = new Function(compiledCode)() as () => Promise<string[] | true | false>;
+		const compiledCode = compileExecutableFunctionSource(gameOverRule[0].initEventCode, this.fullTypes, "游戏结束规则");
+		this.gameOverRuleFunction = new Function(compiledCode)() as (ctx: GameContext, gameProcess: IGameProcess) => Promise<string[] | true | false>;
 	}
 
 	private initMap() {
@@ -932,7 +974,7 @@ export class GameProcess implements IGameProcess {
 
 		mapEvents.forEach((mapEvent) => {
 			try {
-				const effectCode = compileTsToJs(mapEvent.effectCode, this.fullTypes);
+				const effectCode = compileExecutableFunctionSource(mapEvent.effectCode, this.fullTypes, `地图事件 ${mapEvent.name || mapEvent.id}`);
 				this.mapEvents.set(mapEvent.id, {
 					...mapEvent,
 					effectCode,
@@ -955,7 +997,7 @@ export class GameProcess implements IGameProcess {
 		chanceCards.forEach((chanceCard) => {
 			this.chanceCardInfos.set(chanceCard.id, {
 				...chanceCard,
-				effectCode: compileTsToJs(chanceCard.effectCode, this.fullTypes),
+				effectCode: compileExecutableFunctionSource(chanceCard.effectCode, this.fullTypes, `机会卡 ${chanceCard.name || chanceCard.id}`),
 			});
 		});
 	}
@@ -1350,10 +1392,27 @@ export class GameProcess implements IGameProcess {
 	// 	return tempChanceCardList;
 	// }
 
+	public get mapInfo() {
+		return { indexList: this.mapData.mapIndex };
+	}
+
+	public getRandomChanceCard(num: number): IChanceCard[] {
+		const chanceCardList = Array.from(this.chanceCardInfos.values());
+		if (chanceCardList.length === 0 || num <= 0) return [];
+		return Array.from({ length: num }, () => {
+			const card = chanceCardList[Math.floor(Math.random() * chanceCardList.length)];
+			return new ChanceCard(card);
+		});
+	}
+
 	public createNewChanceCard(sourceId: string): IChanceCard {
 		const tempChanceCard = this.chanceCardInfos.get(sourceId);
 		if (!tempChanceCard) throw new Error(`错误的机会卡ID: ${sourceId}`);
 		return new ChanceCard(tempChanceCard);
+	}
+
+	public getNewChanceCard(sourceId: string): IChanceCard {
+		return this.createNewChanceCard(sourceId);
 	}
 
 	public async handleUseChanceCard(
@@ -2095,7 +2154,7 @@ export class GameProcess implements IGameProcess {
 		this.gameBroadcast({
 			type: SocketMsgType.GameOver,
 			source: SocketMsgSource.Server,
-			data: undefined,
+			data: {},
 			msg: { content: "游戏结束", type: "info" },
 		});
 		self.postMessage(<WorkerCommMsg>{

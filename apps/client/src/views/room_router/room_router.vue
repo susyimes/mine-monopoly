@@ -123,10 +123,14 @@ async function handleJoinRoom(e: Event) {
 
 async function joinRoom(id: string) {
 	try {
+		const automation = (window as typeof window & {
+			__AI_LIVE_AUTOMATION__?: { peerHost?: string; peerPort?: number | string };
+		}).__AI_LIVE_AUTOMATION__;
+		const automationPeerPort = Number(automation?.peerPort);
 		const monopolyClient = await useMonopolyClient({
 			iceServer: {
-				host: __FATPAPER_HOST__,
-				port: __ICE_SERVER_PORT__,
+				host: automation?.peerHost || __FATPAPER_HOST__,
+				port: Number.isFinite(automationPeerPort) ? automationPeerPort : __ICE_SERVER_PORT__,
 			},
 		});
 		useLoading().showLoading("正在尝试连接");

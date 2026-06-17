@@ -1,0 +1,33 @@
+{
+  "name": "ai-live-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "stack:check": "tsx src/cli.ts stack:check",
+    "run:rules": "tsx src/cli.ts run:rules",
+    "run:mimo30": "tsx src/cli.ts run:rules --policy mimo --bots 4 --humans 0 --headful=true --bot-headful=false --max-run-ms 1800000 --round-time 8 --map legacy-town-rich-map",
+    "import:legacy-map": "tsx src/scripts/import-legacy-map.ts",
+    "typecheck": "tsc --noEmit",
+    "test:asset-issues": "playwright test tests/asset-issues.spec.ts",
+    "test:build-house": "playwright test tests/build-house-colony.spec.ts",
+    "test:mimo-policy": "playwright test tests/mimo-policy.spec.ts",
+    "test:smoke:cli": "tsx src/cli.ts test:smoke",
+    "test:smoke": "playwright test tests/smoke.spec.ts",
+    "report:last": "tsx src/cli.ts report:last"
+  },
+  "dependencies": {
+    "playwright": "^1.53.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.53.0",
+    "@types/node": "22.15.29",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3"
+  }
+}

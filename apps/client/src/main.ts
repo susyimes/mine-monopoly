@@ -211,8 +211,10 @@ if (getPlatformType() === "capacitor") {
 	});
 }
 
-// 初始化 console 拦截器（在开发环境中也启用）
-interceptConsole();
+// AI live browser automation records console output externally; avoid recursive console persistence there.
+if (!isAiLiveAutomation()) {
+	interceptConsole();
+}
 
 initDeviceStatusListener();
 initSettingStore();
@@ -309,6 +311,14 @@ function initDeviceStatusListener() {
 			useEventBus().emit("window:focus-restored");
 		}
 	});
+}
+
+function isAiLiveAutomation() {
+	return Boolean(
+		(window as typeof window & { __AI_LIVE_AUTOMATION__?: unknown }).__AI_LIVE_AUTOMATION__ ||
+			window.location.search.includes("automation=1") ||
+			window.location.hash.includes("automation=1"),
+	);
 }
 
 // --- 错误处理工具函数 ---

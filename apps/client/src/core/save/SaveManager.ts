@@ -61,7 +61,7 @@ export class SaveManager {
 	/**
 	 * 删除存档
 	 */
-	async delete(id: string): Promise<SaveRecord> {
+	async delete(id: string): Promise<void> {
 		return this.storage.delete(id);
 	}
 

@@ -1,3 +1,5 @@
+> 本仓库的游戏核心 fork from [FatPaper-1874/mine-monopoly](https://github.com/FatPaper-1874/mine-monopoly)。当前已迁移上游 `main`（`b5f2138`）的核心更新，并在此基础上保留本仓库的 AI 自动对局扩展。
+
 <div align="center">
 
 <img src="docs/images/client-logo.png" alt="MineMonopoly 主Logo" width="120"/>
@@ -132,7 +134,8 @@ mine-monopoly/
 │   ├── components/     # 共享 Vue 组件
 │   └── style/          # 共享 SCSS 样式
 ├── docker/             # Docker 部署
-├── docs/               # 项目文档
+├── docs/               # 项目文档与 AI-live 改造记录
+├── tools/ai-live/      # AI 自动房间、bot-runner 和运行报告
 └── conf/               # MySQL 配置
 ```
 
@@ -147,9 +150,9 @@ mine-monopoly/
 ### 安装
 
 ```bash
-# 克隆仓库
-git clone https://github.com/FatPaper-1874/mine-monopoly.git
-cd mine-monopoly
+# 克隆本仓库
+git clone https://github.com/susyimes/mine-monopoly-ai-live.git
+cd mine-monopoly-ai-live
 
 # 安装依赖
 pnpm install
@@ -186,6 +189,19 @@ pnpm check-client       # 仅客户端
 pnpm check-editor       # 仅编辑器
 ```
 
+## AI 自动对局扩展
+
+本仓库额外保留 `tools/ai-live`，用于自动创建房间、驱动 bot 玩家、运行规则/Mimo 策略、记录结构化事件和生成运行报告。客户端在 `?automation=1` 下会暴露 `window.__AI_LIVE_CLIENT_BRIDGE__`，供工具触发投骰、确认弹窗、机会卡、动态按钮和动画完成等真实客户端动作。
+
+```powershell
+cd D:\mine-monopoly-ai-live\tools\ai-live
+npm install
+npm run stack:check
+npm run test:build-house
+npm run run:rules -- --room ai001 --bots 4 --humans 0 --headful=false --round-time 8 --client-url http://localhost:5173
+npm run report:last
+```
+
 ## 环境变量
 
 ### 通用
@@ -200,9 +216,9 @@ pnpm check-editor       # 仅编辑器
 
 | 变量                  | 说明         | 默认值 |
 | --------------------- | ------------ | ------ |
-| `SERVER_PORT`         | 主服务器端口 | `81`   |
-| `ICE_SERVER_PORT`     | ICE 信令端口 | `82`   |
-| `MONOPOLY_ADMIN_PORT` | 管理后台端口 | `83`   |
+| `SERVER_PORT`         | 主服务器端口 | `8181` |
+| `ICE_SERVER_PORT`     | ICE 信令端口 | `8182` |
+| `MONOPOLY_ADMIN_PORT` | 管理后台端口 | `8183` |
 
 ### 路径前缀（nginx 反向代理）
 
@@ -217,7 +233,7 @@ pnpm check-editor       # 仅编辑器
 | 变量             | 说明       | 默认值      |
 | ---------------- | ---------- | ----------- |
 | `MYSQL_HOST`     | 数据库地址 | `localhost` |
-| `MYSQL_PORT`     | 数据库端口 | `3306`      |
+| `MYSQL_PORT`     | 数据库端口 | `3307`      |
 | `MYSQL_DATABASE` | 数据库名   | `monopoly`  |
 | `MYSQL_USERNAME` | 数据库用户 | `root`      |
 | `MYSQL_PASSWORD` | 数据库密码 | `root`      |
@@ -262,14 +278,13 @@ pnpm check-editor       # 仅编辑器
 ### 前提条件
 
 - Docker 与 Docker Compose
-- 网络中可访问的 MySQL 实例
 
 ### 部署步骤
 
 ```bash
-# 1. 克隆仓库
-git clone https://github.com/FatPaper-1874/mine-monopoly.git
-cd mine-monopoly
+# 1. 克隆本仓库
+git clone https://github.com/susyimes/mine-monopoly-ai-live.git
+cd mine-monopoly-ai-live
 
 # 2. 配置环境
 cp docker/.env.example docker/.env
@@ -284,12 +299,13 @@ docker compose -f docker/docker-compose.yml up -d
 
 ### 服务
 
-| 服务            | 容器               | 端口                         |
-| --------------- | ------------------ | ---------------------------- |
-| monopoly-server | Express 应用服务器 | 81, 82, 80（可配置）         |
-| monopoly-coturn | STUN/TURN 中继     | 3478 (STUN), 5349 (TURN TLS) |
+| 服务            | 容器               | 端口                              |
+| --------------- | ------------------ | --------------------------------- |
+| fatpaper-mysql  | MySQL 8            | 3307 -> 3306（宿主机 -> 容器）    |
+| monopoly-server | Express 应用服务器 | 8181, 8182, 8183（可配置）        |
+| monopoly-coturn | STUN/TURN 中继     | 3478 (STUN), 5349 (TURN TLS)      |
 
-服务器通过外部 Docker 网络 (`monopoly-network`) 与 MySQL 通信，启动前请确保 MySQL 在该网络中可访问。
+服务器通过外部 Docker 网络 (`monopoly-network`) 与随 compose 启动的 MySQL 通信。若需要连接已有 MySQL，可在 `docker/.env` 中覆盖 `MYSQL_HOST` / `MYSQL_PORT` 并移除或停用 `fatpaper-mysql` 服务。
 
 ## 文档
 
@@ -298,8 +314,10 @@ docker compose -f docker/docker-compose.yml up -d
 | [开发指南](docs/development-guide.md)         | 架构设计、核心概念、编码规范 |
 | [游戏进程 API](docs/game-process-api.md)      | effectCode 公开 API 参考     |
 | [修饰器系统 API](docs/api/modifier-system.md) | 修饰器模板用法与迁移指南     |
-| [AGENTS.md](AGENTS.md)                        | AI Agent 项目约定            |
-| [CLAUDE.md](CLAUDE.md)                        | Claude Code 工作区指南       |
+| [AI 地产棋局改造方案](docs/ai-live-remodel-plan.md) | 本仓库 AI-live 改造规划 |
+| [Agent 群落运行时](docs/agent-colony-runtime.md) | AI-live agent 运行时说明 |
+| [minev2 AI Live 运行记录](docs/ai-live-minev2-runbook.md) | 新版基线 4 bot / Mimo 跑局记录 |
+| [任务索引](docs/tasks/README.md) | 本仓库阶段任务记录 |
 
 ## 贡献
 

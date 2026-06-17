@@ -78,6 +78,14 @@ export class Property implements IProperty {
 		return this.customPropertyInitFunction;
 	}
 
+	public getName() {
+		return this.name;
+	}
+
+	public getBuildingLevel() {
+		return this.level;
+	}
+
 	private initCommandBus() {
 		this.commandBus.setHandler("property.owner.change", async(payload) => {
 			const { oldOwner, newOwner } = payload;
@@ -125,6 +133,10 @@ export class Property implements IProperty {
 
 	public async setLevel(level: number) {
 		await this.commandBus.execute({ type: "property.level.set", payload: { oldLevel: this.level, newLevel: level } });
+	}
+
+	public async setBuildingLevel(level: number) {
+		await this.setLevel(level);
 	}
 
 	public async setOwner(player: IPlayer | undefined) {

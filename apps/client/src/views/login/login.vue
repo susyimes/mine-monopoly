@@ -63,6 +63,17 @@ onBeforeUnmount(() => {
 
 async function getUserInfoToRoomList() {
 	try {
+		if (isAutomationMode()) {
+			const userInfo = localStorage.getItem("user") || "";
+			if (userInfo) {
+				const { userId, useraccount = "", username, avatar = "", color } = JSON.parse(userInfo);
+				const userInfoStore = useUserInfo();
+				userInfoStore.$patch({ userId, useraccount, username, avatar, color });
+				toRoomList();
+				return;
+			}
+		}
+
 		showLoginMode.value = false;
 		showDice.value = true;
 		nextTick(async () => {
@@ -147,6 +158,10 @@ function handleTouristLogin() {
 
 function toRoomList() {
 	router.replace({ name: "room-router" });
+}
+
+function isAutomationMode() {
+	return window.location.search.includes("automation=1") || window.location.hash.includes("automation=1");
 }
 </script>
 
