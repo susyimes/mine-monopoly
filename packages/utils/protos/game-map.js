@@ -1,5 +1,8 @@
 /*eslint-disable block-scoped-var, id-length, no-control-regex, no-magic-numbers, no-prototype-builtins, no-redeclare, no-shadow, no-var, sort-vars*/
-import * as $protobuf from "protobufjs/minimal";
+import $protobufDefault from "protobufjs/minimal";
+import * as $protobufModule from "protobufjs/minimal";
+
+const $protobuf = $protobufModule.roots ? $protobufModule : ($protobufModule.default || $protobufDefault);
 
 // Common aliases
 const $Reader = $protobuf.Reader, $Writer = $protobuf.Writer, $util = $protobuf.util;

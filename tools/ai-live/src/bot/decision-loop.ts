@@ -49,14 +49,57 @@ export async function runDecisionLoop(
 ) {
   logger.info("starting bot decision loop", { bots: bots.length, maxRunMs: config.maxRunMs });
   const started = Date.now();
-  const tickTimeoutMs = Math.max(config.decisionTimeoutMs * 3, 15000);
+  const tickTimeoutMs = Math.max(config.decisionTimeoutMs * 10, 30000);
+  const activeTicks = new Map<BotPlayer, { promise: Promise<TickResult>; startedAt: number; timeoutRecorded: boolean }>();
   while (!signal.aborted && Date.now() - started < config.maxRunMs) {
-    await Promise.all(bots.map((bot) => withTimeout(bot.tick(), tickTimeoutMs, `bot tick timed out: ${bot.actorName}`)));
+    await Promise.all(
+      bots.map(async (bot) => {
+        const active = activeTicks.get(bot);
+        if (active) {
+          const durationMs = Date.now() - active.startedAt;
+          if (durationMs >= tickTimeoutMs && !active.timeoutRecorded) {
+            active.timeoutRecorded = true;
+            await recorder.recordEvent({ type: "bot.tick.timeout", actor: bot.actorName, data: { durationMs, timeoutMs: tickTimeoutMs } });
+            logger.warn("bot tick still running; skipping overlapping tick", { actor: bot.actorName, durationMs, timeoutMs: tickTimeoutMs });
+          }
+          return;
+        }
+
+        const tracked = Promise.resolve()
+          .then(() => bot.tick())
+          .then((): TickResult => ({ ok: true }))
+          .catch(async (error): Promise<TickResult> => {
+            await recorder.recordError({ phase: "bot.tick", page: bot.actorName, error });
+            return { ok: false, error };
+          })
+          .finally(() => {
+            activeTicks.delete(bot);
+          });
+        activeTicks.set(bot, { promise: tracked, startedAt: Date.now(), timeoutRecorded: false });
+
+        const timeoutMessage = `bot tick timed out: ${bot.actorName}`;
+        try {
+          const result = await withTimeout(tracked, tickTimeoutMs, timeoutMessage);
+          if (!result.ok) throw result.error;
+        } catch (error) {
+          if (error instanceof Error && error.message === timeoutMessage) {
+            const item = activeTicks.get(bot);
+            if (item) item.timeoutRecorded = true;
+            await recorder.recordEvent({ type: "bot.tick.timeout", actor: bot.actorName, data: { timeoutMs: tickTimeoutMs } });
+            logger.warn(timeoutMessage, { timeoutMs: tickTimeoutMs });
+            return;
+          }
+          throw error;
+        }
+      })
+    );
     await recorder.recordEvent({ type: "decision-loop.tick", data: { bots: bots.length } });
     await options.afterTick?.();
     await delay(config.decisionTimeoutMs);
   }
 }
+
+type TickResult = { ok: true } | { ok: false; error: unknown };
 
 export interface DecisionLoopLogger {
   debug?(message: string, meta?: unknown): void;

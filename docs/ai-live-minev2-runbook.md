@@ -95,6 +95,36 @@ npm run run:mimo30 -- --room mimo30
 
 结论：本轮满足阶段 1 的“30 分钟或 GameOver”目标，实际跑到 GameOver。HostBot/Bot1 + Bot2 + Bot3 + Bot4 的 Mimo 对局链路可运行，直播视角为 Bot1/房主页面。
 
+### fresh clone 验证
+
+目标仓库 `susyimes/mine-monopoly` 新克隆目录：`D:\mine-monopoly-susyimes-test`。
+
+本次 fresh clone 暴露并修复了几类只在干净环境容易出现的问题：
+
+- `tools/ai-live` 直接依赖 `playwright` 使用 `^1.53.0` 会解析到新版，和固定的 `@playwright/test@1.53.0` 产生类型冲突；已钉到 `1.53.0`。
+- `protobufjs/minimal` 在当前 Node/tsx ESM 组合下会落在 default export，导入 legacy map 脚本需要兼容 `default`。
+- 房间里地图加载后的随机角色会让多个 bot 撞角色；自动化角色选择已改为优先选择未占用角色。
+- `startGame` bridge 调用需要确认真的进入游戏页；未确认时回退点击真实 UI 开始按钮。
+- 单个 bot tick 偶发超过 15 秒不应直接杀整局；现在记录 `bot.tick.timeout` 并跳过重入，避免长跑被偶发慢 tick 打断。
+
+最终验证：
+
+- room：`clone4mimo143212`
+- runDir：`tools/ai-live/logs/20260617-143213-clone4mimo143212`
+- status：`passed`
+- ended reason：`game-over`
+- duration：1486253 ms，约 24 分 46 秒
+- decisions：340
+- events：935
+- screenshots：26
+- errors：0
+- tick timeouts：0
+- 机会卡决策：13 次
+- 买地接受：27 次
+- 建房决策：3 次
+
+结论：在 `susyimes/mine-monopoly` fresh clone + `codex/minev2-ai-live` 分支上，四 Mimo bot 对局可稳定运行到 GameOver，满足“30 分钟或 GameOver”的阶段 1 验证标准。
+
 ## 直播画面观察
 
 - 画面不是空白或 loading，棋子、骰子、排行榜、Recent overlay、购买/机会卡提示都在刷新。

@@ -22,7 +22,7 @@
     "report:last": "tsx src/cli.ts report:last"
   },
   "dependencies": {
-    "playwright": "^1.53.0"
+    "playwright": "1.53.0"
   },
   "devDependencies": {
     "@playwright/test": "1.53.0",

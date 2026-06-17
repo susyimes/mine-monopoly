@@ -240,10 +240,16 @@ export async function ensureOwnRole(page: Page, preferredIndex: number): Promise
 		const roomState = bridge?.getRoomState?.();
 		const snapshot = bridge?.getSnapshot?.();
 		const self = (roomState?.userList ?? []).find((user) => user.userId === snapshot?.userId);
-		if (self?.roleId) return { roleId: self.roleId, changed: false };
-
 		const roles = roomState?.roleList ?? [];
-		const role = roles.length > 0 ? roles[index % roles.length] : undefined;
+		const occupiedByOthers = new Set(
+			(roomState?.userList ?? [])
+				.filter((user) => user.userId !== snapshot?.userId)
+				.map((user) => user.roleId)
+				.filter(Boolean)
+		);
+		const orderedRoles = roles.length > 0 ? roles.map((_, offset) => roles[(index + offset) % roles.length]) : [];
+		const role = orderedRoles.find((item) => item?.id && !occupiedByOthers.has(item.id)) ?? orderedRoles[0];
+		if (self?.roleId && self.roleId === role?.id) return { roleId: self.roleId, changed: false };
 		if (!role?.id || typeof bridge?.changeRole !== "function") return { changed: false };
 		bridge.changeRole(role.id);
 		return { roleId: role.id, changed: true };
@@ -312,9 +318,11 @@ export async function startGame(page: Page) {
 		})
 		.catch(() => false);
 	if (bridgeStarted) {
-		await waitForGamePage(page);
-		await dispatchGameInitFinished(page);
-		return;
+		const gameReady = await waitForGamePage(page, 12_000).then(() => true).catch(() => false);
+		if (gameReady) {
+			await dispatchGameInitFinished(page);
+			return;
+		}
 	}
 	const startButton = page.locator(READY_BUTTON).filter({ hasText: /开始游戏/ }).first();
 	await startButton.waitFor({ state: "visible" });
@@ -332,11 +340,11 @@ export async function startGame(page: Page) {
 		await closeBlockingDialogs(page);
 		await startButton.click({ force: true });
 	});
-	await waitForGamePage(page);
+	await waitForGamePage(page, 60_000);
 	await dispatchGameInitFinished(page);
 }
 
-async function waitForGamePage(page: Page) {
+async function waitForGamePage(page: Page, timeoutMs = 60_000) {
 	await page.waitForFunction(
 		() => {
 			const bridge = (window as typeof window & {
@@ -361,7 +369,7 @@ async function waitForGamePage(page: Page) {
 			return hasGameData || (/\/game|#\/game/.test(route) && hasGameCanvas);
 		},
 		undefined,
-		{ timeout: 60_000 }
+		{ timeout: timeoutMs }
 	);
 	await page.waitForTimeout(1500);
 	const ready = await page.evaluate(() => {
